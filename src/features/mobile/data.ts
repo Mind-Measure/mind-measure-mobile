@@ -150,46 +150,63 @@ export async function getHelpArticles(category?: string, featured?: boolean): Pr
     return [];
   }
 }
+// Helper to get backend service
+function getBackendService() {
+  return BackendServiceFactory.createService(
+    BackendServiceFactory.getEnvironmentConfig()
+  );
+}
+
 // Get a specific help article and increment view count
 export async function getHelpArticle(slug: string): Promise<ContentArticle | null> {
+  const backendService = getBackendService();
   try {
-    const { data: { user } } = await backendService.auth.getCurrentUser();
+    const userResult = await backendService.auth.getCurrentUser();
+    const user = userResult?.data;
     if (!user) return null;
+    
     // Get user's university
-    const { data: profile } = await backendService.database.select('profiles')
-      .select('university_id')
-      .eq('user_id', user.id)
-      .single();
+    const profileResult = await backendService.database.select('profiles', {
+      columns: 'university_id',
+      filters: { user_id: user.sub || user.Username },
+      limit: 1
+    });
+    const profile = profileResult.data?.[0];
     if (!profile?.university_id) return null;
+    
     // Get the article
-    const { data: article, error } = await backendService.database.select('content_articles')
-      .select(`
-        id,
-        title,
+    const { data, error } = await backendService.database.select('content_articles', {
+      columns: '*',
+      filters: { 
+        university_id: profile.university_id,
         slug,
-        excerpt,
-        content,
-        featured_image,
-        is_featured,
-        view_count,
-        published_at,
-        category:content_categories(name, slug, color, icon)
-      `)
-      .eq('university_id', profile.university_id)
-      .eq('slug', slug)
-      .eq('status', 'published')
-      .single();
-    if (error || !article) {
+        status: 'published'
+      },
+      limit: 1
+    });
+    if (error || !data?.[0]) {
       console.error('Error fetching article:', error);
       return null;
     }
+    const article = data[0];
+    
+    // Fetch category separately if article has a category_id
+    if (article.category_id) {
+      const catResult = await backendService.database.select('content_categories', {
+        columns: 'name, slug, color, icon',
+        filters: { id: article.category_id },
+        limit: 1
+      });
+      if (catResult.data?.[0]) {
+        article.category = catResult.data[0];
+      }
+    }
     
     // Increment view count (fire and forget)
-    backendService.database.select('content_articles')
-      .update({ view_count: article.view_count + 1 })
-      .eq('id', article.id)
-      .then(() => {})
-      .catch(() => {});
+    backendService.database.update('content_articles', 
+      { view_count: (article.view_count || 0) + 1 },
+      { id: article.id }
+    ).catch(() => {});
     
     return article;
   } catch (error) {
@@ -199,12 +216,16 @@ export async function getHelpArticle(slug: string): Promise<ContentArticle | nul
 }
 // Associate user with a university (for onboarding)
 export async function setUserUniversity(universityId: string): Promise<boolean> {
+  const backendService = getBackendService();
   try {
-    const { data: { user } } = await backendService.auth.getCurrentUser();
+    const userResult = await backendService.auth.getCurrentUser();
+    const user = userResult?.data;
     if (!user) return false;
-    const { error } = await backendService.database.select('profiles')
-      .update({ university_id: universityId })
-      .eq('user_id', user.id);
+    
+    const { error } = await backendService.database.update('profiles', 
+      { university_id: universityId },
+      { user_id: user.sub || user.Username }
+    );
     if (error) {
       console.error('Error setting user university:', error);
       return false;
@@ -217,18 +238,25 @@ export async function setUserUniversity(universityId: string): Promise<boolean> 
 }
 // Search universities for onboarding
 export async function searchUniversities(query: string): Promise<University[]> {
+  const backendService = getBackendService();
   try {
-    const { data, error } = await backendService.database.select('universities')
-      .select('id, name, short_name, logo, primary_color')
-      .or(`name.ilike.%${query}%, short_name.ilike.%${query}%`)
-      .eq('status', 'active')
-      .order('name')
-      .limit(10);
+    // Fetch active universities then filter client-side for name/short_name match
+    const { data, error } = await backendService.database.select('universities', {
+      columns: 'id, name, short_name, logo, primary_color',
+      filters: { status: 'active' },
+      orderBy: [{ column: 'name', ascending: true }]
+    });
     if (error) {
       console.error('Error searching universities:', error);
       return [];
     }
-    return data || [];
+    // Client-side filter for name/short_name matching (replaces .or/.ilike)
+    const lowerQuery = query.toLowerCase();
+    const filtered = (data || []).filter((u: any) => 
+      (u.name || '').toLowerCase().includes(lowerQuery) ||
+      (u.short_name || '').toLowerCase().includes(lowerQuery)
+    );
+    return filtered.slice(0, 10);
   } catch (error) {
     console.error('Error searching universities:', error);
     return [];

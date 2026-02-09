@@ -54,26 +54,23 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({ onNaviga
     if (!user?.id) return null;
     try {
       // Get user profile data
-      const { data: profile } = await backendService.database.select({
-        table: 'profiles',
-        select: 'first_name, last_name, university, course, year_of_study',
+      const { data: profile } = await backendService.database.select('profiles', {
+        columns: 'first_name, last_name, university, course, year_of_study',
         filters: { id: user.id },
         limit: 1
       });
       
       // Get recent assessment history for context
-      const { data: recentAssessments } = await backendService.database.select({
-        table: 'assessment_sessions',
-        select: 'assessment_type, created_at, meta',
+      const { data: recentAssessments } = await backendService.database.select('assessment_sessions', {
+        columns: 'assessment_type, created_at, meta',
         filters: { user_id: user.id },
         orderBy: [{ column: 'created_at', ascending: false }],
         limit: 3
       });
       
       // Get wellness trends
-      const { data: wellnessData } = await backendService.database.select({
-        table: 'fusion_outputs',
-        select: 'score, created_at',
+      const { data: wellnessData } = await backendService.database.select('fusion_outputs', {
+        columns: 'score, created_at',
         filters: { user_id: user.id },
         orderBy: [{ column: 'created_at', ascending: false }],
         limit: 5
@@ -464,10 +461,10 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({ onNaviga
         sessionCreatedRef.current = true;
         if (ENABLE_ASSESSMENT_SESSIONS_WIDGET) {
           try {
-            await backendService.database.select('assessment_sessions')
-              .update({ status: 'cancelled' })
-              .eq('user_id', user?.id)
-              .eq('status', 'pending');
+            await backendService.database.update('assessment_sessions',
+              { status: 'cancelled' },
+              { user_id: user?.id, status: 'pending' }
+            );
           } catch (e) {
             console.warn('[MobileConversation] Skip cancel-pending assessment_sessions (flag off or error):', e);
           }
@@ -535,13 +532,14 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({ onNaviga
     try {
       if (ENABLE_ASSESSMENT_SESSIONS_WIDGET) {
         try {
-          await backendService.database.select('assessment_sessions')
-            .update({
+          await backendService.database.update('assessment_sessions',
+            {
               status: 'completed',
               visual_data: data,
               assessment_type: actualMode ? 'baseline' : 'checkin'
-            })
-            .eq('id', currentSession.id);
+            },
+            { id: currentSession.id }
+          );
         } catch (e) {
           console.warn('[MobileConversation] Skip assessment_sessions update (flag off or error):', e);
         }

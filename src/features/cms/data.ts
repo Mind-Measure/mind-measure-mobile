@@ -59,16 +59,21 @@ export interface LocalResource {
   website?: string;
   category: 'academic' | 'wellbeing' | 'financial' | 'housing' | 'career';
 }
-// CMS Data Functions
-export async function getAllUniversities(): Promise<University[]> {
-  // AWS Backend Service
-  const backendService = BackendServiceFactory.createService(
+// Helper to get backend service
+function getBackendService() {
+  return BackendServiceFactory.createService(
     BackendServiceFactory.getEnvironmentConfig()
   );
+}
+
+// CMS Data Functions
+export async function getAllUniversities(): Promise<University[]> {
+  const backendService = getBackendService();
   try {
-    const { data, error } = await backendService.database.select('universities')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const { data, error } = await backendService.database.select('universities', {
+      columns: '*',
+      orderBy: [{ column: 'created_at', ascending: false }]
+    });
     if (error) throw error;
     return data || [];
   } catch (error) {
@@ -381,76 +386,88 @@ export async function getContentArticles(universityId?: string, status?: string)
   }
 }
 export async function getContentArticleById(id: string): Promise<ContentArticle | null> {
+  const backendService = getBackendService();
   try {
-    const { data, error } = await backendService.database.select('content_articles')
-      .select(`
-        *,
-        category:content_categories(*)
-      `)
-      .eq('id', id)
-      .single();
+    const { data, error } = await backendService.database.select('content_articles', {
+      columns: '*',
+      filters: { id },
+      limit: 1
+    });
     if (error) throw error;
-    return data;
+    const article = data?.[0] || null;
+    
+    // Fetch category separately if article has a category_id
+    if (article?.category_id) {
+      const catResult = await backendService.database.select('content_categories', {
+        columns: '*',
+        filters: { id: article.category_id },
+        limit: 1
+      });
+      if (catResult.data?.[0]) {
+        article.category = catResult.data[0];
+      }
+    }
+    
+    return article;
   } catch (error) {
     console.error('Error fetching content article:', error);
     return null;
   }
 }
 export async function createContentArticle(articleData: Partial<ContentArticle>): Promise<ContentArticle | null> {
+  const backendService = getBackendService();
   try {
-    const { data: { user } } = await /* TODO: Replace with backendService - was: backendService */ backendService.databasegetUser();
-    const { data, error } = await backendService.database.select('content_articles')
-      .insert([{
-        university_id: articleData.university_id,
-        category_id: articleData.category_id,
-        title: articleData.title || '',
-        slug: articleData.slug || articleData.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || '',
-        excerpt: articleData.excerpt,
-        content: articleData.content || '',
-        featured_image: articleData.featured_image,
-        status: articleData.status || 'draft',
-        is_featured: articleData.is_featured || false,
-        author_id: user?.id
-      }])
-      .select(`
-        *,
-        category:content_categories(*)
-      `)
-      .single();
+    const userResult = await backendService.auth.getCurrentUser();
+    const user = userResult?.data;
+    
+    const { data, error } = await backendService.database.insert('content_articles', {
+      university_id: articleData.university_id,
+      category_id: articleData.category_id,
+      title: articleData.title || '',
+      slug: articleData.slug || articleData.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || '',
+      excerpt: articleData.excerpt,
+      content: articleData.content || '',
+      featured_image: articleData.featured_image,
+      status: articleData.status || 'draft',
+      is_featured: articleData.is_featured || false,
+      author_id: user?.sub || user?.Username
+    });
     if (error) throw error;
-    return data;
+    
+    // Return the created article (fetch it back with category)
+    const created = data?.[0] || data;
+    if (created?.id) {
+      return await getContentArticleById(created.id);
+    }
+    return created;
   } catch (error) {
     console.error('Error creating content article:', error);
     return null;
   }
 }
 export async function updateContentArticle(id: string, updates: Partial<ContentArticle>): Promise<ContentArticle | null> {
+  const backendService = getBackendService();
   try {
     const updateData: any = { ...updates };
     delete updateData.id;
     delete updateData.created_at;
     delete updateData.category;
     delete updateData.tags;
-    const { data, error } = await backendService.database.select('content_articles')
-      .update(updateData)
-      .eq('id', id)
-      .select(`
-        *,
-        category:content_categories(*)
-      `)
-      .single();
+    
+    const { data, error } = await backendService.database.update('content_articles', updateData, { id });
     if (error) throw error;
-    return data;
+    
+    // Fetch the updated article with category
+    return await getContentArticleById(id);
   } catch (error) {
     console.error('Error updating content article:', error);
     return null;
   }
 }
 export async function deleteContentArticle(id: string): Promise<boolean> {
+  const backendService = getBackendService();
   try {
-    const { error } = await backendService.database.select('content_articles')
-      .delete()
-      .eq('id', id);
+    const { error } = await backendService.database.delete('content_articles', { id });
     if (error) throw error;
     return true;
   } catch (error) {
@@ -459,18 +476,28 @@ export async function deleteContentArticle(id: string): Promise<boolean> {
   }
 }
 export async function incrementArticleViews(id: string): Promise<void> {
+  const backendService = getBackendService();
   try {
-    await backendService.rpc('increment_article_views', { article_id: id });
+    // Fetch current view count, then increment
+    const { data } = await backendService.database.select('content_articles', {
+      columns: 'view_count',
+      filters: { id },
+      limit: 1
+    });
+    const currentCount = data?.[0]?.view_count || 0;
+    await backendService.database.update('content_articles', { view_count: currentCount + 1 }, { id });
   } catch (error) {
     console.error('Error incrementing article views:', error);
   }
 }
 // Content Tags Functions
 export async function getContentTags(): Promise<ContentTag[]> {
+  const backendService = getBackendService();
   try {
-    const { data, error } = await backendService.database.select('content_tags')
-      .select('*')
-      .order('name');
+    const { data, error } = await backendService.database.select('content_tags', {
+      columns: '*',
+      orderBy: [{ column: 'name', ascending: true }]
+    });
     if (error) throw error;
     return data || [];
   } catch (error) {
@@ -479,14 +506,12 @@ export async function getContentTags(): Promise<ContentTag[]> {
   }
 }
 export async function createContentTag(name: string): Promise<ContentTag | null> {
+  const backendService = getBackendService();
   try {
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-    const { data, error } = await backendService.database.select('content_tags')
-      .insert([{ name, slug }])
-      .select()
-      .single();
+    const { data, error } = await backendService.database.insert('content_tags', { name, slug });
     if (error) throw error;
-    return data;
+    return data?.[0] || data;
   } catch (error) {
     console.error('Error creating content tag:', error);
     return null;
@@ -494,9 +519,11 @@ export async function createContentTag(name: string): Promise<ContentTag | null>
 }
 // Statistics Functions
 export async function getCMSStatistics() {
+  const backendService = getBackendService();
   try {
-    const { data: universities, error } = await backendService.database.select('universities')
-      .select('status, emergency_contacts, total_students');
+    const { data: universities, error } = await backendService.database.select('universities', {
+      columns: 'status, emergency_contacts, total_students'
+    });
     if (error) throw error;
     const stats = {
       totalUniversities: universities?.length || 0,
@@ -536,11 +563,13 @@ export interface AuthorizedUser {
 }
 // Get authorized users for a university
 export async function getAuthorizedUsers(universityId: string): Promise<AuthorizedUser[]> {
+  const backendService = getBackendService();
   try {
-    const { data, error } = await backendService.database.select('university_authorized_users')
-      .select('*')
-      .eq('university_id', universityId)
-      .order('created_at', { ascending: false });
+    const { data, error } = await backendService.database.select('university_authorized_users', {
+      columns: '*',
+      filters: { university_id: universityId },
+      orderBy: [{ column: 'created_at', ascending: false }]
+    });
     if (error) {
       console.error('Error fetching authorized users:', error);
       return [];
@@ -553,16 +582,14 @@ export async function getAuthorizedUsers(universityId: string): Promise<Authoriz
 }
 // Add authorized user
 export async function addAuthorizedUser(user: Omit<AuthorizedUser, 'id' | 'created_at' | 'updated_at' | 'login_count' | 'last_login'>): Promise<AuthorizedUser | null> {
+  const backendService = getBackendService();
   try {
-    const { data, error } = await backendService.database.select('university_authorized_users')
-      .insert([user])
-      .select()
-      .single();
+    const { data, error } = await backendService.database.insert('university_authorized_users', user);
     if (error) {
       console.error('Error adding authorized user:', error);
       return null;
     }
-    return data;
+    return data?.[0] || data;
   } catch (error) {
     console.error('Error adding authorized user:', error);
     return null;
@@ -570,17 +597,17 @@ export async function addAuthorizedUser(user: Omit<AuthorizedUser, 'id' | 'creat
 }
 // Update authorized user
 export async function updateAuthorizedUser(id: string, updates: Partial<AuthorizedUser>): Promise<AuthorizedUser | null> {
+  const backendService = getBackendService();
   try {
-    const { data, error } = await backendService.database.select('university_authorized_users')
-      .update({ ...updates, updated_at: new Date().toISOString() })
-      .eq('id', id)
-      .select()
-      .single();
+    const { data, error } = await backendService.database.update('university_authorized_users', 
+      { ...updates, updated_at: new Date().toISOString() },
+      { id }
+    );
     if (error) {
       console.error('Error updating authorized user:', error);
       return null;
     }
-    return data;
+    return data?.[0] || data;
   } catch (error) {
     console.error('Error updating authorized user:', error);
     return null;
@@ -588,10 +615,9 @@ export async function updateAuthorizedUser(id: string, updates: Partial<Authoriz
 }
 // Delete authorized user
 export async function deleteAuthorizedUser(id: string): Promise<boolean> {
+  const backendService = getBackendService();
   try {
-    const { error } = await backendService.database.select('university_authorized_users')
-      .delete()
-      .eq('id', id);
+    const { error } = await backendService.database.delete('university_authorized_users', { id });
     if (error) {
       console.error('Error deleting authorized user:', error);
       return false;
@@ -604,21 +630,23 @@ export async function deleteAuthorizedUser(id: string): Promise<boolean> {
 }
 // Check if user is authorized for university
 export async function isUserAuthorized(email: string, universityId: string): Promise<boolean> {
+  const backendService = getBackendService();
   try {
     // MM staff are always authorized
     if (email.endsWith('@mindmeasure.co.uk')) {
       return true;
     }
-    const { data, error } = await backendService.database
-      .rpc('is_user_authorized', {
-        user_email: email,
-        uni_id: universityId
-      });
+    // Check university_authorized_users table directly
+    const { data, error } = await backendService.database.select('university_authorized_users', {
+      columns: 'id',
+      filters: { email, university_id: universityId, status: 'active' },
+      limit: 1
+    });
     if (error) {
       console.error('Error checking user authorization:', error);
       return false;
     }
-    return data || false;
+    return (data && data.length > 0) || false;
   } catch (error) {
     console.error('Error checking user authorization:', error);
     return false;
@@ -626,14 +654,12 @@ export async function isUserAuthorized(email: string, universityId: string): Pro
 }
 // Update user last login
 export async function updateUserLastLogin(email: string): Promise<void> {
+  const backendService = getBackendService();
   try {
-    const { error } = await backendService.database
-      .rpc('update_user_last_login', {
-        user_email: email
-      });
-    if (error) {
-      console.error('Error updating user last login:', error);
-    }
+    await backendService.database.update('university_authorized_users', 
+      { last_login: new Date().toISOString(), login_count: 1 },
+      { email }
+    );
   } catch (error) {
     console.error('Error updating user last login:', error);
   }
