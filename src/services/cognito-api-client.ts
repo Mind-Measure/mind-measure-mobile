@@ -55,7 +55,10 @@ async function makeAuthRequest<T = Record<string, unknown>>(
   endpoint: string,
   body: Record<string, unknown>
 ): Promise<T> {
-  const response = await fetch(`${getApiBaseUrl()}/api/auth/${endpoint}`, {
+  const url = `${getApiBaseUrl()}/api/auth/${endpoint}`;
+  console.log(`🔄 Auth request: POST ${url}`);
+
+  const response = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -63,7 +66,16 @@ async function makeAuthRequest<T = Record<string, unknown>>(
     body: JSON.stringify(body),
   });
 
+  // Handle non-JSON responses (e.g. Vercel error pages)
+  const contentType = response.headers.get('content-type') || '';
+  if (!contentType.includes('application/json')) {
+    const text = await response.text();
+    console.error(`❌ Non-JSON response from ${endpoint} (${response.status}):`, text.substring(0, 200));
+    throw new Error(`Server error (${response.status}). Please try again.`);
+  }
+
   const data = await response.json();
+  console.log(`✅ Auth response from ${endpoint}: status=${response.status}, keys=${Object.keys(data).join(',')}`);
 
   if (!response.ok) {
     throw new Error((data as { error?: string }).error || 'Request failed');
@@ -202,9 +214,37 @@ export const cognitoApiClient = {
         password,
       });
 
-      // Check for special cases
+      console.log(
+        '🔍 Sign in response fields:',
+        JSON.stringify({
+          hasAccessToken: !!result.accessToken,
+          hasIdToken: !!result.idToken,
+          hasRefreshToken: !!result.refreshToken,
+          needsVerification: result.needsVerification,
+          needsNewPassword: result.needsNewPassword,
+          challengeName: result.challengeName,
+          error: result.error,
+        })
+      );
+
+      // Check for unverified email
       if (result.needsVerification) {
         return { data: { user: null as AuthUser | null }, error: 'UNVERIFIED_EMAIL', needsVerification: true, email };
+      }
+
+      // Check for Cognito challenges (e.g. NEW_PASSWORD_REQUIRED after admin-created account)
+      if (result.needsNewPassword) {
+        return {
+          data: { user: null as AuthUser | null },
+          error: 'Your account requires a password change. Please use "Forgot Password" to set a new password.',
+        };
+      }
+
+      if (result.challengeName) {
+        return {
+          data: { user: null as AuthUser | null },
+          error: result.error || `Additional verification required (${result.challengeName}). Please contact support.`,
+        };
       }
 
       // Store tokens
@@ -232,7 +272,9 @@ export const cognitoApiClient = {
         return { data: { user }, error: null as string | null };
       }
 
-      throw new Error('Invalid response from server');
+      // If we get here, the response shape is unexpected — log it for debugging
+      console.error('❌ Unexpected sign in response shape:', JSON.stringify(result));
+      throw new Error('Sign in succeeded but received an unexpected response. Please try again.');
     } catch (error: unknown) {
       console.error('❌ API Client: Sign in error:', error);
       const message = error instanceof Error ? error.message : 'Sign in failed';

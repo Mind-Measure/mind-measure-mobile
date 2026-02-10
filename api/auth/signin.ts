@@ -48,6 +48,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const result = await client.send(command);
 
+    // Log the response shape for debugging
+    console.log(
+      'Cognito auth response:',
+      JSON.stringify({
+        challengeName: result.ChallengeName || null,
+        hasAuthResult: !!result.AuthenticationResult,
+        hasAccessToken: !!result.AuthenticationResult?.AccessToken,
+        hasIdToken: !!result.AuthenticationResult?.IdToken,
+        hasRefreshToken: !!result.AuthenticationResult?.RefreshToken,
+      })
+    );
+
     // Check if additional steps are required
     if (result.ChallengeName) {
       // Handle confirmation required case

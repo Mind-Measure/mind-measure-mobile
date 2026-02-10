@@ -63,11 +63,16 @@ export interface SignInRequest {
 }
 
 export interface SignInResponse {
-  accessToken: string;
-  idToken: string;
-  refreshToken: string;
-  expiresIn: number;
+  accessToken?: string;
+  idToken?: string;
+  refreshToken?: string;
+  expiresIn?: number;
+  tokenType?: string;
   needsVerification?: boolean;
+  needsNewPassword?: boolean;
+  challengeName?: string;
+  session?: string;
+  error?: string | null;
 }
 
 export interface TokenRefreshResponse {
