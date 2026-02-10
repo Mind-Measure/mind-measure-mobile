@@ -36,16 +36,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (req.method !== 'GET' && req.method !== 'POST') {
     res.setHeader('Content-Type', 'text/html');
-    return res.status(405).end(htmlPage('Error', '<h1>Method not allowed</h1><p>Use GET with ?token=... or POST with { "token": "..." }</p>'));
+    return res
+      .status(405)
+      .end(
+        htmlPage('Error', '<h1>Method not allowed</h1><p>Use GET with ?token=... or POST with { "token": "..." }</p>')
+      );
   }
 
   // Accept token from query string (GET) or request body (POST)
-  const token = req.method === 'POST'
-    ? (req.body?.token ?? '').toString().trim()
-    : (req.query.token ?? '').toString().trim();
+  const token =
+    req.method === 'POST' ? (req.body?.token ?? '').toString().trim() : (req.query.token ?? '').toString().trim();
   if (!token) {
     res.setHeader('Content-Type', 'text/html');
-    return res.status(400).end(htmlPage('Opt-out', '<h1>Missing token</h1><p>The opt-out link is invalid or incomplete.</p>'));
+    return res
+      .status(400)
+      .end(htmlPage('Opt-out', '<h1>Missing token</h1><p>The opt-out link is invalid or incomplete.</p>'));
   }
 
   const client = getDbClient();
@@ -62,14 +67,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (r.rowCount === 0) {
       res.setHeader('Content-Type', 'text/html');
-      return res.status(404).end(htmlPage('Opt-out', '<h1>Link invalid or expired</h1><p>This opt-out link has already been used or is no longer valid.</p>'));
+      return res
+        .status(404)
+        .end(
+          htmlPage(
+            'Opt-out',
+            '<h1>Link invalid or expired</h1><p>This opt-out link has already been used or is no longer valid.</p>'
+          )
+        );
     }
 
-    const body = '<h1>You’ve been removed</h1><p>You won’t receive any further check-in reminders from Mind Measure.</p>';
+    const body =
+      '<h1>You’ve been removed</h1><p>You won’t receive any further check-in reminders from Mind Measure.</p>';
     res.setHeader('Content-Type', 'text/html');
     return res.status(200).end(htmlPage('Opt-out complete', body));
   } catch (e: any) {
-    try { await client.end(); } catch (_) {}
+    try {
+      await client.end();
+    } catch (_) {
+      /* intentionally empty */
+    }
     console.error('[buddies/optout]', e);
     res.setHeader('Content-Type', 'text/html');
     return res.status(500).end(htmlPage('Error', '<h1>Something went wrong</h1><p>Please try again later.</p>'));

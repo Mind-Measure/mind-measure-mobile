@@ -1,22 +1,22 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useConversation } from '@elevenlabs/react';
 import { motion } from 'motion/react';
-import { Button } from '../ui/button';
 import { useAuth } from '../../contexts/AuthContext';
 import { Preferences } from '@capacitor/preferences';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
-import mindMeasureLogo from "../../assets/66710e04a85d98ebe33850197f8ef41bd28d8b84.png";
+import mindMeasureLogo from '../../assets/66710e04a85d98ebe33850197f8ef41bd28d8b84.png';
 import {
   extractAssessmentFromTranscript,
   calculateClinicalScores,
   calculateMindMeasureComposite,
   validateAssessmentData,
   type AssessmentState,
-  type PhqResponses
 } from '../../utils/baselineScoring';
 import { MediaCapture } from '../../services/multimodal/baseline/mediaCapture';
 import { BaselineEnrichmentService } from '../../services/multimodal/baseline';
+import type { EnrichmentResult } from '../../services/multimodal/baseline/enrichmentService';
 import { ConversationScreen } from './ConversationScreen';
+import type { CapturedMediaResult, BaselineAnalysisData } from '../../types/assessment';
 
 interface BaselineAssessmentSDKProps {
   onBack?: () => void;
@@ -43,7 +43,7 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  
+
   // Clinical-focused processing messages for baseline (9 seconds total, 1.5s each)
   const processingMessages = [
     'Assessing PHQ-2 responses',
@@ -51,9 +51,9 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
     'Analysing vocal pitch patterns',
     'Processing facial expressions',
     'Computing baseline wellbeing score',
-    'Finalising your baseline profile'
+    'Finalising your baseline profile',
   ];
-  
+
   // Multimodal capture
   const mediaCaptureRef = useRef<MediaCapture | null>(null);
   const captureStartTimeRef = useRef<number>(0);
@@ -64,7 +64,7 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
     phqResponses: {},
     moodScore: null,
     startedAt: null,
-    endedAt: null
+    endedAt: null,
   });
 
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -79,31 +79,33 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
     },
     onMessage: (message) => {
       console.log('[SDK] 📩 Message received:', message);
-      
+
       const newMessage: Message = {
         id: crypto.randomUUID(),
         text: message.message,
         sender: message.source === 'ai' ? 'ai' : 'user',
-        timestamp: new Date()
+        timestamp: new Date(),
       };
-      
+
       // Update messages for UI display
-      setMessages(prev => [...prev, newMessage]);
+      setMessages((prev) => [...prev, newMessage]);
 
       // Append to transcript using functional updater
-      setAssessmentState(prev => ({
+      setAssessmentState((prev) => ({
         ...prev,
-        transcript: prev.transcript + `${message.source === 'ai' ? 'agent' : 'user'}: ${message.message}\n`
+        transcript: prev.transcript + `${message.source === 'ai' ? 'agent' : 'user'}: ${message.message}\n`,
       }));
     },
     onError: (error) => {
       console.error('[SDK] ❌ Conversation error:', error);
-    }
+    },
   });
 
   // Load click sound
   useEffect(() => {
-    audioRef.current = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSyBzvLZiTYIGWi77eafTRAMUKfj8LZjHAY4ktfyy3ksBSR3yPDdkEALFF+06eunVRQKRZ/g8r5sIQUsgs/y2Yk1CBlouu3mn00QDFA=');
+    audioRef.current = new Audio(
+      'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSyBzvLZiTYIGWi77eafTRAMUKfj8LZjHAY4ktfyy3ksBSR3yPDdkEALFF+06eunVRQKRZ/g8r5sIQUsgs/y2Yk1CBlouu3mn00QDFA='
+    );
   }, []);
 
   // Auto-scroll to bottom when new messages arrive
@@ -117,7 +119,7 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
 
     try {
       console.log('[SDK] 🎤 Requesting microphone permission...');
-      
+
       await navigator.mediaDevices.getUserMedia({ audio: true });
       console.log('[SDK] ✅ Audio permission granted');
 
@@ -127,7 +129,7 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
         mediaCaptureRef.current = new MediaCapture({
           captureAudio: true,
           captureVideo: true,
-          videoFrameRate: 1 // 1 frame per second
+          videoFrameRate: 1, // 1 frame per second
         });
         await mediaCaptureRef.current.start();
         captureStartTimeRef.current = Date.now();
@@ -145,26 +147,25 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
         phqResponses: {},
         moodScore: null,
         startedAt,
-        endedAt: null
+        endedAt: null,
       });
-      
+
       // Wait a moment for UI to render, then start the conversation
       setTimeout(async () => {
         try {
           console.log('[SDK] 🚀 Starting ElevenLabs conversation session...');
-          
+
           const sid = await conversation.startSession({
-            agentId: 'agent_9301k22s8e94f7qs5e704ez02npe'
-          });
+            agentId: 'agent_9301k22s8e94f7qs5e704ez02npe',
+          } as any);
 
           console.log('[SDK] ✅ Session started with ID:', sid);
           setSessionId(sid);
-
         } catch (error) {
           console.error('[SDK] ❌ Failed to start conversation:', error);
           alert('Failed to start conversation. Please try again.');
           setShowConversation(false);
-          
+
           // Cleanup media capture
           if (mediaCaptureRef.current) {
             mediaCaptureRef.current.cancel();
@@ -172,10 +173,11 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
           }
         }
       }, 500);
-
     } catch (error) {
       console.error('[SDK] ❌ Permission request failed:', error);
-      alert('Microphone access is required for the baseline assessment. Please check your browser settings and try again.');
+      alert(
+        'Microphone access is required for the baseline assessment. Please check your browser settings and try again.'
+      );
     } finally {
       setRequestingPermissions(false);
     }
@@ -183,22 +185,27 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
 
   const handleFinish = async () => {
     console.log('[SDK] 🏁 Finish button clicked');
-    console.log('[SDK] 📊 Current state - isSaving:', isSaving, 'transcript length:', assessmentState.transcript.length);
-    
+    console.log(
+      '[SDK] 📊 Current state - isSaving:',
+      isSaving,
+      'transcript length:',
+      assessmentState.transcript.length
+    );
+
     // Prevent double-clicking
     if (isSaving) {
       console.log('[SDK] ⚠️ Already processing, ignoring duplicate click');
       return;
     }
-    
+
     // Show saving state immediately
     setIsSaving(true);
     console.log('[SDK] ✅ Setting isSaving to true, processing overlay should appear');
-    
+
     // Play click sound and haptics
     try {
       if (audioRef.current) {
-        audioRef.current.play().catch(e => console.log('Audio play failed:', e));
+        audioRef.current.play().catch((e) => console.log('Audio play failed:', e));
       }
       await Haptics.impact({ style: ImpactStyle.Heavy });
     } catch (e) {
@@ -230,12 +237,12 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
     console.log('[SDK] 📊 Processing assessment data...');
 
     const endedAt = Date.now();
-    
+
     // Start smooth 9-second message roll (1.5s per message)
     setProcessingPhase('extracting');
     let messageIndex = 0;
     setProcessingMessage(processingMessages[0]);
-    
+
     const messageInterval = setInterval(() => {
       messageIndex++;
       if (messageIndex < processingMessages.length) {
@@ -246,7 +253,7 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
     // Extract PHQ/GAD/mood from the full transcript
     console.log('[SDK] 📝 Transcript to analyze:', assessmentState.transcript.substring(0, 200) + '...');
     console.log('[SDK] 📝 Full transcript length:', assessmentState.transcript.length);
-    
+
     const { phqResponses, moodScore } = extractAssessmentFromTranscript(assessmentState.transcript);
     console.log('[SDK] 📊 Extracted PHQ responses:', phqResponses);
     console.log('[SDK] 📊 Extracted mood score:', moodScore);
@@ -255,7 +262,7 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
       ...assessmentState,
       phqResponses,
       moodScore,
-      endedAt
+      endedAt,
     };
 
     // Validate
@@ -268,8 +275,8 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
       console.error('[SDK] ❌ Missing questions:', validation.details.missingQuestions);
       clearInterval(messageInterval);
       setErrorMessage(
-        'We didn\'t capture enough data to create your baseline assessment. ' +
-        'This can happen if you pressed Finish before answering all five questions.'
+        "We didn't capture enough data to create your baseline assessment. " +
+          'This can happen if you pressed Finish before answering all five questions.'
       );
       setShowErrorModal(true);
       setIsSaving(false);
@@ -288,14 +295,14 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
     // Visual phase transitions (for title changes only)
     setTimeout(() => setProcessingPhase('calculating'), 3000);
     setTimeout(() => setProcessingPhase('saving'), 6000);
-    
+
     // Stop message rotation after all messages shown
     setTimeout(() => clearInterval(messageInterval), 9000);
-    
+
     // Stop media capture and get blobs
-    let capturedMedia: any = null;
-    let enrichmentResult: any = null;
-    
+    let capturedMedia: CapturedMediaResult | null = null;
+    let enrichmentResult: EnrichmentResult | null = null;
+
     if (mediaCaptureRef.current) {
       try {
         console.log('[SDK] 📹 Stopping media capture...');
@@ -303,31 +310,30 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
         console.log('[SDK] ✅ Media captured:', {
           hasAudio: !!capturedMedia.audio,
           hasVideo: !!capturedMedia.videoFrames?.length,
-          duration: capturedMedia.duration
+          duration: capturedMedia.duration,
         });
 
         // Enrich with multimodal features
         console.log('[SDK] 🎯 Enriching with multimodal features...');
         const enrichmentService = new BaselineEnrichmentService();
-        
+
         enrichmentResult = await enrichmentService.enrichBaseline({
           clinicalScore: composite.score,
           audioBlob: capturedMedia.audio,
           videoFrames: capturedMedia.videoFrames,
-          duration: capturedMedia.duration,
+          duration: capturedMedia.duration ?? 0,
           userId: user?.id || '',
           fusionOutputId: 'temp', // Will be replaced after DB insert
           startTime: capturedMedia.startTime,
-          endTime: capturedMedia.endTime
+          endTime: capturedMedia.endTime,
         });
 
         console.log('[SDK] ✅ Enrichment complete:', {
-          originalScore: enrichmentResult.originalScore,
-          finalScore: enrichmentResult.finalScore,
-          success: enrichmentResult.success,
-          warnings: enrichmentResult.warnings
+          originalScore: enrichmentResult?.originalScore,
+          finalScore: enrichmentResult?.finalScore,
+          success: enrichmentResult?.success,
+          warnings: enrichmentResult?.warnings,
         });
-
       } catch (error) {
         console.warn('[SDK] ⚠️ Multimodal enrichment failed:', error);
         enrichmentResult = null; // Fall back to clinical-only
@@ -340,7 +346,11 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
 
     // Use enriched score if available, otherwise clinical-only
     const finalScore = enrichmentResult?.finalScore ?? composite.score;
-    console.log('[SDK] 📊 Final score:', finalScore, enrichmentResult ? '(70% clinical + 30% multimodal)' : '(clinical-only)');
+    console.log(
+      '[SDK] 📊 Final score:',
+      finalScore,
+      enrichmentResult ? '(70% clinical + 30% multimodal)' : '(clinical-only)'
+    );
 
     // Phase 3: Saving (6 seconds from start)
     setTimeout(() => setProcessingPhase('saving'), 3000); // 3s more = 6s total
@@ -371,20 +381,15 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
 
     try {
       console.log('[SDK] 💾 Saving assessment to database...');
-      
+
       const { BackendServiceFactory } = await import('../../services/database/BackendServiceFactory');
-      const backendService = BackendServiceFactory.createService(
-        BackendServiceFactory.getEnvironmentConfig()
-      );
+      const backendService = BackendServiceFactory.createService(BackendServiceFactory.getEnvironmentConfig());
 
       // Check/create profile
-      const { data: existingProfiles, error: profileCheckError } = await backendService.database.select(
-        'profiles',
-        {
-          columns: ['id', 'email', 'user_id'],
-          filters: { user_id: userId }
-        }
-      );
+      const { data: existingProfiles, error: profileCheckError } = await backendService.database.select('profiles', {
+        columns: ['id', 'email', 'user_id'],
+        filters: { user_id: userId },
+      });
 
       if (profileCheckError) {
         console.error('[SDK] ❌ Error checking profile:', profileCheckError);
@@ -393,11 +398,11 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
 
       if (!existingProfiles || existingProfiles.length === 0) {
         console.log('[SDK] Creating user profile...');
-        
+
         const { resolveUniversityFromEmail } = await import('../../services/UniversityResolver');
         const userEmail = user?.email || '';
         const universityId = await resolveUniversityFromEmail(userEmail);
-        
+
         const firstName = user?.user_metadata?.first_name || 'User';
         const lastName = user?.user_metadata?.last_name || '';
         const profileData = {
@@ -410,7 +415,7 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
           baseline_established: false,
           streak_count: 0,
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         };
 
         const { error: profileCreateError } = await backendService.database.insert('profiles', profileData);
@@ -424,7 +429,7 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
       }
 
       // Build analysis object with multimodal data if available
-      const analysisData: any = {
+      const analysisData: BaselineAnalysisData = {
         assessment_type: 'baseline',
         elevenlabs_session_id: sessionId,
         clinical_scores: {
@@ -432,71 +437,85 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
           gad2_total: clinical.gad2_total,
           mood_scale: clinical.mood_scale,
           phq2_positive_screen: clinical.phq2_positive_screen,
-          gad2_positive_screen: clinical.gad2_positive_screen
+          gad2_positive_screen: clinical.gad2_positive_screen,
         },
         conversation_quality: 'complete',
         mind_measure_composite: {
           score: composite.score,
           phq2_component: composite.phq2_component,
           gad2_component: composite.gad2_component,
-          mood_component: composite.mood_component
-        }
+          mood_component: composite.mood_component,
+        },
+        multimodal_enrichment: {
+          enabled: false,
+          reason: 'Not yet processed',
+        },
       };
 
       // Add multimodal data if enrichment succeeded
       if (enrichmentResult && enrichmentResult.success) {
         analysisData.multimodal_enrichment = {
           enabled: true,
-          audio_features: enrichmentResult.audioFeatures,
-          visual_features: enrichmentResult.visualFeatures,
-          scoring_breakdown: enrichmentResult.scoringBreakdown,
+          audio_features: enrichmentResult.audioFeatures as Record<string, unknown> | null,
+          visual_features: enrichmentResult.visualFeatures as Record<string, unknown> | null,
+          scoring_breakdown: enrichmentResult.scoringBreakdown as unknown as Record<string, unknown>,
           processing_time_ms: enrichmentResult.processingTimeMs,
-          warnings: enrichmentResult.warnings
+          warnings: enrichmentResult.warnings,
         };
       } else {
         analysisData.multimodal_enrichment = {
           enabled: false,
-          reason: enrichmentResult?.warnings?.[0] || 'Media capture not available'
+          reason: enrichmentResult?.warnings?.[0] || 'Media capture not available',
         };
       }
 
       // Save fusion output with FINAL score (hybrid if available, clinical-only otherwise)
       const fusionData = {
         user_id: userId,
-        session_id: null, // ElevenLabs session ID stored in analysis JSON instead
+        session_id: null as string | null, // ElevenLabs session ID stored in analysis JSON instead
         score: finalScore,
         score_smoothed: finalScore,
         final_score: finalScore,
         p_worse_fused: (100 - finalScore) / 100,
-        uncertainty: enrichmentResult ? (1 - enrichmentResult.scoringBreakdown.confidence) : 0.3,
+        uncertainty: enrichmentResult ? 1 - enrichmentResult.scoringBreakdown.confidence : 0.3,
         qc_overall: enrichmentResult?.scoringBreakdown.confidence || 0.7,
         public_state: 'report',
         model_version: enrichmentResult ? 'v1.1-multimodal' : 'v1.0-clinical',
         analysis: JSON.stringify(analysisData),
         topics: JSON.stringify(['wellbeing', 'baseline', 'initial_assessment', 'phq2', 'gad2']),
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       };
 
-      const { data: fusionResult, error: fusionError } = await backendService.database.insert('fusion_outputs', fusionData);
+      const { data: fusionResult, error: fusionError } = await backendService.database.insert(
+        'fusion_outputs',
+        fusionData
+      );
       if (fusionError || !fusionResult) {
         console.error('[SDK] ❌ CRITICAL: Failed to save baseline assessment:', fusionError);
         throw new Error('Failed to save baseline assessment');
       }
       // Handle array or single object return - type the result properly
-      const fusionOutputId = Array.isArray(fusionResult) 
-        ? (fusionResult[0] as any)?.id 
-        : (fusionResult as any)?.id;
+      const fusionOutputId = Array.isArray(fusionResult)
+        ? ((fusionResult[0] as Record<string, unknown> | undefined)?.id as string | undefined)
+        : ((fusionResult as Record<string, unknown> | undefined)?.id as string | undefined);
       if (!fusionOutputId) {
         console.error('[SDK] ❌ CRITICAL: No fusion_output_id returned');
         throw new Error('Failed to get fusion_output_id');
       }
-      console.log('[SDK] ✅ Baseline assessment saved with final score:', finalScore, 'fusion_output_id:', fusionOutputId);
+      console.log(
+        '[SDK] ✅ Baseline assessment saved with final score:',
+        finalScore,
+        'fusion_output_id:',
+        fusionOutputId
+      );
       if (enrichmentResult) {
-        console.log('[SDK] 📊 Score breakdown: clinical=' + composite.score + ', final=' + finalScore + ' (70/30 weighted)');
+        console.log(
+          '[SDK] 📊 Score breakdown: clinical=' + composite.score + ', final=' + finalScore + ' (70/30 weighted)'
+        );
       }
 
       // Store raw transcript (optional - doesn't block baseline completion)
-      const transcriptLines = assessmentState.transcript.split('\n').filter(line => line.trim());
+      const transcriptLines = assessmentState.transcript.split('\n').filter((line) => line.trim());
       const transcriptData = {
         fusion_output_id: fusionOutputId,
         user_id: userId,
@@ -506,7 +525,7 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
         word_count: assessmentState.transcript.split(/\s+/).length,
         duration_seconds: Math.round((endedAt - (assessmentState.startedAt || endedAt)) / 1000),
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       };
 
       const { error: transcriptError } = await backendService.database.insert('assessment_transcripts', transcriptData);
@@ -523,51 +542,51 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
         phq2_q2: 'Over the past two weeks, how often have you felt down, depressed, or hopeless?',
         gad2_q1: 'Over the past two weeks, how often have you felt nervous, anxious, or on edge?',
         gad2_q2: 'Over the past two weeks, how often have you been unable to stop or control worrying?',
-        mood: 'On a scale of one to ten, how would you rate your current mood?'
+        mood: 'On a scale of one to ten, how would you rate your current mood?',
       };
 
       const frequencyMap: { [key: number]: string } = {
         0: 'Not at all',
         1: 'Several days',
         2: 'More than half the days',
-        3: 'Nearly every day'
+        3: 'Nearly every day',
       };
 
       const items = [
-        { 
-          item_code: 'phq2_q1', 
+        {
+          item_code: 'phq2_q1',
           instrument: 'PHQ-2',
           question_text: questionTexts.phq2_q1,
           response_score: phqResponses.phq2_q1 ?? 0,
-          response_raw: frequencyMap[phqResponses.phq2_q1 ?? 0]
+          response_raw: frequencyMap[phqResponses.phq2_q1 ?? 0],
         },
-        { 
-          item_code: 'phq2_q2', 
+        {
+          item_code: 'phq2_q2',
           instrument: 'PHQ-2',
           question_text: questionTexts.phq2_q2,
           response_score: phqResponses.phq2_q2 ?? 0,
-          response_raw: frequencyMap[phqResponses.phq2_q2 ?? 0]
+          response_raw: frequencyMap[phqResponses.phq2_q2 ?? 0],
         },
-        { 
-          item_code: 'gad2_q1', 
+        {
+          item_code: 'gad2_q1',
           instrument: 'GAD-2',
           question_text: questionTexts.gad2_q1,
           response_score: phqResponses.gad2_q1 ?? 0,
-          response_raw: frequencyMap[phqResponses.gad2_q1 ?? 0]
+          response_raw: frequencyMap[phqResponses.gad2_q1 ?? 0],
         },
-        { 
-          item_code: 'gad2_q2', 
+        {
+          item_code: 'gad2_q2',
           instrument: 'GAD-2',
           question_text: questionTexts.gad2_q2,
           response_score: phqResponses.gad2_q2 ?? 0,
-          response_raw: frequencyMap[phqResponses.gad2_q2 ?? 0]
+          response_raw: frequencyMap[phqResponses.gad2_q2 ?? 0],
         },
-        { 
-          item_code: 'mood_scale', 
+        {
+          item_code: 'mood_scale',
           instrument: 'MOOD_SCALE',
           question_text: questionTexts.mood,
           response_score: moodScore ?? 5,
-          response_raw: String(moodScore ?? 5)
+          response_raw: String(moodScore ?? 5),
         },
       ];
 
@@ -583,7 +602,7 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
           response_score: item.response_score,
           extraction_confidence: 'high',
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         });
         if (itemError) {
           console.warn('[SDK] ⚠️ Failed to store assessment item:', item.item_code, itemError);
@@ -599,7 +618,7 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
         { baseline_established: true, updated_at: new Date().toISOString() },
         { user_id: userId }
       );
-      
+
       if (updateError) {
         console.error('[SDK] ❌ CRITICAL: Failed to update profile:', updateError);
         throw new Error('Failed to mark baseline as complete');
@@ -607,9 +626,9 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
       console.log('[SDK] ✅ Profile updated (baseline_established = true)');
 
       // Mark complete in device storage
-      await Preferences.set({ 
-        key: 'mindmeasure_baseline_complete', 
-        value: 'true' 
+      await Preferences.set({
+        key: 'mindmeasure_baseline_complete',
+        value: 'true',
       });
       console.log('[SDK] ✅ Device storage updated');
 
@@ -620,7 +639,6 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
       if (onComplete) {
         onComplete();
       }
-
     } catch (error) {
       console.error('[SDK] ❌ Error saving assessment:', error);
       setIsSaving(false);
@@ -640,19 +658,19 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
               className="absolute inset-0"
               animate={{
                 background: [
-                  "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                  "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
-                  "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
-                  "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
-                ]
+                  'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                  'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                  'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                ],
               }}
               transition={{
                 duration: 6,
                 repeat: Infinity,
-                ease: "linear"
+                ease: 'linear',
               }}
               style={{
-                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
               }}
             />
 
@@ -670,7 +688,7 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
               transition={{
                 duration: 4,
                 repeat: Infinity,
-                ease: "easeInOut"
+                ease: 'easeInOut',
               }}
             />
             <motion.div
@@ -683,8 +701,8 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
               transition={{
                 duration: 3,
                 repeat: Infinity,
-                ease: "easeInOut",
-                delay: 1
+                ease: 'easeInOut',
+                delay: 1,
               }}
             />
 
@@ -699,20 +717,16 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
               <motion.div
                 className="mb-6"
                 animate={{
-                  scale: [1, 1.05, 1]
+                  scale: [1, 1.05, 1],
                 }}
                 transition={{
                   duration: 2.5,
                   repeat: Infinity,
-                  ease: "easeInOut"
+                  ease: 'easeInOut',
                 }}
               >
                 <div className="w-32 h-32 p-4 bg-white/20 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20">
-                  <img
-                    src={mindMeasureLogo}
-                    alt="Mind Measure"
-                    className="w-full h-full object-contain"
-                  />
+                  <img src={mindMeasureLogo} alt="Mind Measure" className="w-full h-full object-contain" />
                 </div>
               </motion.div>
 
@@ -737,9 +751,7 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.6, delay: 0.2 }}
               >
-                <p className="text-white/90 text-lg font-medium mb-8">
-                  {processingMessage}
-                </p>
+                <p className="text-white/90 text-lg font-medium mb-8">{processingMessage}</p>
               </motion.div>
 
               {/* Progress bar - infinite loop */}
@@ -751,13 +763,13 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
               >
                 <motion.div
                   className="h-full bg-white/60 rounded-full"
-                  animate={{ x: ["-100%", "200%"] }}
+                  animate={{ x: ['-100%', '200%'] }}
                   transition={{
                     duration: 2,
                     repeat: Infinity,
-                    ease: "linear"
+                    ease: 'linear',
                   }}
-                  style={{ width: "50%" }}
+                  style={{ width: '50%' }}
                 />
               </motion.div>
             </motion.div>
@@ -778,299 +790,366 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
 
   // Show welcome screen
   return (
-    <div style={{
-      minHeight: '100vh',
-      backgroundColor: '#F5F5F5'
-    }}>
-      <div style={{
+    <div
+      style={{
+        minHeight: '100vh',
+        backgroundColor: '#F5F5F5',
+      }}
+    >
+      <div
+        style={{
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           padding: '20px',
           paddingTop: '80px',
           maxWidth: '600px',
-          margin: '0 auto'
-        }}>
-          {/* Logo */}
-          <img 
-            src={mindMeasureLogo} 
-            alt="Mind Measure" 
-            style={{
-              width: '80px',
-              height: '80px',
-              marginBottom: '20px'
-            }}
-          />
-          
-          <h1 style={{
+          margin: '0 auto',
+        }}
+      >
+        {/* Logo */}
+        <img
+          src={mindMeasureLogo}
+          alt="Mind Measure"
+          style={{
+            width: '80px',
+            height: '80px',
+            marginBottom: '20px',
+          }}
+        />
+
+        <h1
+          style={{
             fontSize: '24px',
             fontWeight: '600',
             color: '#1a1a1a',
             margin: '0 0 32px 0',
-            textAlign: 'center'
-          }}>
-            Start your wellness journey
-          </h1>
+            textAlign: 'center',
+          }}
+        >
+          Start your wellness journey
+        </h1>
 
-          {/* What to Expect Card */}
-          <div style={{
+        {/* What to Expect Card */}
+        <div
+          style={{
             background: 'white',
             borderRadius: '16px',
             padding: '32px 24px',
             boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
             marginBottom: '24px',
-            width: '100%'
-          }}>
-            <h2 style={{
+            width: '100%',
+          }}
+        >
+          <h2
+            style={{
               fontSize: '24px',
               fontWeight: '600',
               color: '#1a1a1a',
               margin: '0 0 24px 0',
-              textAlign: 'center'
-            }}>
-              What to expect
-            </h2>
-
-            {/* Bullet Points */}
-            <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '16px'
-            }}>
-              {/* Point 1 */}
-              <div style={{
-                display: 'flex',
-                gap: '12px',
-                alignItems: 'flex-start'
-              }}>
-                <div style={{
-                  width: '6px',
-                  height: '6px',
-                  borderRadius: '50%',
-                  backgroundColor: '#1a1a1a',
-                  marginTop: '8px',
-                  flexShrink: 0
-                }} />
-                <span style={{
-                  fontSize: '15px',
-                  color: '#1a1a1a',
-                  lineHeight: '1.6'
-                }}>
-                  Five questions
-                </span>
-              </div>
-
-              {/* Point 2 */}
-              <div style={{
-                display: 'flex',
-                gap: '12px',
-                alignItems: 'flex-start'
-              }}>
-                <div style={{
-                  width: '6px',
-                  height: '6px',
-                  borderRadius: '50%',
-                  backgroundColor: '#1a1a1a',
-                  marginTop: '8px',
-                  flexShrink: 0
-                }} />
-                <span style={{
-                  fontSize: '15px',
-                  color: '#1a1a1a',
-                  lineHeight: '1.6'
-                }}>
-                  3-5 minutes max
-                </span>
-              </div>
-
-              {/* Point 3 */}
-              <div style={{
-                display: 'flex',
-                gap: '12px',
-                alignItems: 'flex-start'
-              }}>
-                <div style={{
-                  width: '6px',
-                  height: '6px',
-                  borderRadius: '50%',
-                  backgroundColor: '#1a1a1a',
-                  marginTop: '8px',
-                  flexShrink: 0
-                }} />
-                <span style={{
-                  fontSize: '15px',
-                  color: '#1a1a1a',
-                  lineHeight: '1.6'
-                }}>
-                  We use your camera so make sure you are looking at the screen
-                </span>
-              </div>
-
-              {/* Point 4 */}
-              <div style={{
-                display: 'flex',
-                gap: '12px',
-                alignItems: 'flex-start'
-              }}>
-                <div style={{
-                  width: '6px',
-                  height: '6px',
-                  borderRadius: '50%',
-                  backgroundColor: '#1a1a1a',
-                  marginTop: '8px',
-                  flexShrink: 0
-                }} />
-                <span style={{
-                  fontSize: '15px',
-                  color: '#1a1a1a',
-                  lineHeight: '1.6'
-                }}>
-                  We analyse your voice to understand your mood
-                </span>
-              </div>
-
-              {/* Point 5 */}
-              <div style={{
-                display: 'flex',
-                gap: '12px',
-                alignItems: 'flex-start'
-              }}>
-                <div style={{
-                  width: '6px',
-                  height: '6px',
-                  borderRadius: '50%',
-                  backgroundColor: '#1a1a1a',
-                  marginTop: '8px',
-                  flexShrink: 0
-                }} />
-                <span style={{
-                  fontSize: '15px',
-                  color: '#1a1a1a',
-                  lineHeight: '1.6'
-                }}>
-                  We delete any voice and images we collect as soon as we have analysed them
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Start Assessment Button */}
-          <button
-            onClick={handleStartAssessment}
-            disabled={requestingPermissions}
-            style={{
-              width: '100%',
-              padding: '16px',
-              background: requestingPermissions ? '#cccccc' : 'linear-gradient(135deg, #8B5CF6, #A78BFA)',
-              color: 'white',
-              border: 'none',
-              borderRadius: '12px',
-              fontSize: '16px',
-              fontWeight: '600',
-              cursor: requestingPermissions ? 'not-allowed' : 'pointer',
-              boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              transition: 'all 0.2s',
-              opacity: requestingPermissions ? 0.5 : 1
-            }}
-            onMouseOver={(e) => {
-              if (!requestingPermissions) {
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 6px 16px rgba(139, 92, 246, 0.4)';
-              }
-            }}
-            onMouseOut={(e) => {
-              if (!requestingPermissions) {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(139, 92, 246, 0.3)';
-              }
+              textAlign: 'center',
             }}
           >
-            {requestingPermissions ? (
-              <>
-                <div style={{
+            What to expect
+          </h2>
+
+          {/* Bullet Points */}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px',
+            }}
+          >
+            {/* Point 1 */}
+            <div
+              style={{
+                display: 'flex',
+                gap: '12px',
+                alignItems: 'flex-start',
+              }}
+            >
+              <div
+                style={{
+                  width: '6px',
+                  height: '6px',
+                  borderRadius: '50%',
+                  backgroundColor: '#1a1a1a',
+                  marginTop: '8px',
+                  flexShrink: 0,
+                }}
+              />
+              <span
+                style={{
+                  fontSize: '15px',
+                  color: '#1a1a1a',
+                  lineHeight: '1.6',
+                }}
+              >
+                Five questions
+              </span>
+            </div>
+
+            {/* Point 2 */}
+            <div
+              style={{
+                display: 'flex',
+                gap: '12px',
+                alignItems: 'flex-start',
+              }}
+            >
+              <div
+                style={{
+                  width: '6px',
+                  height: '6px',
+                  borderRadius: '50%',
+                  backgroundColor: '#1a1a1a',
+                  marginTop: '8px',
+                  flexShrink: 0,
+                }}
+              />
+              <span
+                style={{
+                  fontSize: '15px',
+                  color: '#1a1a1a',
+                  lineHeight: '1.6',
+                }}
+              >
+                3-5 minutes max
+              </span>
+            </div>
+
+            {/* Point 3 */}
+            <div
+              style={{
+                display: 'flex',
+                gap: '12px',
+                alignItems: 'flex-start',
+              }}
+            >
+              <div
+                style={{
+                  width: '6px',
+                  height: '6px',
+                  borderRadius: '50%',
+                  backgroundColor: '#1a1a1a',
+                  marginTop: '8px',
+                  flexShrink: 0,
+                }}
+              />
+              <span
+                style={{
+                  fontSize: '15px',
+                  color: '#1a1a1a',
+                  lineHeight: '1.6',
+                }}
+              >
+                We use your camera so make sure you are looking at the screen
+              </span>
+            </div>
+
+            {/* Point 4 */}
+            <div
+              style={{
+                display: 'flex',
+                gap: '12px',
+                alignItems: 'flex-start',
+              }}
+            >
+              <div
+                style={{
+                  width: '6px',
+                  height: '6px',
+                  borderRadius: '50%',
+                  backgroundColor: '#1a1a1a',
+                  marginTop: '8px',
+                  flexShrink: 0,
+                }}
+              />
+              <span
+                style={{
+                  fontSize: '15px',
+                  color: '#1a1a1a',
+                  lineHeight: '1.6',
+                }}
+              >
+                We analyse your voice to understand your mood
+              </span>
+            </div>
+
+            {/* Point 5 */}
+            <div
+              style={{
+                display: 'flex',
+                gap: '12px',
+                alignItems: 'flex-start',
+              }}
+            >
+              <div
+                style={{
+                  width: '6px',
+                  height: '6px',
+                  borderRadius: '50%',
+                  backgroundColor: '#1a1a1a',
+                  marginTop: '8px',
+                  flexShrink: 0,
+                }}
+              />
+              <span
+                style={{
+                  fontSize: '15px',
+                  color: '#1a1a1a',
+                  lineHeight: '1.6',
+                }}
+              >
+                We delete any voice and images we collect as soon as we have analysed them
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Start Assessment Button */}
+        <button
+          onClick={handleStartAssessment}
+          disabled={requestingPermissions}
+          style={{
+            width: '100%',
+            padding: '16px',
+            background: requestingPermissions ? '#cccccc' : 'linear-gradient(135deg, #8B5CF6, #A78BFA)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '12px',
+            fontSize: '16px',
+            fontWeight: '600',
+            cursor: requestingPermissions ? 'not-allowed' : 'pointer',
+            boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            transition: 'all 0.2s',
+            opacity: requestingPermissions ? 0.5 : 1,
+          }}
+          onMouseOver={(e) => {
+            if (!requestingPermissions) {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 6px 16px rgba(139, 92, 246, 0.4)';
+            }
+          }}
+          onMouseOut={(e) => {
+            if (!requestingPermissions) {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(139, 92, 246, 0.3)';
+            }
+          }}
+        >
+          {requestingPermissions ? (
+            <>
+              <div
+                style={{
                   width: '16px',
                   height: '16px',
                   border: '2px solid white',
                   borderTopColor: 'transparent',
                   borderRadius: '50%',
-                  animation: 'spin 1s linear infinite'
-                }} />
-                Requesting Permissions...
-              </>
-            ) : (
-              <>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polygon points="5 3 19 12 5 21 5 3"/>
-                </svg>
-                Let's Get Started
-              </>
-            )}
-          </button>
-        </div>
+                  animation: 'spin 1s linear infinite',
+                }}
+              />
+              Requesting Permissions...
+            </>
+          ) : (
+            <>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polygon points="5 3 19 12 5 21 5 3" />
+              </svg>
+              Let's Get Started
+            </>
+          )}
+        </button>
+      </div>
 
       {/* Error Modal */}
       {showErrorModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999,
-          padding: '1rem'
-        }}>
-          <div style={{
-            backgroundColor: 'white',
-            borderRadius: '1rem',
-            maxWidth: '28rem',
-            width: '100%',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
-            overflow: 'hidden'
-          }}>
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '1rem',
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '1rem',
+              maxWidth: '28rem',
+              width: '100%',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+              overflow: 'hidden',
+            }}
+          >
             {/* Header */}
-            <div style={{
-              padding: '1.5rem',
-              borderBottom: '1px solid #e5e7eb'
-            }}>
-              <h3 style={{
-                fontSize: '1.25rem',
-                fontWeight: '600',
-                color: '#111827',
-                margin: 0
-              }}>
+            <div
+              style={{
+                padding: '1.5rem',
+                borderBottom: '1px solid #e5e7eb',
+              }}
+            >
+              <h3
+                style={{
+                  fontSize: '1.25rem',
+                  fontWeight: '600',
+                  color: '#111827',
+                  margin: 0,
+                }}
+              >
                 Unable to Complete Baseline
               </h3>
             </div>
 
             {/* Body */}
-            <div style={{
-              padding: '1.5rem'
-            }}>
-              <p style={{
-                color: '#6b7280',
-                lineHeight: '1.6',
-                margin: 0
-              }}>
+            <div
+              style={{
+                padding: '1.5rem',
+              }}
+            >
+              <p
+                style={{
+                  color: '#6b7280',
+                  lineHeight: '1.6',
+                  margin: 0,
+                }}
+              >
                 {errorMessage}
               </p>
             </div>
 
             {/* Footer - Buttons */}
-            <div style={{
-              padding: '1rem 1.5rem',
-              backgroundColor: '#f9fafb',
-              display: 'flex',
-              gap: '0.75rem',
-              justifyContent: 'flex-end'
-            }}>
+            <div
+              style={{
+                padding: '1rem 1.5rem',
+                backgroundColor: '#f9fafb',
+                display: 'flex',
+                gap: '0.75rem',
+                justifyContent: 'flex-end',
+              }}
+            >
               <button
                 onClick={() => {
                   setShowErrorModal(false);
@@ -1081,7 +1160,7 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
                     phqResponses: {},
                     moodScore: null,
                     startedAt: null,
-                    endedAt: null
+                    endedAt: null,
                   });
                   // Navigate back to dashboard
                   if (onComplete) {
@@ -1097,7 +1176,7 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
                   border: '1px solid #d1d5db',
                   borderRadius: '0.5rem',
                   cursor: 'pointer',
-                  transition: 'all 0.2s'
+                  transition: 'all 0.2s',
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.backgroundColor = '#f3f4f6';
@@ -1108,7 +1187,7 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
               >
                 Cancel
               </button>
-              
+
               <button
                 onClick={() => {
                   setShowErrorModal(false);
@@ -1119,7 +1198,7 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
                     phqResponses: {},
                     moodScore: null,
                     startedAt: null,
-                    endedAt: null
+                    endedAt: null,
                   });
                   // Go back to baseline welcome to try again
                   if (onBack) {
@@ -1136,7 +1215,7 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
                   borderRadius: '0.5rem',
                   cursor: 'pointer',
                   boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-                  transition: 'all 0.2s'
+                  transition: 'all 0.2s',
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = 'scale(1.02)';

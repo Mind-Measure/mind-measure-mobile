@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Button } from "../ui/button";
-import { Card, CardContent } from "../ui/card";
-import { Input } from "../ui/input";
-import { Badge } from "../ui/badge";
-import { Search, Building2, Check, RefreshCw } from "lucide-react";
-import { searchUniversities, setUserUniversity } from "../../features/mobile/data";
-import { University } from "../../features/cms/data";
+import { Button } from '../ui/button';
+import { Card, CardContent } from '../ui/card';
+import { Input } from '../ui/input';
+import { Search, Building2, Check, RefreshCw } from 'lucide-react';
+import { searchUniversities, setUserUniversity } from '../../features/mobile/data';
+import { University } from '../../features/cms/data';
 interface UniversitySelectorProps {
   onSelect: (university: University) => void;
   onComplete?: () => void;
@@ -57,9 +56,7 @@ export function UniversitySelector({ onSelect, onComplete }: UniversitySelectorP
       <div className="text-center space-y-2">
         <Building2 className="w-12 h-12 mx-auto text-blue-600" />
         <h2 className="text-2xl font-bold">Select Your University</h2>
-        <p className="text-muted-foreground">
-          Choose your university to get personalized support and resources
-        </p>
+        <p className="text-muted-foreground">Choose your university to get personalized support and resources</p>
       </div>
       {/* Search Input */}
       <div className="relative">
@@ -82,16 +79,12 @@ export function UniversitySelector({ onSelect, onComplete }: UniversitySelectorP
       {/* Search Results */}
       {universities.length > 0 && (
         <div className="space-y-2">
-          <p className="text-sm text-muted-foreground">
-            {universities.length} universities found
-          </p>
+          <p className="text-sm text-muted-foreground">{universities.length} universities found</p>
           {universities.map((university) => (
             <Card
               key={university.id}
               className={`cursor-pointer transition-all hover:shadow-md ${
-                selectedUniversity?.id === university.id
-                  ? 'ring-2 ring-blue-500 bg-blue-50'
-                  : 'hover:bg-gray-50'
+                selectedUniversity?.id === university.id ? 'ring-2 ring-blue-500 bg-blue-50' : 'hover:bg-gray-50'
               }`}
               onClick={() => handleSelectUniversity(university)}
             >
@@ -119,9 +112,7 @@ export function UniversitySelector({ onSelect, onComplete }: UniversitySelectorP
                       )}
                     </div>
                   </div>
-                  {selectedUniversity?.id === university.id && (
-                    <Check className="w-5 h-5 text-blue-600" />
-                  )}
+                  {selectedUniversity?.id === university.id && <Check className="w-5 h-5 text-blue-600" />}
                 </div>
               </CardContent>
             </Card>
@@ -133,9 +124,7 @@ export function UniversitySelector({ onSelect, onComplete }: UniversitySelectorP
         <div className="text-center py-8">
           <Building2 className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
           <h3 className="font-semibold mb-2">No universities found</h3>
-          <p className="text-sm text-muted-foreground">
-            Try searching with a different name or check your spelling
-          </p>
+          <p className="text-sm text-muted-foreground">Try searching with a different name or check your spelling</p>
         </div>
       )}
       {/* Confirmation */}
@@ -184,9 +173,7 @@ export function UniversitySelector({ onSelect, onComplete }: UniversitySelectorP
       )}
       {/* Help Text */}
       <div className="text-center">
-        <p className="text-xs text-muted-foreground">
-          Can't find your university? Contact support for assistance.
-        </p>
+        <p className="text-xs text-muted-foreground">Can't find your university? Contact support for assistance.</p>
       </div>
     </div>
   );

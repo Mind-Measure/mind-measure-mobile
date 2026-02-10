@@ -1,7 +1,7 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
-import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { BackendServiceFactory } from '@/services/database/BackendServiceFactory';
+
 import { Preferences } from '@capacitor/preferences';
 import { BottomNav } from '@/components/BottomNavigation';
 
@@ -9,40 +9,49 @@ import { BottomNav } from '@/components/BottomNavigation';
 import { SplashScreen } from './LandingPage';
 
 // Lazily loaded: only fetched when navigated to
-const DashboardScreen = lazy(() => import('./MobileDashboard').then(m => ({ default: m.DashboardScreen })));
-const MobileCheckin = lazy(() => import('./MobileCheckin').then(m => ({ default: m.MobileCheckin })));
-const BuddiesScreen = lazy(() => import('./BuddiesScreen').then(m => ({ default: m.BuddiesScreen })));
-const BuddyConsentPage = lazy(() => import('./BuddyConsentPage').then(m => ({ default: m.BuddyConsentPage })));
-const MobileProfile = lazy(() => import('./MobileProfile').then(m => ({ default: m.MobileProfile })));
-const HelpPage = lazy(() => import('./HelpPage').then(m => ({ default: m.HelpScreen })));
-const MobileConversation = lazy(() => import('./MobileConversation').then(m => ({ default: m.MobileConversation })));
-const MobileSettings = lazy(() => import('./MobileSettings').then(m => ({ default: m.MobileSettings })));
-const RegistrationScreen = lazy(() => import('./RegistrationScreen').then(m => ({ default: m.RegistrationScreen })));
-const WelcomeBack = lazy(() => import('./WelcomeBack').then(m => ({ default: m.WelcomeBack })));
-const BaselineAssessmentScreen = lazy(() => import('./BaselineWelcome').then(m => ({ default: m.BaselineAssessmentScreen })));
-const BaselineAssessmentSDK = lazy(() => import('./BaselineAssessmentSDK').then(m => ({ default: m.BaselineAssessmentSDK })));
-const CheckinAssessment = lazy(() => import('./CheckinAssessment').then(m => ({ default: m.CheckinAssessment })));
-const ReturningSplashScreen = lazy(() => import('./ReturningSplashScreen').then(m => ({ default: m.ReturningSplashScreen })));
+const DashboardScreen = lazy(() => import('./MobileDashboard').then((m) => ({ default: m.DashboardScreen })));
+const MobileCheckin = lazy(() => import('./MobileCheckin').then((m) => ({ default: m.MobileCheckin })));
+const BuddiesScreen = lazy(() => import('./BuddiesScreen').then((m) => ({ default: m.BuddiesScreen })));
+const BuddyConsentPage = lazy(() => import('./BuddyConsentPage').then((m) => ({ default: m.BuddyConsentPage })));
+const MobileProfile = lazy(() => import('./MobileProfile').then((m) => ({ default: m.MobileProfile })));
+const HelpPage = lazy(() => import('./HelpPage').then((m) => ({ default: m.HelpScreen })));
+const MobileSettings = lazy(() => import('./MobileSettings').then((m) => ({ default: m.MobileSettings })));
+const RegistrationScreen = lazy(() => import('./RegistrationScreen').then((m) => ({ default: m.RegistrationScreen })));
+const BaselineAssessmentScreen = lazy(() =>
+  import('./BaselineWelcome').then((m) => ({ default: m.BaselineAssessmentScreen }))
+);
+const BaselineAssessmentSDK = lazy(() =>
+  import('./BaselineAssessmentSDK').then((m) => ({ default: m.BaselineAssessmentSDK }))
+);
+const CheckinAssessment = lazy(() => import('./CheckinAssessment').then((m) => ({ default: m.CheckinAssessment })));
+const ReturningSplashScreen = lazy(() =>
+  import('./ReturningSplashScreen').then((m) => ({ default: m.ReturningSplashScreen }))
+);
 
 // Loading fallback
 function LoadingFallback() {
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      background: 'linear-gradient(135deg, #7C3AED 0%, #3B82F6 100%)',
-    }}>
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(135deg, #7C3AED 0%, #3B82F6 100%)',
+      }}
+    >
       <div style={{ textAlign: 'center', color: '#FFFFFF' }}>
-        <div style={{
-          width: 32, height: 32,
-          border: '3px solid rgba(255,255,255,0.3)',
-          borderTopColor: '#FFFFFF',
-          borderRadius: '50%',
-          animation: 'spin 0.8s linear infinite',
-          margin: '0 auto 12px',
-        }} />
+        <div
+          style={{
+            width: 32,
+            height: 32,
+            border: '3px solid rgba(255,255,255,0.3)',
+            borderTopColor: '#FFFFFF',
+            borderRadius: '50%',
+            animation: 'spin 0.8s linear infinite',
+            margin: '0 auto 12px',
+          }}
+        />
         <p style={{ fontSize: 14, opacity: 0.8 }}>Loading…</p>
         <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
       </div>
@@ -53,21 +62,28 @@ function LoadingFallback() {
 // Simple NotFound component (no external dependency)
 function NotFound() {
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      background: 'linear-gradient(135deg, #7C3AED 0%, #3B82F6 100%)',
-    }}>
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(135deg, #7C3AED 0%, #3B82F6 100%)',
+      }}
+    >
       <div style={{ textAlign: 'center', color: '#FFFFFF' }}>
         <h1 style={{ fontSize: 48, fontWeight: 700, marginBottom: 8 }}>404</h1>
         <p style={{ fontSize: 16, opacity: 0.8, marginBottom: 24 }}>Page not found</p>
-        <a href="/" style={{
-          color: '#FFFFFF',
-          textDecoration: 'underline',
-          fontSize: 14,
-        }}>Go home</a>
+        <a
+          href="/"
+          style={{
+            color: '#FFFFFF',
+            textDecoration: 'underline',
+            fontSize: 14,
+          }}
+        >
+          Go home
+        </a>
       </div>
     </div>
   );
@@ -80,11 +96,11 @@ export const saveUserToDevice = async (userId: string, baselineCompleted: boolea
       userId,
       baselineCompleted,
       lastLogin: Date.now(),
-      savedAt: new Date().toISOString()
+      savedAt: new Date().toISOString(),
     };
     await Preferences.set({
       key: 'mindmeasure_user',
-      value: JSON.stringify(userData)
+      value: JSON.stringify(userData),
     });
     return true;
   } catch (error) {
@@ -102,7 +118,7 @@ export const markBaselineComplete = async () => {
       userData.baselineCompletedAt = new Date().toISOString();
       await Preferences.set({
         key: 'mindmeasure_user',
-        value: JSON.stringify(userData)
+        value: JSON.stringify(userData),
       });
       return true;
     }
@@ -123,16 +139,11 @@ export const clearUserFromDevice = async () => {
 };
 
 export function MobileAppWrapper() {
-  // AWS Backend Service
-  const backendService = BackendServiceFactory.createService(
-    BackendServiceFactory.getEnvironmentConfig()
-  );
-
   const [activeScreen, setActiveScreen] = useState<'dashboard' | 'content' | 'buddies' | 'profile'>('dashboard');
-  const [hasCheckedUserStatus, setHasCheckedUserStatus] = useState(false);
+  const [_hasCheckedUserStatus, setHasCheckedUserStatus] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: _authLoading } = useAuth();
 
   // Check device preferences for returning user status
   useEffect(() => {
@@ -195,46 +206,63 @@ export function MobileAppWrapper() {
       <>
         <Suspense fallback={<LoadingFallback />}>
           <Routes>
-            <Route path="/" element={
-              <SplashScreen onGetStarted={() => navigate('/onboarding')} />
-            } />
-            <Route path="/baseline-welcome" element={<BaselineAssessmentScreen onStartAssessment={() => navigate('/baseline')} />} />
-            <Route path="/onboarding" element={
-              <RegistrationScreen
-                onBack={() => navigate('/')}
-                onComplete={async (createdUserId?: string) => {
-                  const userIdToSave = createdUserId || user?.id;
-                  if (userIdToSave) {
-                    await saveUserToDevice(userIdToSave, false);
-                  } else {
-                    const tempId = `temp_${Date.now()}`;
-                    await saveUserToDevice(tempId, false);
-                  }
-                  navigate('/baseline-welcome');
-                }}
-              />
-            } />
+            <Route path="/" element={<SplashScreen onGetStarted={() => navigate('/onboarding')} />} />
+            <Route
+              path="/baseline-welcome"
+              element={<BaselineAssessmentScreen onStartAssessment={() => navigate('/baseline')} />}
+            />
+            <Route
+              path="/onboarding"
+              element={
+                <RegistrationScreen
+                  onBack={() => navigate('/')}
+                  onComplete={async (createdUserId?: string) => {
+                    const userIdToSave = createdUserId || user?.id;
+                    if (userIdToSave) {
+                      await saveUserToDevice(userIdToSave, false);
+                    } else {
+                      const tempId = `temp_${Date.now()}`;
+                      await saveUserToDevice(tempId, false);
+                    }
+                    navigate('/baseline-welcome');
+                  }}
+                />
+              }
+            />
             <Route path="/welcome-back" element={<ReturningSplashScreen onComplete={() => navigate('/dashboard')} />} />
             <Route path="/baseline" element={<BaselineAssessmentSDK onBack={() => window.history.back()} />} />
             <Route path="/checkin" element={<CheckinAssessment onBack={() => window.history.back()} />} />
-            <Route path="/dashboard" element={
-              <DashboardScreen
-                onNeedHelp={() => navigate('/help')}
-                onCheckIn={() => navigate('/checkin-welcome')}
-              />
-            } />
+            <Route
+              path="/dashboard"
+              element={
+                <DashboardScreen onNeedHelp={() => navigate('/help')} onCheckIn={() => navigate('/checkin-welcome')} />
+              }
+            />
             <Route path="/checkin-welcome" element={<MobileCheckin onNavigateToJodie={() => navigate('/checkin')} />} />
             <Route path="/buddies" element={<BuddiesScreen />} />
             <Route path="/buddies/invite" element={<BuddyConsentPage />} />
             <Route path="/help" element={<HelpPage />} />
-            <Route path="/profile" element={<MobileProfile onNavigateBack={() => {}} onNavigateToSettings={() => navigate('/settings')} onNavigateToBaseline={() => navigate('/baseline-welcome')} autoTriggerExport={false} onExportTriggered={() => {}} />} />
+            <Route
+              path="/profile"
+              element={
+                <MobileProfile
+                  onNavigateBack={() => {}}
+                  onNavigateToSettings={() => navigate('/settings')}
+                  onNavigateToBaseline={() => navigate('/baseline-welcome')}
+                  autoTriggerExport={false}
+                  onExportTriggered={() => {}}
+                />
+              }
+            />
             <Route path="/settings" element={<MobileSettings onNavigateBack={() => navigate('/profile')} />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
         {/* Only show navigation bar on main app screens, hide on splash/onboarding and assessments */}
         {(() => {
-          const hideNav = location.pathname === '/' || /^\/(onboarding|welcome-back|baseline-welcome|baseline)$/i.test(location.pathname);
+          const hideNav =
+            location.pathname === '/' ||
+            /^\/(onboarding|welcome-back|baseline-welcome|baseline)$/i.test(location.pathname);
           return !hideNav;
         })() && (
           <div className="fixed bottom-0 left-0 right-0 z-50">

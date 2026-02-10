@@ -1,14 +1,15 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedrock-runtime';
 import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
+import { setCorsHeaders, handleCorsPreflightIfNeeded } from './_lib/cors-config';
 
 // Initialize Bedrock client
 const bedrockClient = new BedrockRuntimeClient({
   region: process.env.AWS_REGION || 'eu-west-2',
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || ''
-  }
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+  },
 });
 
 // Initialize SES client
@@ -16,8 +17,8 @@ const sesClient = new SESClient({
   region: process.env.AWS_REGION || 'eu-west-2',
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || ''
-  }
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+  },
 });
 
 interface RequestBody {
@@ -28,16 +29,9 @@ interface RequestBody {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // CORS headers
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
-
-  if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
-  }
+  // CORS
+  if (handleCorsPreflightIfNeeded(req, res)) return;
+  setCorsHeaders(req, res);
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -65,11 +59,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         table: 'fusion_outputs',
         filters: {
           user_id: userId,
-          created_at: { gte: startDate.toISOString() }
+          created_at: { gte: startDate.toISOString() },
         },
         orderBy: [{ column: 'created_at', ascending: true }],
-        select: 'id, final_score, analysis, created_at'
-      })
+        select: 'id, final_score, analysis, created_at',
+      }),
     });
 
     const sessions = await sessionsResponse.json();
@@ -90,22 +84,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Send email with the report
     await sendReportEmail(userEmail, userName || 'there', report, periodDays);
 
-    return res.status(200).json({ 
+    return res.status(200).json({
       success: true,
       message: `Report successfully sent to ${userEmail}`,
       metadata: {
         periodDays,
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
-        checkInCount: sessions.data.length
-      }
+        checkInCount: sessions.data.length,
+      },
     });
-
   } catch (error: any) {
     console.error('Report generation error:', error);
-    return res.status(500).json({ 
+    return res.status(500).json({
       error: 'Failed to generate report',
-      details: error.message 
+      details: error.message,
     });
   }
 }
@@ -126,9 +119,7 @@ function prepareReportData(sessions: any[], periodDays: number) {
 
     // Parse analysis
     try {
-      const analysis = typeof session.analysis === 'string' 
-        ? JSON.parse(session.analysis) 
-        : session.analysis;
+      const analysis = typeof session.analysis === 'string' ? JSON.parse(session.analysis) : session.analysis;
 
       if (analysis) {
         // Mood scores (check both field name variations)
@@ -180,8 +171,8 @@ function prepareReportData(sessions: any[], periodDays: number) {
     checkInCount: sessions.length,
     dateRange: {
       start: sessions[0]?.created_at,
-      end: sessions[sessions.length - 1]?.created_at
-    }
+      end: sessions[sessions.length - 1]?.created_at,
+    },
   };
 }
 
@@ -192,13 +183,15 @@ async function generateAISummary(data: any, periodDays: number): Promise<string>
     .slice(0, 10)
     .map(([theme]) => theme);
 
-  const avgScore = data.scores.length > 0 
-    ? Math.round(data.scores.reduce((a: number, b: number) => a + b, 0) / data.scores.length)
-    : 0;
+  const avgScore =
+    data.scores.length > 0
+      ? Math.round(data.scores.reduce((a: number, b: number) => a + b, 0) / data.scores.length)
+      : 0;
 
-  const avgMood = data.moodScores.length > 0
-    ? Math.round((data.moodScores.reduce((a: number, b: number) => a + b, 0) / data.moodScores.length) * 10) / 10
-    : 0;
+  const avgMood =
+    data.moodScores.length > 0
+      ? Math.round((data.moodScores.reduce((a: number, b: number) => a + b, 0) / data.moodScores.length) * 10) / 10
+      : 0;
 
   const prompt = `You are a professional wellbeing analyst creating an objective, factual summary report for a student.
 
@@ -241,15 +234,15 @@ Write the report now:`;
         messages: [
           {
             role: 'user',
-            content: prompt
-          }
-        ]
-      })
+            content: prompt,
+          },
+        ],
+      }),
     });
 
     const response = await bedrockClient.send(command);
     const responseBody = JSON.parse(new TextDecoder().decode(response.body));
-    
+
     return responseBody.content[0].text;
   } catch (error) {
     console.error('AI summary generation failed:', error);
@@ -258,24 +251,30 @@ Write the report now:`;
 }
 
 function compileReport(data: any, aiSummary: string, periodDays: number): string {
-  const avgScore = data.scores.length > 0 
-    ? Math.round(data.scores.reduce((a: number, b: number) => a + b, 0) / data.scores.length)
-    : 0;
+  const avgScore =
+    data.scores.length > 0
+      ? Math.round(data.scores.reduce((a: number, b: number) => a + b, 0) / data.scores.length)
+      : 0;
 
-  const avgMood = data.moodScores.length > 0
-    ? Math.round((data.moodScores.reduce((a: number, b: number) => a + b, 0) / data.moodScores.length) * 10) / 10
-    : 0;
+  const avgMood =
+    data.moodScores.length > 0
+      ? Math.round((data.moodScores.reduce((a: number, b: number) => a + b, 0) / data.moodScores.length) * 10) / 10
+      : 0;
 
   const topThemes = Object.entries(data.themes)
     .sort(([, a]: any, [, b]: any) => b - a)
     .slice(0, 15)
     .map(([theme, count]) => `${theme} (${count})`);
 
-  const startDate = new Date(data.dateRange.start).toLocaleDateString('en-GB', { 
-    day: 'numeric', month: 'long', year: 'numeric' 
+  const startDate = new Date(data.dateRange.start).toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
   });
-  const endDate = new Date(data.dateRange.end).toLocaleDateString('en-GB', { 
-    day: 'numeric', month: 'long', year: 'numeric' 
+  const endDate = new Date(data.dateRange.end).toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
   });
 
   return `
@@ -304,13 +303,19 @@ ${topThemes.join('\n')}
 POSITIVE FACTORS (Top 10)
 ───────────────────────────────────────────────────────────────
 
-${data.pleasures.slice(0, 10).map((p: string, i: number) => `${i + 1}. ${p}`).join('\n')}
+${data.pleasures
+  .slice(0, 10)
+  .map((p: string, i: number) => `${i + 1}. ${p}`)
+  .join('\n')}
 
 ───────────────────────────────────────────────────────────────
 AREAS OF CONCERN (Top 10)
 ───────────────────────────────────────────────────────────────
 
-${data.concerns.slice(0, 10).map((c: string, i: number) => `${i + 1}. ${c}`).join('\n')}
+${data.concerns
+  .slice(0, 10)
+  .map((c: string, i: number) => `${i + 1}. ${c}`)
+  .join('\n')}
 
 ───────────────────────────────────────────────────────────────
 PROFESSIONAL ANALYSIS
@@ -337,13 +342,13 @@ qualified healthcare professional.
 }
 
 async function sendReportEmail(
-  toEmail: string, 
-  userName: string, 
-  reportText: string, 
+  toEmail: string,
+  userName: string,
+  reportText: string,
   periodDays: number
 ): Promise<void> {
   const subject = `Your Mind Measure Wellbeing Report (${periodDays} Days)`;
-  
+
   // Create HTML version of the report
   const htmlReport = `
 <!DOCTYPE html>
@@ -449,24 +454,24 @@ Visit https://mobile.mindmeasure.app to manage your account.
       Source: 'Mind Measure <noreply@mindmeasure.co.uk>',
       ReplyToAddresses: ['info@mindmeasure.co.uk'],
       Destination: {
-        ToAddresses: [toEmail]
+        ToAddresses: [toEmail],
       },
       Message: {
         Subject: {
           Data: subject,
-          Charset: 'UTF-8'
+          Charset: 'UTF-8',
         },
         Body: {
           Text: {
             Data: textBody,
-            Charset: 'UTF-8'
+            Charset: 'UTF-8',
           },
           Html: {
             Data: htmlReport,
-            Charset: 'UTF-8'
-          }
-        }
-      }
+            Charset: 'UTF-8',
+          },
+        },
+      },
     });
 
     await sesClient.send(command);
@@ -480,7 +485,7 @@ Visit https://mobile.mindmeasure.app to manage your account.
 function extractStatsHTML(report: string): string {
   const lines = report.split('\n');
   let html = '';
-  
+
   for (const line of lines) {
     if (line.includes('Total Check-ins:')) {
       const value = line.split(':')[1]?.trim();
@@ -495,54 +500,53 @@ function extractStatsHTML(report: string): string {
       html += `<div class="stat-card"><div class="stat-label">Avg Mood</div><div class="stat-value">${value}</div></div>`;
     }
   }
-  
+
   return html || '<p>Statistics unavailable</p>';
 }
 
 function extractThemesHTML(report: string): string {
   const lines = report.split('\n');
-  const themesStart = lines.findIndex(l => l.includes('KEY THEMES'));
+  const themesStart = lines.findIndex((l) => l.includes('KEY THEMES'));
   const themesEnd = lines.findIndex((l, i) => i > themesStart && l.includes('─────'));
-  
+
   if (themesStart === -1 || themesEnd === -1) return '<span class="theme-tag">No themes</span>';
-  
+
   return lines
     .slice(themesStart + 3, themesEnd)
-    .filter(l => l.trim())
-    .map(theme => `<span class="theme-tag">${theme.trim()}</span>`)
+    .filter((l) => l.trim())
+    .map((theme) => `<span class="theme-tag">${theme.trim()}</span>`)
     .join('');
 }
 
 function extractListHTML(report: string, section: string): string {
   const lines = report.split('\n');
-  const sectionStart = lines.findIndex(l => l.includes(section));
+  const sectionStart = lines.findIndex((l) => l.includes(section));
   const sectionEnd = lines.findIndex((l, i) => i > sectionStart && l.includes('─────'));
-  
+
   if (sectionStart === -1 || sectionEnd === -1) return '<li>None listed</li>';
-  
+
   return lines
     .slice(sectionStart + 3, sectionEnd)
-    .filter(l => l.trim() && l.match(/^\d+\./))
-    .map(item => `<li>${item.replace(/^\d+\.\s*/, '')}</li>`)
+    .filter((l) => l.trim() && l.match(/^\d+\./))
+    .map((item) => `<li>${item.replace(/^\d+\.\s*/, '')}</li>`)
     .join('');
 }
 
 function extractAnalysisHTML(report: string): string {
   const lines = report.split('\n');
-  const analysisStart = lines.findIndex(l => l.includes('PROFESSIONAL ANALYSIS'));
+  const analysisStart = lines.findIndex((l) => l.includes('PROFESSIONAL ANALYSIS'));
   const analysisEnd = lines.findIndex((l, i) => i > analysisStart && l.includes('NOTES'));
-  
+
   if (analysisStart === -1 || analysisEnd === -1) return '<p>Analysis unavailable</p>';
-  
+
   const analysisText = lines
     .slice(analysisStart + 3, analysisEnd)
-    .filter(l => !l.includes('─────'))
+    .filter((l) => !l.includes('─────'))
     .join('\n')
     .trim();
-  
+
   return analysisText
     .split('\n\n')
-    .map(para => `<p>${para.replace(/\n/g, '<br>')}</p>`)
+    .map((para) => `<p>${para.replace(/\n/g, '<br>')}</p>`)
     .join('');
 }
-

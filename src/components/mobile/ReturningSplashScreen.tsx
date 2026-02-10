@@ -1,5 +1,10 @@
 import { useEffect } from 'react';
 import { motion } from 'motion/react';
+
+// Motion v12 variants typing workaround – the exported Variants type is
+// too narrow for keyframe arrays and the strict CSS property types.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnimVariants = Record<string, any>;
 import mindMeasureLogo from '@/assets/Mindmeasure_logo.png';
 interface ReturningSplashScreenProps {
   onComplete: () => void;
@@ -12,67 +17,67 @@ export function ReturningSplashScreen({ onComplete }: ReturningSplashScreenProps
     }, 5000);
     return () => clearTimeout(timer);
   }, [onComplete]);
-  const containerVariants = {
+  const containerVariants: AnimVariants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
       transition: {
         duration: 0.8,
-        staggerChildren: 0.3
-      }
+        staggerChildren: 0.3,
+      },
     },
     exit: {
       opacity: 0,
       scale: 0.95,
       transition: {
-        duration: 0.5
-      }
-    }
+        duration: 0.5,
+      },
+    },
   };
-  const itemVariants = {
+  const itemVariants: AnimVariants = {
     hidden: { y: 20, opacity: 0 },
     visible: {
       y: 0,
       opacity: 1,
       transition: {
         duration: 0.6,
-        ease: "easeOut"
-      }
-    }
+        ease: 'easeOut',
+      },
+    },
   };
-  const logoVariants = {
+  const logoVariants: AnimVariants = {
     hidden: { scale: 0.8, opacity: 0 },
     visible: {
       scale: 1,
       opacity: 1,
       transition: {
         duration: 0.8,
-        ease: "easeOut"
-      }
+        ease: 'easeOut',
+      },
     },
     pulse: {
       scale: [1, 1.05, 1],
       transition: {
         duration: 2.5,
         repeat: Infinity,
-        ease: "easeInOut"
-      }
-    }
+        ease: 'easeInOut',
+      },
+    },
   };
-  const gradientVariants = {
+  const gradientVariants: AnimVariants = {
     animate: {
       background: [
-        "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-        "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
-        "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
-        "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+        'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+        'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+        'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       ],
       transition: {
         duration: 6,
         repeat: Infinity,
-        ease: "linear"
-      }
-    }
+        ease: 'linear',
+      },
+    },
   };
   return (
     <div className="min-h-screen relative overflow-hidden flex items-center justify-center">
@@ -82,7 +87,7 @@ export function ReturningSplashScreen({ onComplete }: ReturningSplashScreenProps
         variants={gradientVariants}
         animate="animate"
         style={{
-          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         }}
       />
       {/* Subtle overlay for depth */}
@@ -98,7 +103,7 @@ export function ReturningSplashScreen({ onComplete }: ReturningSplashScreenProps
         transition={{
           duration: 4,
           repeat: Infinity,
-          ease: "easeInOut"
+          ease: 'easeInOut',
         }}
       />
       <motion.div
@@ -111,8 +116,8 @@ export function ReturningSplashScreen({ onComplete }: ReturningSplashScreenProps
         transition={{
           duration: 3,
           repeat: Infinity,
-          ease: "easeInOut",
-          delay: 1
+          ease: 'easeInOut',
+          delay: 1,
         }}
       />
       {/* Content */}
@@ -124,41 +129,26 @@ export function ReturningSplashScreen({ onComplete }: ReturningSplashScreenProps
         exit="exit"
       >
         {/* Logo */}
-        <motion.div
-          className="mb-6"
-          variants={logoVariants}
-          animate={["visible", "pulse"]}
-        >
+        <motion.div className="mb-6" variants={logoVariants} animate={['visible', 'pulse']}>
           <div className="w-32 h-32 p-4 bg-white/20 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20">
-            <img
-              src={mindMeasureLogo}
-              alt="Mind Measure"
-              className="w-full h-full object-contain"
-            />
+            <img src={mindMeasureLogo} alt="Mind Measure" className="w-full h-full object-contain" />
           </div>
         </motion.div>
         {/* App Name */}
         <motion.div variants={itemVariants}>
-          <h1 className="text-4xl font-semibold text-white mb-3">
-            Mind Measure
-          </h1>
+          <h1 className="text-4xl font-semibold text-white mb-3">Mind Measure</h1>
         </motion.div>
         {/* Tagline */}
         <motion.div variants={itemVariants}>
-          <p className="text-white/90 text-lg font-medium">
-            Measure • Monitor • Manage
-          </p>
+          <p className="text-white/90 text-lg font-medium">Measure • Monitor • Manage</p>
         </motion.div>
         {/* Subtle loading indicator */}
-        <motion.div
-          className="mt-8 w-12 h-1 bg-white/30 rounded-full overflow-hidden"
-          variants={itemVariants}
-        >
+        <motion.div className="mt-8 w-12 h-1 bg-white/30 rounded-full overflow-hidden" variants={itemVariants}>
           <motion.div
             className="h-full bg-white/60 rounded-full"
-            initial={{ width: "0%" }}
-            animate={{ width: "100%" }}
-            transition={{ duration: 5, ease: "easeInOut" }}
+            initial={{ width: '0%' }}
+            animate={{ width: '100%' }}
+            transition={{ duration: 5, ease: 'easeInOut' }}
           />
         </motion.div>
       </motion.div>

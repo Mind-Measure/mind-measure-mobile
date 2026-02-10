@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ArrowLeft, MessageCircle, Brain, Heart, TrendingUp } from 'lucide-react';
@@ -7,7 +7,7 @@ interface CheckinAssessmentProps {
 }
 export function CheckinAssessment({ onBack }: CheckinAssessmentProps) {
   const [scriptLoaded, setScriptLoaded] = useState(false);
-  const [widgetReady, setWidgetReady] = useState(false);
+  const [_widgetReady, setWidgetReady] = useState(false);
   const widgetRef = useRef<HTMLDivElement>(null);
   // Load ElevenLabs script
   useEffect(() => {
@@ -52,10 +52,8 @@ export function CheckinAssessment({ onBack }: CheckinAssessmentProps) {
     widget.addEventListener('ready', () => {
       setWidgetReady(true);
     });
-    widget.addEventListener('conversation-started', () => {
-    });
-    widget.addEventListener('conversation-ended', () => {
-    });
+    widget.addEventListener('conversation-started', () => {});
+    widget.addEventListener('conversation-ended', () => {});
     widget.addEventListener('error', (event) => {
       console.error('❌ Check-in widget error:', event);
     });
@@ -122,9 +120,7 @@ export function CheckinAssessment({ onBack }: CheckinAssessmentProps) {
               <MessageCircle className="w-8 h-8 text-white" />
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Loading Check-in...</h3>
-            <p className="text-gray-600 text-sm">
-              Preparing your wellness check-in with Mind Measure AI
-            </p>
+            <p className="text-gray-600 text-sm">Preparing your wellness check-in with Mind Measure AI</p>
           </Card>
         ) : (
           <div className="w-full h-full min-h-[600px]" ref={widgetRef}>

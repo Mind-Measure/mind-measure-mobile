@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, GraduationCap, Shield, CheckCircle, AlertCircle, Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, GraduationCap, Shield, CheckCircle, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 interface UniversityRegistrationProps {
   onComplete: (userData: any) => void;
   onBack: () => void;
 }
 export const UniversityRegistration: React.FC<UniversityRegistrationProps> = ({ onComplete, onBack }) => {
-  const [currentStep, setCurrentStep] = useState<'welcome' | 'registration' | 'verification' | 'baseline-setup'>('welcome');
+  const [currentStep, setCurrentStep] = useState<'welcome' | 'registration' | 'verification' | 'baseline-setup'>(
+    'welcome'
+  );
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -18,7 +20,7 @@ export const UniversityRegistration: React.FC<UniversityRegistrationProps> = ({ 
     confirmPassword: '',
     university: 'University of Worcester',
     agreeToTerms: false,
-    agreeToPrivacy: false
+    agreeToPrivacy: false,
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -29,7 +31,7 @@ export const UniversityRegistration: React.FC<UniversityRegistrationProps> = ({ 
     'University of Warwick',
     'University of Oxford',
     'University of Cambridge',
-    'Other'
+    'Other',
   ];
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -78,7 +80,7 @@ export const UniversityRegistration: React.FC<UniversityRegistrationProps> = ({ 
     onComplete({
       ...formData,
       registrationComplete: true,
-      baselineRequired: true
+      baselineRequired: true,
     });
   };
   const renderWelcome = () => (
@@ -169,7 +171,9 @@ export const UniversityRegistration: React.FC<UniversityRegistrationProps> = ({ 
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
           >
             {universities.map((uni) => (
-              <option key={uni} value={uni}>{uni}</option>
+              <option key={uni} value={uni}>
+                {uni}
+              </option>
             ))}
           </select>
         </div>
@@ -255,11 +259,7 @@ export const UniversityRegistration: React.FC<UniversityRegistrationProps> = ({ 
         >
           Continue
         </Button>
-        <Button
-          onClick={() => setCurrentStep('welcome')}
-          variant="outline"
-          className="w-full"
-        >
+        <Button onClick={() => setCurrentStep('welcome')} variant="outline" className="w-full">
           Back
         </Button>
       </div>
@@ -292,9 +292,7 @@ export const UniversityRegistration: React.FC<UniversityRegistrationProps> = ({ 
         >
           I've Verified My Email
         </Button>
-        <p className="text-sm text-gray-500">
-          Didn't receive the email? Check your spam folder or contact support.
-        </p>
+        <p className="text-sm text-gray-500">Didn't receive the email? Check your spam folder or contact support.</p>
       </div>
     </div>
   );
@@ -327,9 +325,7 @@ export const UniversityRegistration: React.FC<UniversityRegistrationProps> = ({ 
         >
           Start Baseline Assessment
         </Button>
-        <p className="text-sm text-gray-500">
-          You can complete this later from your dashboard if needed.
-        </p>
+        <p className="text-sm text-gray-500">You can complete this later from your dashboard if needed.</p>
       </div>
     </div>
   );
@@ -359,28 +355,23 @@ export const UniversityRegistration: React.FC<UniversityRegistrationProps> = ({ 
         {/* Header */}
         {currentStep !== 'welcome' && (
           <div className="flex items-center space-x-4 pt-6">
-            <Button
-              onClick={onBack}
-              variant="ghost"
-              size="sm"
-              className="p-2 hover:bg-white/50 rounded-xl"
-            >
+            <Button onClick={onBack} variant="ghost" size="sm" className="p-2 hover:bg-white/50 rounded-xl">
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div className="flex-1">
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div
                   className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${((['welcome', 'registration', 'verification', 'baseline-setup'].indexOf(currentStep) + 1) / 4) * 100}%` }}
+                  style={{
+                    width: `${((['welcome', 'registration', 'verification', 'baseline-setup'].indexOf(currentStep) + 1) / 4) * 100}%`,
+                  }}
                 ></div>
               </div>
             </div>
           </div>
         )}
         {/* Step Content */}
-        <div className="pt-8">
-          {renderCurrentStep()}
-        </div>
+        <div className="pt-8">{renderCurrentStep()}</div>
         {/* Bottom spacing */}
         <div className="h-24" />
       </div>

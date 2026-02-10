@@ -14,8 +14,8 @@ export function EmailVerificationScreen({ email, onVerified, onBack }: EmailVeri
   const [isLoading, setIsLoading] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
-  
-  const { signIn, confirmEmail, resendConfirmation } = useAuth();
+
+  const { confirmEmail, resendConfirmation } = useAuth();
 
   // Cooldown timer for resend button
   useEffect(() => {
@@ -64,7 +64,7 @@ export function EmailVerificationScreen({ email, onVerified, onBack }: EmailVeri
 
     try {
       const { error: resendError } = await resendConfirmation(email);
-      
+
       if (resendError) {
         if (resendError.includes('LimitExceededException') || resendError.includes('Too many')) {
           setError('Too many requests. Please try again later.');
@@ -74,7 +74,7 @@ export function EmailVerificationScreen({ email, onVerified, onBack }: EmailVeri
       } else {
         setResendCooldown(60); // 60 second cooldown
         setError('New code sent! Check your email.');
-        
+
         // Clear the success message after 3 seconds
         setTimeout(() => {
           if (error === 'New code sent! Check your email.') {
@@ -122,7 +122,10 @@ export function EmailVerificationScreen({ email, onVerified, onBack }: EmailVeri
       </div>
 
       {/* Content */}
-      <div className="flex-1 px-6 py-8 overflow-y-auto" style={{ paddingBottom: 'max(20rem, calc(env(safe-area-inset-bottom) + 20rem))' }}>
+      <div
+        className="flex-1 px-6 py-8 overflow-y-auto"
+        style={{ paddingBottom: 'max(20rem, calc(env(safe-area-inset-bottom) + 20rem))' }}
+      >
         <div className="max-w-md mx-auto">
           {/* Icon */}
           <div className="flex justify-center mb-6">
@@ -132,9 +135,7 @@ export function EmailVerificationScreen({ email, onVerified, onBack }: EmailVeri
           </div>
 
           {/* Title */}
-          <h2 className="text-2xl font-bold text-gray-900 text-center mb-3">
-            Check your email
-          </h2>
+          <h2 className="text-2xl font-bold text-gray-900 text-center mb-3">Check your email</h2>
 
           {/* Description */}
           <p className="text-gray-600 text-center mb-8">
@@ -162,18 +163,18 @@ export function EmailVerificationScreen({ email, onVerified, onBack }: EmailVeri
               autoComplete="off"
               autoFocus
             />
-            <p className="text-xs text-gray-500 text-center mt-2">
-              Enter the 6-digit code from your email
-            </p>
+            <p className="text-xs text-gray-500 text-center mt-2">Enter the 6-digit code from your email</p>
           </div>
 
           {/* Error Message */}
           {error && (
-            <div className={`mb-4 p-4 rounded-lg ${
-              error === 'New code sent! Check your email.' 
-                ? 'bg-green-50 text-green-800 border border-green-200' 
-                : 'bg-red-50 text-red-800 border border-red-200'
-            }`}>
+            <div
+              className={`mb-4 p-4 rounded-lg ${
+                error === 'New code sent! Check your email.'
+                  ? 'bg-green-50 text-green-800 border border-green-200'
+                  : 'bg-red-50 text-red-800 border border-red-200'
+              }`}
+            >
               <p className="text-sm font-medium">{error}</p>
             </div>
           )}
@@ -183,7 +184,7 @@ export function EmailVerificationScreen({ email, onVerified, onBack }: EmailVeri
             onClick={handleVerify}
             disabled={code.length !== 6 || isLoading}
             style={{
-              background: (code.length !== 6 || isLoading) ? '#d1d5db' : 'linear-gradient(to right, #9333ea, #2563eb)',
+              background: code.length !== 6 || isLoading ? '#d1d5db' : 'linear-gradient(to right, #9333ea, #2563eb)',
               color: 'white',
               width: '100%',
               height: '3.5rem',
@@ -192,13 +193,13 @@ export function EmailVerificationScreen({ email, onVerified, onBack }: EmailVeri
               borderRadius: '0.75rem',
               boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
               border: 'none',
-              cursor: (code.length !== 6 || isLoading) ? 'not-allowed' : 'pointer',
+              cursor: code.length !== 6 || isLoading ? 'not-allowed' : 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '0.5rem',
               transition: 'all 0.3s',
-              marginBottom: '1.5rem'
+              marginBottom: '1.5rem',
             }}
           >
             {isLoading ? (
@@ -213,9 +214,7 @@ export function EmailVerificationScreen({ email, onVerified, onBack }: EmailVeri
 
           {/* Resend Code Section */}
           <div className="text-center mb-6">
-            <p className="text-sm text-gray-600 mb-3">
-              Didn't receive the code?
-            </p>
+            <p className="text-sm text-gray-600 mb-3">Didn't receive the code?</p>
             <button
               onClick={handleResend}
               disabled={isResending || resendCooldown > 0}
@@ -237,8 +236,8 @@ export function EmailVerificationScreen({ email, onVerified, onBack }: EmailVeri
           {/* Help Text */}
           <div className="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-100">
             <p className="text-sm text-blue-900">
-              <strong>Note:</strong> The verification email may take a few minutes to arrive. 
-              Check your spam folder if you don't see it.
+              <strong>Note:</strong> The verification email may take a few minutes to arrive. Check your spam folder if
+              you don't see it.
             </p>
           </div>
         </div>
@@ -246,4 +245,3 @@ export function EmailVerificationScreen({ email, onVerified, onBack }: EmailVeri
     </div>
   );
 }
-

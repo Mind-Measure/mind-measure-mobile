@@ -10,11 +10,11 @@ export function MoodTrendChart({ data }: MoodTrendChartProps) {
   // Filter data based on period
   const filterDataByPeriod = (days: number) => {
     if (data.length === 0) return [];
-    
+
     const now = new Date();
     const cutoff = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
-    
-    return data.filter(d => new Date(d.date) >= cutoff).reverse();
+
+    return data.filter((d) => new Date(d.date) >= cutoff).reverse();
   };
 
   const getDataForPeriod = () => {
@@ -34,16 +34,17 @@ export function MoodTrendChart({ data }: MoodTrendChartProps) {
 
   if (chartData.length === 0) {
     return (
-      <div style={{
-        textAlign: 'center',
-        padding: '40px 20px',
-        color: '#999999',
-        fontSize: '14px'
-      }}>
-        {data.length === 0 
+      <div
+        style={{
+          textAlign: 'center',
+          padding: '40px 20px',
+          color: '#999999',
+          fontSize: '14px',
+        }}
+      >
+        {data.length === 0
           ? 'Complete check-ins to see your mood trends'
-          : `No data available for the last ${period === '7d' ? '7 days' : period === '30d' ? '30 days' : '90 days'}`
-        }
+          : `No data available for the last ${period === '7d' ? '7 days' : period === '30d' ? '30 days' : '90 days'}`}
       </div>
     );
   }
@@ -58,26 +59,25 @@ export function MoodTrendChart({ data }: MoodTrendChartProps) {
   const maxScore = 10;
   const minScore = 0;
 
-  // Calculate statistics
-  const avgScore = chartData.reduce((sum, d) => sum + d.score, 0) / chartData.length;
-  const maxDataScore = Math.max(...chartData.map(d => d.score));
-  const minDataScore = Math.min(...chartData.map(d => d.score));
-
   // Create SVG points
-  const points = chartData.map((d, i) => {
-    const x = padding.left + (i / Math.max(chartData.length - 1, 1)) * chartWidth;
-    const y = padding.top + ((maxScore - d.score) / (maxScore - minScore)) * chartHeight;
-    return `${x},${y}`;
-  }).join(' ');
+  const points = chartData
+    .map((d, i) => {
+      const x = padding.left + (i / Math.max(chartData.length - 1, 1)) * chartWidth;
+      const y = padding.top + ((maxScore - d.score) / (maxScore - minScore)) * chartHeight;
+      return `${x},${y}`;
+    })
+    .join(' ');
 
   return (
     <div>
       {/* Period Tabs */}
-      <div style={{
-        display: 'flex',
-        gap: '8px',
-        marginBottom: '16px'
-      }}>
+      <div
+        style={{
+          display: 'flex',
+          gap: '8px',
+          marginBottom: '16px',
+        }}
+      >
         <button
           onClick={() => setPeriod('7d')}
           style={{
@@ -90,7 +90,7 @@ export function MoodTrendChart({ data }: MoodTrendChartProps) {
             cursor: 'pointer',
             transition: 'all 0.2s',
             background: period === '7d' ? 'linear-gradient(135deg, #5B8FED, #6BA3FF)' : '#F5F5F5',
-            color: period === '7d' ? 'white' : '#666666'
+            color: period === '7d' ? 'white' : '#666666',
           }}
         >
           7 Days
@@ -107,7 +107,7 @@ export function MoodTrendChart({ data }: MoodTrendChartProps) {
             cursor: 'pointer',
             transition: 'all 0.2s',
             background: period === '30d' ? 'linear-gradient(135deg, #5B8FED, #6BA3FF)' : '#F5F5F5',
-            color: period === '30d' ? 'white' : '#666666'
+            color: period === '30d' ? 'white' : '#666666',
           }}
         >
           30 Days
@@ -124,7 +124,7 @@ export function MoodTrendChart({ data }: MoodTrendChartProps) {
             cursor: 'pointer',
             transition: 'all 0.2s',
             background: period === '90d' ? 'linear-gradient(135deg, #5B8FED, #6BA3FF)' : '#F5F5F5',
-            color: period === '90d' ? 'white' : '#666666'
+            color: period === '90d' ? 'white' : '#666666',
           }}
         >
           90 Days
@@ -137,7 +137,7 @@ export function MoodTrendChart({ data }: MoodTrendChartProps) {
         style={{
           width: '100%',
           height: `${height}px`,
-          overflow: 'visible'
+          overflow: 'visible',
         }}
       >
         {/* Grid lines - whole numbers only */}
@@ -145,21 +145,8 @@ export function MoodTrendChart({ data }: MoodTrendChartProps) {
           const y = padding.top + ((maxScore - value) / (maxScore - minScore)) * chartHeight;
           return (
             <g key={value}>
-              <line
-                x1={padding.left}
-                y1={y}
-                x2={padding.left + chartWidth}
-                y2={y}
-                stroke="#F0F0F0"
-                strokeWidth="0.5"
-              />
-              <text
-                x={padding.left - 5}
-                y={y + 2}
-                textAnchor="end"
-                fontSize="8"
-                fill="#999999"
-              >
+              <line x1={padding.left} y1={y} x2={padding.left + chartWidth} y2={y} stroke="#F0F0F0" strokeWidth="0.5" />
+              <text x={padding.left - 5} y={y + 2} textAnchor="end" fontSize="8" fill="#999999">
                 {value}
               </text>
             </g>
@@ -186,17 +173,7 @@ export function MoodTrendChart({ data }: MoodTrendChartProps) {
         {chartData.map((d, i) => {
           const x = padding.left + (i / Math.max(chartData.length - 1, 1)) * chartWidth;
           const y = padding.top + ((maxScore - d.score) / (maxScore - minScore)) * chartHeight;
-          return (
-            <circle
-              key={i}
-              cx={x}
-              cy={y}
-              r="2"
-              fill="#5B8FED"
-              stroke="white"
-              strokeWidth="1"
-            />
-          );
+          return <circle key={i} cx={x} cy={y} r="2" fill="#5B8FED" stroke="white" strokeWidth="1" />;
         })}
 
         {/* Gradients */}
@@ -213,24 +190,23 @@ export function MoodTrendChart({ data }: MoodTrendChartProps) {
       </svg>
 
       {/* Stats below chart */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        marginTop: '12px',
-        fontSize: '12px',
-        color: '#666666'
-      }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          marginTop: '12px',
+          fontSize: '12px',
+          color: '#666666',
+        }}
+      >
         <div>
           <span style={{ fontWeight: '600', color: '#1a1a1a' }}>
             {Math.round((chartData.reduce((sum, d) => sum + d.score, 0) / chartData.length) * 10) / 10}
-          </span>
-          {' '}avg
+          </span>{' '}
+          avg
         </div>
-        <div>
-          {chartData.length} check-ins
-        </div>
+        <div>{chartData.length} check-ins</div>
       </div>
     </div>
   );
 }
-

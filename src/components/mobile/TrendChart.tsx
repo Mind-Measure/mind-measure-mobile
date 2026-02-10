@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, ChevronRight, Calendar, TrendingUp } from 'lucide-react';
 import { Card } from '@/components/ui/card';
@@ -31,23 +31,23 @@ export function TrendChart({ last7CheckIns, weeklyAverages, monthlyAverages }: T
       key: 'last7',
       title: 'Last 7 Check-ins',
       subtitle: 'Your most recent scores',
-      data: last7CheckIns
+      data: last7CheckIns,
     },
     {
       key: 'weekly',
       title: 'Weekly Averages',
       subtitle: 'Last 10 weeks',
-      data: weeklyAverages
+      data: weeklyAverages,
     },
     {
       key: 'monthly',
       title: 'Monthly Averages',
       subtitle: 'Last 12 months',
-      data: monthlyAverages
-    }
+      data: monthlyAverages,
+    },
   ];
 
-  const currentViewIndex = views.findIndex(v => v.key === activeView);
+  const currentViewIndex = views.findIndex((v) => v.key === activeView);
   const currentView = views[currentViewIndex];
 
   const onTouchStart = (e: React.TouchEvent) => {
@@ -61,11 +61,11 @@ export function TrendChart({ last7CheckIns, weeklyAverages, monthlyAverages }: T
 
   const onTouchEnd = () => {
     if (!touchStart || !touchEnd) return;
-    
+
     const distance = touchStart - touchEnd;
     const isLeftSwipe = distance > minSwipeDistance;
     const isRightSwipe = distance < -minSwipeDistance;
-    
+
     if (isLeftSwipe && currentViewIndex < views.length - 1) {
       setActiveView(views[currentViewIndex + 1].key);
     }
@@ -110,10 +110,10 @@ export function TrendChart({ last7CheckIns, weeklyAverages, monthlyAverages }: T
     if (data.length < 2) return null;
     const recent = data.slice(0, Math.ceil(data.length / 2));
     const older = data.slice(Math.ceil(data.length / 2));
-    
+
     const recentAvg = recent.reduce((sum, d) => sum + d.score, 0) / recent.length;
     const olderAvg = older.reduce((sum, d) => sum + d.score, 0) / older.length;
-    
+
     const diff = recentAvg - olderAvg;
     if (Math.abs(diff) < 3) return { direction: 'stable', value: 0 };
     return { direction: diff > 0 ? 'improving' : 'declining', value: Math.round(diff) };
@@ -141,32 +141,34 @@ export function TrendChart({ last7CheckIns, weeklyAverages, monthlyAverages }: T
           <h3 className="text-gray-900 mb-1">{currentView.title}</h3>
           <p className="text-gray-600 text-sm">{currentView.subtitle}</p>
         </div>
-        
+
         {/* Trend Badge */}
         {trend && (
-          <Badge className={`${
-            trend.direction === 'improving' ? 'bg-green-100 text-green-700' :
-            trend.direction === 'declining' ? 'bg-red-100 text-red-700' :
-            'bg-gray-100 text-gray-700'
-          } border-0`}>
-            <TrendingUp className={`w-3 h-3 mr-1 ${
-              trend.direction === 'declining' ? 'rotate-180' : 
-              trend.direction === 'stable' ? 'rotate-90' : ''
-            }`} />
-            {trend.direction === 'stable' ? 'Stable' : 
-             trend.direction === 'improving' ? `+${trend.value}` : 
-             trend.value}
+          <Badge
+            className={`${
+              trend.direction === 'improving'
+                ? 'bg-green-100 text-green-700'
+                : trend.direction === 'declining'
+                  ? 'bg-red-100 text-red-700'
+                  : 'bg-gray-100 text-gray-700'
+            } border-0`}
+          >
+            <TrendingUp
+              className={`w-3 h-3 mr-1 ${
+                trend.direction === 'declining' ? 'rotate-180' : trend.direction === 'stable' ? 'rotate-90' : ''
+              }`}
+            />
+            {trend.direction === 'stable'
+              ? 'Stable'
+              : trend.direction === 'improving'
+                ? `+${trend.value}`
+                : trend.value}
           </Badge>
         )}
       </div>
 
       {/* Chart Container with Touch Handlers */}
-      <div
-        className="relative"
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
-      >
+      <div className="relative" onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
         <AnimatePresence mode="wait">
           <motion.div
             key={activeView}
@@ -198,9 +200,7 @@ export function TrendChart({ last7CheckIns, weeklyAverages, monthlyAverages }: T
                             </div>
                           </motion.div>
                         </div>
-                        <span className="text-xs text-gray-600 text-center">
-                          {formatLabel(point.date, activeView)}
-                        </span>
+                        <span className="text-xs text-gray-600 text-center">{formatLabel(point.date, activeView)}</span>
                       </div>
                     );
                   })}
@@ -210,9 +210,11 @@ export function TrendChart({ last7CheckIns, weeklyAverages, monthlyAverages }: T
                 <div className="pt-4 border-t border-gray-200/50">
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600 text-sm">Average</span>
-                    <span className={`text-2xl font-bold ${getScoreColor(
-                      Math.round(currentView.data.reduce((sum, d) => sum + d.score, 0) / currentView.data.length)
-                    )}`}>
+                    <span
+                      className={`text-2xl font-bold ${getScoreColor(
+                        Math.round(currentView.data.reduce((sum, d) => sum + d.score, 0) / currentView.data.length)
+                      )}`}
+                    >
                       {Math.round(currentView.data.reduce((sum, d) => sum + d.score, 0) / currentView.data.length)}
                     </span>
                   </div>
@@ -235,34 +237,30 @@ export function TrendChart({ last7CheckIns, weeklyAverages, monthlyAverages }: T
           onClick={handlePrevious}
           disabled={currentViewIndex === 0}
           className={`p-1 rounded-full ${
-            currentViewIndex === 0 
-              ? 'text-gray-300 cursor-not-allowed' 
-              : 'text-gray-600 hover:bg-gray-100'
+            currentViewIndex === 0 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-100'
           }`}
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
-        
+
         <div className="flex gap-2">
-          {views.map((view, index) => (
+          {views.map((view, _index) => (
             <button
               key={view.key}
               onClick={() => setActiveView(view.key)}
               className={`h-2 rounded-full transition-all ${
-                activeView === view.key
-                  ? 'w-6 bg-gradient-to-r from-purple-500 to-pink-500'
-                  : 'w-2 bg-gray-300'
+                activeView === view.key ? 'w-6 bg-gradient-to-r from-purple-500 to-pink-500' : 'w-2 bg-gray-300'
               }`}
             />
           ))}
         </div>
-        
+
         <button
           onClick={handleNext}
           disabled={currentViewIndex === views.length - 1}
           className={`p-1 rounded-full ${
-            currentViewIndex === views.length - 1 
-              ? 'text-gray-300 cursor-not-allowed' 
+            currentViewIndex === views.length - 1
+              ? 'text-gray-300 cursor-not-allowed'
               : 'text-gray-600 hover:bg-gray-100'
           }`}
         >
@@ -272,4 +270,3 @@ export function TrendChart({ last7CheckIns, weeklyAverages, monthlyAverages }: T
     </Card>
   );
 }
-

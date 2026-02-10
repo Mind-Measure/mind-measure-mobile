@@ -1,19 +1,19 @@
 /**
  * Baseline Enrichment Service
- * 
+ *
  * Post-processes baseline assessment to add multimodal features
  * and compute hybrid 70/30 score.
- * 
+ *
  * Flow:
  * 1. Baseline completes with clinical score
  * 2. Processing screen shown
  * 3. This service enriches with audio/visual features
  * 4. Dashboard shows final hybrid score
- * 
+ *
  * Usage:
  * ```typescript
  * const service = new BaselineEnrichmentService();
- * 
+ *
  * const enrichedResult = await service.enrichBaseline({
  *   clinicalScore: 82,
  *   audioBlob: capturedAudio,
@@ -22,7 +22,7 @@
  *   userId: '...',
  *   fusionOutputId: '...'
  * });
- * 
+ *
  * // enrichedResult.finalScore is the 70/30 weighted score (whole number)
  * ```
  */
@@ -30,26 +30,21 @@
 import { BaselineAudioExtractor } from './audioFeatures';
 import { BaselineVisualExtractor } from './visualFeatures';
 import { BaselineScoring } from './scoring';
-import type {
-  CapturedMedia,
-  BaselineAudioFeatures,
-  BaselineVisualFeatures,
-  BaselineScoringBreakdown
-} from '../types';
+import type { CapturedMedia, BaselineAudioFeatures, BaselineVisualFeatures, BaselineScoringBreakdown } from '../types';
 
 export interface EnrichmentInput {
   // Clinical component
-  clinicalScore: number;           // 0-100 from PHQ-2/GAD-2/mood
-  
+  clinicalScore: number; // 0-100 from PHQ-2/GAD-2/mood
+
   // Media to process
   audioBlob?: Blob;
   videoFrames?: Blob[];
-  duration: number;                // Seconds
-  
+  duration: number; // Seconds
+
   // Database references
   userId: string;
   fusionOutputId: string;
-  
+
   // Optional metadata
   startTime?: number;
   endTime?: number;
@@ -57,14 +52,14 @@ export interface EnrichmentInput {
 
 export interface EnrichmentResult {
   // Scores (all whole numbers)
-  originalScore: number;           // Clinical only
-  finalScore: number;              // 70% clinical + 30% multimodal (rounded)
+  originalScore: number; // Clinical only
+  finalScore: number; // 70% clinical + 30% multimodal (rounded)
   scoringBreakdown: BaselineScoringBreakdown;
-  
+
   // Features
   audioFeatures: BaselineAudioFeatures | null;
   visualFeatures: BaselineVisualFeatures | null;
-  
+
   // Metadata
   success: boolean;
   processingTimeMs: number;
@@ -82,14 +77,13 @@ export class BaselineEnrichmentService {
 
   /**
    * Enrich baseline assessment with multimodal features
-   * 
+   *
    * This is called during the processing screen, after the baseline
    * conversation completes but before showing the dashboard.
    */
   async enrichBaseline(input: EnrichmentInput): Promise<EnrichmentResult> {
     const startTime = Date.now();
     const warnings: string[] = [];
-    
 
     let audioFeatures: BaselineAudioFeatures | null = null;
     let visualFeatures: BaselineVisualFeatures | null = null;
@@ -100,16 +94,14 @@ export class BaselineEnrichmentService {
         audio: input.audioBlob,
         videoFrames: input.videoFrames,
         duration: input.duration,
-        startTime: input.startTime || Date.now() - (input.duration * 1000),
-        endTime: input.endTime || Date.now()
+        startTime: input.startTime || Date.now() - input.duration * 1000,
+        endTime: input.endTime || Date.now(),
       };
 
       // Extract audio features (if available)
       if (input.audioBlob) {
         try {
-          const audioStartTime = Date.now();
           audioFeatures = await this.audioExtractor.extract(capturedMedia);
-          const audioTime = Date.now() - audioStartTime;
         } catch (error) {
           console.warn('[EnrichmentService] ⚠️ Audio extraction failed:', error);
           warnings.push('Audio feature extraction failed - using clinical score only');
@@ -121,9 +113,7 @@ export class BaselineEnrichmentService {
       // Extract visual features (if available)
       if (input.videoFrames && input.videoFrames.length > 0) {
         try {
-          const visualStartTime = Date.now();
           visualFeatures = await this.visualExtractor.extract(capturedMedia);
-          const visualTime = Date.now() - visualStartTime;
         } catch (error) {
           console.warn('[EnrichmentService] ⚠️ Visual extraction failed:', error);
           warnings.push('Visual feature extraction failed - using clinical score only');
@@ -133,10 +123,10 @@ export class BaselineEnrichmentService {
       }
 
       // Compute final score with dynamic reweighting
-      
+
       const audioFailed = !audioFeatures;
       const visualFailed = !visualFeatures;
-      
+
       const scoringBreakdown = BaselineScoring.computeScore(
         input.clinicalScore,
         audioFeatures,
@@ -144,10 +134,9 @@ export class BaselineEnrichmentService {
         audioFailed,
         visualFailed
       );
-      
+
       // Round to whole number
       scoringBreakdown.finalScore = Math.round(scoringBreakdown.finalScore);
-      
 
       const processingTimeMs = Date.now() - startTime;
 
@@ -159,15 +148,14 @@ export class BaselineEnrichmentService {
         visualFeatures,
         success: true,
         processingTimeMs,
-        warnings
+        warnings,
       };
-
     } catch (error) {
       console.error('[EnrichmentService] ❌ Enrichment failed:', error);
-      
+
       // Fall back to clinical-only score
       const processingTimeMs = Date.now() - startTime;
-      
+
       return {
         originalScore: input.clinicalScore,
         finalScore: input.clinicalScore,
@@ -179,61 +167,17 @@ export class BaselineEnrichmentService {
           multimodalScore: input.clinicalScore,
           multimodalWeight: 0,
           finalScore: input.clinicalScore,
-          confidence: 0.5 // Low confidence due to failure
+          confidence: 0.5, // Low confidence due to failure
         },
         audioFeatures: null,
         visualFeatures: null,
         success: false,
         processingTimeMs,
-        warnings: [
-          'Multimodal enrichment failed completely',
-          error instanceof Error ? error.message : 'Unknown error'
-        ]
+        warnings: ['Multimodal enrichment failed completely', error instanceof Error ? error.message : 'Unknown error'],
       };
     }
-  }
-
-  /**
-   * Create neutral audio features for fallback
-   */
-  private createNeutralAudioFeatures(): BaselineAudioFeatures {
-    return {
-      meanPitch: 150,
-      pitchVariability: 25,
-      speakingRate: 140,
-      pauseFrequency: 5,
-      pauseDuration: 0.5,
-      voiceEnergy: 0.6,
-      jitter: 0.3,
-      shimmer: 0.3,
-      harmonicRatio: 0.7,
-      quality: 0.5
-    };
-  }
-
-  /**
-   * Create neutral visual features for fallback
-   */
-  private createNeutralVisualFeatures(): BaselineVisualFeatures {
-    return {
-      smileFrequency: 0.3,
-      smileIntensity: 0.4,
-      eyeContact: 0.6,
-      eyebrowPosition: 0.4,
-      facialTension: 0.3,
-      blinkRate: 17,
-      headMovement: 0.4,
-      affect: 0.1,
-      facePresenceQuality: 0.8,
-      overallQuality: 0.5
-    };
   }
 }
 
 // Export types
-export type {
-  BaselineAudioFeatures,
-  BaselineVisualFeatures,
-  BaselineScoringBreakdown
-};
-
+export type { BaselineAudioFeatures, BaselineVisualFeatures, BaselineScoringBreakdown };

@@ -1,5 +1,10 @@
 import { useState, useEffect, memo } from 'react';
 import { motion } from 'motion/react';
+
+// Motion v12 variants typing workaround – the exported Variants type is
+// too narrow for keyframe arrays and the strict CSS property types.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnimVariants = Record<string, any>;
 import { Button } from '@/components/ui/button';
 import { Heart, ArrowRight } from 'lucide-react';
 import mindMeasureLogo from '@/assets/Mindmeasure_logo.png';
@@ -17,28 +22,28 @@ const taglineWords = ['Measure', 'Monitor', 'Manage'];
 const studentImages = [
   {
     src: student1,
-    alt: "Mind Measure student with sunglasses and colorful jacket"
+    alt: 'Mind Measure student with sunglasses and colorful jacket',
   },
   {
     src: student2,
-    alt: "Mind Measure student with confident pose"
+    alt: 'Mind Measure student with confident pose',
   },
   {
     src: student3,
-    alt: "Mind Measure student looking thoughtful"
+    alt: 'Mind Measure student looking thoughtful',
   },
   {
     src: student4,
-    alt: "Mind Measure student with pink knit scarf smiling warmly"
+    alt: 'Mind Measure student with pink knit scarf smiling warmly',
   },
   {
     src: student5,
-    alt: "Mind Measure student with glasses and blonde hair"
+    alt: 'Mind Measure student with glasses and blonde hair',
   },
   {
     src: student6,
-    alt: "Mind Measure student with curly hair in black top"
-  }
+    alt: 'Mind Measure student with curly hair in black top',
+  },
 ];
 
 interface SplashScreenProps {
@@ -63,28 +68,28 @@ function SplashScreenComponent({ onGetStarted }: SplashScreenProps) {
     }, 4500);
     return () => clearInterval(imageInterval);
   }, []);
-  const containerVariants = {
+  const containerVariants: AnimVariants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
       transition: {
         duration: 0.6,
-        staggerChildren: 0.2
-      }
-    }
+        staggerChildren: 0.2,
+      },
+    },
   };
-  const itemVariants = {
+  const itemVariants: AnimVariants = {
     hidden: { y: 30, opacity: 0 },
     visible: {
       y: 0,
       opacity: 1,
       transition: {
         duration: 0.6,
-        ease: "easeOut"
-      }
-    }
+        ease: 'easeOut',
+      },
+    },
   };
-  const logoVariants = {
+  const logoVariants: AnimVariants = {
     hidden: { scale: 0.5, opacity: 0, rotate: -10 },
     visible: {
       scale: 1,
@@ -92,31 +97,31 @@ function SplashScreenComponent({ onGetStarted }: SplashScreenProps) {
       rotate: 0,
       transition: {
         duration: 0.8,
-        ease: "easeOut"
-      }
+        ease: 'easeOut',
+      },
     },
     pulse: {
       scale: [1, 1.05, 1],
       transition: {
         duration: 2,
         repeat: Infinity,
-        ease: "easeInOut"
-      }
-    }
+        ease: 'easeInOut',
+      },
+    },
   };
-  const gradientVariants = {
+  const gradientVariants: AnimVariants = {
     animate: {
       background: [
-        "linear-gradient(45deg, #8B5CF6, #EC4899, #06B6D4)",
-        "linear-gradient(45deg, #EC4899, #06B6D4, #8B5CF6)",
-        "linear-gradient(45deg, #06B6D4, #8B5CF6, #EC4899)"
+        'linear-gradient(45deg, #8B5CF6, #EC4899, #06B6D4)',
+        'linear-gradient(45deg, #EC4899, #06B6D4, #8B5CF6)',
+        'linear-gradient(45deg, #06B6D4, #8B5CF6, #EC4899)',
       ],
       transition: {
         duration: 8,
         repeat: Infinity,
-        ease: "linear"
-      }
-    }
+        ease: 'linear',
+      },
+    },
   };
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -126,7 +131,7 @@ function SplashScreenComponent({ onGetStarted }: SplashScreenProps) {
         variants={gradientVariants}
         animate="animate"
         style={{
-          background: "linear-gradient(45deg, #8B5CF6, #EC4899, #06B6D4)"
+          background: 'linear-gradient(45deg, #8B5CF6, #EC4899, #06B6D4)',
         }}
       />
       {/* Floating orbs */}
@@ -139,7 +144,7 @@ function SplashScreenComponent({ onGetStarted }: SplashScreenProps) {
         transition={{
           duration: 6,
           repeat: Infinity,
-          ease: "easeInOut"
+          ease: 'easeInOut',
         }}
       />
       <motion.div
@@ -151,7 +156,7 @@ function SplashScreenComponent({ onGetStarted }: SplashScreenProps) {
         transition={{
           duration: 4,
           repeat: Infinity,
-          ease: "easeInOut"
+          ease: 'easeInOut',
         }}
       />
       <motion.div
@@ -163,7 +168,7 @@ function SplashScreenComponent({ onGetStarted }: SplashScreenProps) {
         transition={{
           duration: 5,
           repeat: Infinity,
-          ease: "easeInOut"
+          ease: 'easeInOut',
         }}
       />
       {/* Content */}
@@ -174,24 +179,14 @@ function SplashScreenComponent({ onGetStarted }: SplashScreenProps) {
         animate="visible"
       >
         {/* Logo */}
-        <motion.div
-          className="mb-4"
-          variants={logoVariants}
-          animate={["visible", "pulse"]}
-        >
+        <motion.div className="mb-4" variants={logoVariants} animate={['visible', 'pulse']}>
           <div className="w-24 h-24 p-4 bg-white/20 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/30">
-            <img
-              src={mindMeasureLogo}
-              alt="Mind Measure"
-              className="w-full h-full object-contain"
-            />
+            <img src={mindMeasureLogo} alt="Mind Measure" className="w-full h-full object-contain" />
           </div>
         </motion.div>
         {/* App Name */}
         <motion.div variants={itemVariants} className="mb-4">
-          <h1 className="text-4xl font-bold text-white mb-2">
-            Mind Measure
-          </h1>
+          <h1 className="text-4xl font-bold text-white mb-2">Mind Measure</h1>
         </motion.div>
         {/* Animated Tagline */}
         <motion.div variants={itemVariants} className="mb-8">
@@ -200,26 +195,19 @@ function SplashScreenComponent({ onGetStarted }: SplashScreenProps) {
               <motion.span
                 key={word}
                 className={`transition-all duration-500 ${
-                  index === currentTaglineIndex
-                    ? 'text-white font-semibold scale-110'
-                    : 'text-white/70'
+                  index === currentTaglineIndex ? 'text-white font-semibold scale-110' : 'text-white/70'
                 }`}
                 animate={index === currentTaglineIndex ? { y: [-2, 0, -2] } : {}}
                 transition={{ duration: 0.6, repeat: Infinity }}
               >
                 {word}
-                {index < taglineWords.length - 1 && (
-                  <span className="mx-2 text-white/50">•</span>
-                )}
+                {index < taglineWords.length - 1 && <span className="mx-2 text-white/50">•</span>}
               </motion.span>
             ))}
           </div>
         </motion.div>
         {/* Hero Image Carousel */}
-        <motion.div
-          variants={itemVariants}
-          className="mb-6 relative"
-        >
+        <motion.div variants={itemVariants} className="mb-6 relative">
           <div className="relative">
             <div className="w-48 h-64 rounded-3xl overflow-hidden shadow-2xl border-4 border-white/30 backdrop-blur-sm">
               {/* Image stack for smooth transitions */}
@@ -234,14 +222,10 @@ function SplashScreenComponent({ onGetStarted }: SplashScreenProps) {
                   }}
                   transition={{
                     duration: 0.8,
-                    ease: "easeInOut"
+                    ease: 'easeInOut',
                   }}
                 >
-                  <img
-                    src={image.src}
-                    alt={image.alt}
-                    className="w-full h-full object-cover"
-                  />
+                  <img src={image.src} alt={image.alt} className="w-full h-full object-cover" />
                 </motion.div>
               ))}
               {/* Image transition overlay */}
@@ -253,7 +237,7 @@ function SplashScreenComponent({ onGetStarted }: SplashScreenProps) {
                 transition={{
                   duration: 4.5,
                   repeat: Infinity,
-                  ease: "easeInOut"
+                  ease: 'easeInOut',
                 }}
               />
             </div>
@@ -267,7 +251,7 @@ function SplashScreenComponent({ onGetStarted }: SplashScreenProps) {
               transition={{
                 duration: 3,
                 repeat: Infinity,
-                ease: "easeInOut"
+                ease: 'easeInOut',
               }}
             >
               <Heart className="w-6 h-6 text-white fill-white" />
@@ -278,9 +262,7 @@ function SplashScreenComponent({ onGetStarted }: SplashScreenProps) {
                 <motion.div
                   key={index}
                   className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                    index === currentImageIndex
-                      ? 'bg-white shadow-lg'
-                      : 'bg-white/40'
+                    index === currentImageIndex ? 'bg-white shadow-lg' : 'bg-white/40'
                   }`}
                   animate={{
                     scale: index === currentImageIndex ? 1.2 : 1,
@@ -296,15 +278,12 @@ function SplashScreenComponent({ onGetStarted }: SplashScreenProps) {
             Empowering <span className="text-pink-200">every student's</span> mental wellness
           </h2>
           <p className="text-white/80 text-base leading-relaxed">
-            Join thousands of students who use Mind Measure to understand and improve their wellbeing with just a few minutes each day.
+            Join thousands of students who use Mind Measure to understand and improve their wellbeing with just a few
+            minutes each day.
           </p>
         </motion.div>
         {/* CTA Button */}
-        <motion.div
-          variants={itemVariants}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
+        <motion.div variants={itemVariants} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
           <Button
             onClick={() => {
               onGetStarted();
@@ -312,25 +291,19 @@ function SplashScreenComponent({ onGetStarted }: SplashScreenProps) {
             className="bg-white text-purple-600 hover:bg-white/90 h-14 px-8 text-lg font-semibold rounded-2xl shadow-xl border-2 border-white/50 min-w-[280px]"
           >
             Take Your First Check-In
-            <motion.div
-              animate={{ x: [0, 5, 0] }}
-              transition={{ duration: 1, repeat: Infinity }}
-            >
+            <motion.div animate={{ x: [0, 5, 0] }} transition={{ duration: 1, repeat: Infinity }}>
               <ArrowRight className="w-5 h-5 ml-2" />
             </motion.div>
           </Button>
         </motion.div>
-        
+
         {/* Debug Buttons - Only in development */}
         {process.env.NODE_ENV === 'development' && (
-          <motion.div
-            variants={itemVariants}
-            className="mt-4 space-y-2"
-          >
+          <motion.div variants={itemVariants} className="mt-4 space-y-2">
             <p className="text-white/70 text-sm">Debug Options:</p>
             <div className="flex gap-2 flex-wrap justify-center">
               <Button
-                onClick={() => window.location.href = '/test-returning'}
+                onClick={() => (window.location.href = '/test-returning')}
                 className="bg-blue-500/20 text-white text-xs px-4 py-2 rounded-lg border border-white/30"
               >
                 Test Returning User

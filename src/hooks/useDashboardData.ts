@@ -1,7 +1,19 @@
 import { useState, useEffect } from 'react';
 import { BackendServiceFactory } from '@/services/database/BackendServiceFactory';
 import { useAuth } from '@/contexts/AuthContext';
-import { cognitoApiClient } from '@/services/cognito-api-client';
+import type { FusionOutput } from '@/types/database';
+import { parseAnalysis } from '@/types/database';
+
+/** Shape of the profile row returned from the profiles table. */
+interface ProfileRow {
+  first_name: string;
+  last_name: string;
+  display_name: string;
+  streak_count: number;
+  baseline_established: boolean;
+  created_at?: string;
+  university_id?: string;
+}
 
 interface DashboardData {
   profile: {
@@ -47,10 +59,8 @@ interface DashboardData {
 
 export function useDashboardData(): DashboardData {
   const { user } = useAuth();
-  const backendService = BackendServiceFactory.createService(
-    BackendServiceFactory.getEnvironmentConfig()
-  );
-  
+  const backendService = BackendServiceFactory.createService(BackendServiceFactory.getEnvironmentConfig());
+
   const [data, setData] = useState<DashboardData>({
     profile: {
       firstName: 'User',
@@ -67,7 +77,7 @@ export function useDashboardData(): DashboardData {
       last7Days: [],
       last30Days: [],
       weeklyAverages: [],
-      monthlyAverages: []
+      monthlyAverages: [],
     },
     hasData: false,
     loading: true,
@@ -76,36 +86,35 @@ export function useDashboardData(): DashboardData {
 
   useEffect(() => {
     if (!user?.id) {
-      setData(prev => ({ ...prev, loading: false }));
+      setData((prev) => ({ ...prev, loading: false }));
       return;
     }
-    
+
     fetchDashboardData();
   }, [user?.id]);
 
   const fetchDashboardData = async () => {
     if (!user?.id) return;
-    
+
     try {
-      
-      setData(prev => ({ ...prev, loading: true, error: null }));
-      
+      setData((prev) => ({ ...prev, loading: true, error: null }));
+
       // Fetch user profile
-      const { data: profiles, error: profileError } = await backendService.database.select('profiles', {
+      const { data: profiles, error: profileError } = await backendService.database.select<ProfileRow>('profiles', {
         filters: { user_id: user.id },
-        columns: 'first_name, last_name, display_name, streak_count, baseline_established, created_at, university_id'
+        columns: 'first_name, last_name, display_name, streak_count, baseline_established, created_at, university_id',
       });
-      
+
       const profile = profiles && profiles.length > 0 ? profiles[0] : null;
-      
+
       if (profileError) {
         console.error('❌ Error fetching profile:', profileError);
         // Profile might not exist yet, create it
         const firstName = user.user_metadata?.given_name || user.user_metadata?.first_name || 'User';
         const lastName = user.user_metadata?.family_name || user.user_metadata?.last_name || '';
         const displayName = user.user_metadata?.name || user.user_metadata?.full_name || firstName;
-        
-        const { data: newProfile, error: createError } = await backendService.database.insert('profiles', {
+
+        const { data: _newProfile, error: createError } = await backendService.database.insert('profiles', {
           user_id: user.id,
           first_name: firstName,
           last_name: lastName,
@@ -113,35 +122,34 @@ export function useDashboardData(): DashboardData {
           streak_count: 0,
           baseline_established: false,
         });
-        
+
         if (createError) {
-          throw new Error(`Failed to create profile: ${createError.message}`);
+          throw new Error(`Failed to create profile: ${createError}`);
         }
       }
 
       // Fetch latest assessment data from fusion_outputs (where baseline scores are stored)
       // DO NOT query assessment_sessions - it has FK constraints and missing columns (conversation_summary) for baseline
-      const { data: sessions, error: sessionsError } = await backendService.database.select(
+      const { data: sessions, error: sessionsError } = await backendService.database.select<FusionOutput>(
         'fusion_outputs',
         {
           columns: ['id', 'score', 'final_score', 'analysis', 'created_at'],
           filters: { user_id: user.id },
-          orderBy: [{ column: 'created_at', ascending: false }]
+          orderBy: [{ column: 'created_at', ascending: false }],
         }
       );
-      
+
       if (sessionsError) {
         console.warn('⚠️ Database select failed (failing silently for baseline):', sessionsError);
         // Don't throw - fail gracefully for baseline users who might not have sessions yet
       }
-      
 
       // Process the data
       const firstName = user.user_metadata?.given_name || user.user_metadata?.first_name || 'User';
       const lastName = user.user_metadata?.family_name || user.user_metadata?.last_name || '';
       const displayName = user.user_metadata?.name || user.user_metadata?.full_name || firstName;
-      
-      const profileData = profile || {
+
+      const profileData: ProfileRow = profile || {
         first_name: firstName,
         last_name: lastName,
         display_name: displayName,
@@ -153,29 +161,28 @@ export function useDashboardData(): DashboardData {
 
       // Get latest session with score (use score or final_score from fusion_outputs)
       // This is used for the score card display - can be baseline or check-in
-      const latestSessionWithScore = sessions?.find(s => s.final_score || s.score);
+      const latestSessionWithScore = sessions?.find((s) => s.final_score || s.score);
       let latestScore = null;
       let latestSession = null;
-      
-      
+
       if (latestSessionWithScore) {
-        const currentScore = latestSessionWithScore.final_score || latestSessionWithScore.score;
-        
+        const currentScore = latestSessionWithScore.final_score ?? latestSessionWithScore.score ?? 0;
+
         // Find the second session with a score (skip the first one which is latestSessionWithScore)
-        const sessionsWithScores = sessions?.filter(s => s.final_score || s.score) || [];
+        const sessionsWithScores = sessions?.filter((s) => s.final_score || s.score) || [];
         const previousSession = sessionsWithScores.length > 1 ? sessionsWithScores[1] : null;
-        
+
         let trend: 'up' | 'down' | 'stable' = 'stable';
         if (previousSession) {
-          const previousScore = previousSession.final_score || previousSession.score;
+          const previousScore = previousSession.final_score ?? previousSession.score ?? 0;
           if (currentScore > previousScore + 5) trend = 'up';
           else if (currentScore < previousScore - 5) trend = 'down';
         }
-        
+
         // Fix date formatting to use British format (DD/MM/YYYY)
         const assessmentDate = new Date(latestSessionWithScore.created_at);
         const formattedDate = assessmentDate.toLocaleDateString('en-GB');
-        
+
         latestScore = {
           score: currentScore,
           lastUpdated: formattedDate,
@@ -183,38 +190,20 @@ export function useDashboardData(): DashboardData {
           label: getScoreLabel(currentScore),
         };
       }
-      
+
       // Find latest CHECK-IN specifically (not baseline) for the "Latest Check-in" section
-      const latestCheckIn = sessions?.find(s => {
+      const latestCheckIn = sessions?.find((s) => {
         if (!(s.final_score || s.score)) return false;
-        
-        let analysisData: any = {};
-        try {
-          analysisData = typeof s.analysis === 'string' 
-            ? JSON.parse(s.analysis) 
-            : s.analysis || {};
-        } catch (e) {
-          return false;
-        }
-        
+        const analysisData = parseAnalysis(s.analysis);
         return analysisData.assessment_type === 'checkin';
       });
-      
-      
+
       if (latestCheckIn) {
-        const checkInScore = latestCheckIn.final_score || latestCheckIn.score;
-        
+        const checkInScore = latestCheckIn.final_score ?? latestCheckIn.score ?? 0;
+
         // Parse analysis field
-        let analysisData: any = {};
-        try {
-          analysisData = typeof latestCheckIn.analysis === 'string' 
-            ? JSON.parse(latestCheckIn.analysis) 
-            : latestCheckIn.analysis || {};
-        } catch (e) {
-          console.warn('Failed to parse check-in analysis:', e);
-        }
-        
-        
+        const analysisData = parseAnalysis(latestCheckIn.analysis);
+
         latestSession = {
           id: latestCheckIn.id,
           createdAt: new Date(latestCheckIn.created_at).toLocaleDateString('en-GB'),
@@ -224,39 +213,35 @@ export function useDashboardData(): DashboardData {
           driverPositive: analysisData.driver_positive || analysisData.drivers_positive || [],
           driverNegative: analysisData.driver_negative || analysisData.drivers_negative || [],
         };
-        
       }
-      
+
       // Recent activity from all sessions (parse analysis to get assessment_type)
-      const recentActivity = sessions?.slice(0, 5).map(session => {
-        let analysisData: any = {};
-        try {
-          analysisData = typeof session.analysis === 'string' 
-            ? JSON.parse(session.analysis) 
-            : session.analysis || {};
-        } catch (e) {
-          // Ignore parse errors
-        }
-        
-        return {
-          type: analysisData.assessment_type === 'baseline' ? 'baseline' : 'checkin' as const,
-          score: session.final_score || session.score || 0,
-          createdAt: session.created_at,
-        };
-      }) || [];
-      
+      const recentActivity =
+        sessions?.slice(0, 5).map((session) => {
+          const analysisData = parseAnalysis(session.analysis);
+          return {
+            type: analysisData.assessment_type === 'baseline' ? ('baseline' as const) : ('checkin' as const),
+            score: session.final_score || session.score || 0,
+            createdAt: session.created_at,
+          };
+        }) || [];
+
       // Calculate trend data for charts
       const trendData = calculateTrendData(sessions || []);
-      
+
       const hasData = sessions && sessions.length > 0;
-      
+
       setData({
         profile: {
-          firstName: (profileData.first_name || 'User').charAt(0).toUpperCase() + (profileData.first_name || 'User').slice(1).toLowerCase(),
-          lastName: (profileData.last_name || '').charAt(0).toUpperCase() + (profileData.last_name || '').slice(1).toLowerCase(),
+          firstName:
+            (profileData.first_name || 'User').charAt(0).toUpperCase() +
+            (profileData.first_name || 'User').slice(1).toLowerCase(),
+          lastName:
+            (profileData.last_name || '').charAt(0).toUpperCase() +
+            (profileData.last_name || '').slice(1).toLowerCase(),
           displayName: profileData.display_name || 'User',
           streakCount: profileData.streak_count || 0,
-          baselineEstablished: profileData.baseline_established || (sessions && sessions.length > 0),
+          baselineEstablished: profileData.baseline_established || !!(sessions && sessions.length > 0),
           createdAt: profileData.created_at, // Account creation date
           university_id: profileData.university_id, // University ID for nudges/content
         },
@@ -268,17 +253,16 @@ export function useDashboardData(): DashboardData {
         loading: false,
         error: null,
       });
-      
     } catch (error) {
       console.error('❌ Error fetching dashboard data:', error);
-      setData(prev => ({
+      setData((prev) => ({
         ...prev,
         loading: false,
         error: error instanceof Error ? error.message : 'Failed to load dashboard data',
       }));
     }
   };
-  
+
   return data;
 }
 
@@ -289,121 +273,119 @@ function getScoreLabel(score: number): string {
   return 'Needs Attention';
 }
 
-function calculateTrendData(sessions: any[]) {
+function calculateTrendData(sessions: FusionOutput[]) {
   // Filter only check-ins (exclude baseline)
-  const checkIns = sessions.filter(s => {
-    let analysisData: any = {};
-    try {
-      analysisData = typeof s.analysis === 'string' ? JSON.parse(s.analysis) : s.analysis || {};
-    } catch (e) {
-      return false;
-    }
+  const checkIns = sessions.filter((s) => {
+    const analysisData = parseAnalysis(s.analysis);
     return analysisData.assessment_type !== 'baseline';
   });
 
   // Last 7 check-ins
-  const last7CheckIns = checkIns.slice(0, 7).reverse().map(s => ({
-    date: s.created_at,
-    score: s.final_score || s.score || 0
-  }));
+  const last7CheckIns = checkIns
+    .slice(0, 7)
+    .reverse()
+    .map((s) => ({
+      date: s.created_at,
+      score: s.final_score || s.score || 0,
+    }));
 
   // Last 7 days (one data point per day, using most recent score for that day)
   const last7Days: Array<{ date: string; score: number }> = [];
   const now = new Date();
-  
+
   for (let i = 6; i >= 0; i--) {
     const targetDate = new Date(now);
     targetDate.setDate(targetDate.getDate() - i);
     targetDate.setHours(0, 0, 0, 0);
-    
+
     const nextDate = new Date(targetDate);
     nextDate.setDate(nextDate.getDate() + 1);
-    
+
     // Find the most recent check-in for this day
-    const dayCheckIn = checkIns.find(s => {
+    const dayCheckIn = checkIns.find((s) => {
       const sessionDate = new Date(s.created_at);
       return sessionDate >= targetDate && sessionDate < nextDate;
     });
-    
+
     if (dayCheckIn) {
       last7Days.push({
         date: targetDate.toISOString(),
-        score: dayCheckIn.final_score || dayCheckIn.score || 0
+        score: dayCheckIn.final_score || dayCheckIn.score || 0,
       });
     }
   }
 
   // Last 30 days (one data point per day)
   const last30Days: Array<{ date: string; score: number }> = [];
-  
+
   for (let i = 29; i >= 0; i--) {
     const targetDate = new Date(now);
     targetDate.setDate(targetDate.getDate() - i);
     targetDate.setHours(0, 0, 0, 0);
-    
+
     const nextDate = new Date(targetDate);
     nextDate.setDate(nextDate.getDate() + 1);
-    
+
     // Find the most recent check-in for this day
-    const dayCheckIn = checkIns.find(s => {
+    const dayCheckIn = checkIns.find((s) => {
       const sessionDate = new Date(s.created_at);
       return sessionDate >= targetDate && sessionDate < nextDate;
     });
-    
+
     if (dayCheckIn) {
       last30Days.push({
         date: targetDate.toISOString(),
-        score: dayCheckIn.final_score || dayCheckIn.score || 0
+        score: dayCheckIn.final_score || dayCheckIn.score || 0,
       });
     }
   }
 
   // Weekly averages (last 10 weeks)
   const weeklyAverages: Array<{ date: string; score: number }> = [];
-  
+
   for (let i = 9; i >= 0; i--) {
     const weekStart = new Date(now);
-    weekStart.setDate(weekStart.getDate() - (i * 7));
+    weekStart.setDate(weekStart.getDate() - i * 7);
     weekStart.setHours(0, 0, 0, 0);
-    
+
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekEnd.getDate() + 7);
-    
-    const weekSessions = checkIns.filter(s => {
+
+    const weekSessions = checkIns.filter((s) => {
       const sessionDate = new Date(s.created_at);
       return sessionDate >= weekStart && sessionDate < weekEnd;
     });
-    
+
     if (weekSessions.length > 0) {
       const avgScore = Math.round(
         weekSessions.reduce((sum, s) => sum + (s.final_score || s.score || 0), 0) / weekSessions.length
       );
       weeklyAverages.push({
         date: weekStart.toISOString(),
-        score: avgScore
+        score: avgScore,
       });
     }
   }
 
   // Monthly averages (last 12 months)
   const monthlyAverages: Array<{ date: string; score: number }> = [];
-  
+
   for (let i = 11; i >= 0; i--) {
     const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
-    
-    const monthSessions = checkIns.filter(s => {
+
+    const monthSessions = checkIns.filter((s) => {
       const sessionDate = new Date(s.created_at);
       return sessionDate >= monthStart && sessionDate <= monthEnd;
     });
-    
+
     if (monthSessions.length > 0) {
       const avgScore = Math.round(
         monthSessions.reduce((sum, s) => sum + (s.final_score || s.score || 0), 0) / monthSessions.length
       );
       monthlyAverages.push({
         date: monthStart.toISOString(),
-        score: avgScore
+        score: avgScore,
       });
     }
   }
@@ -413,7 +395,6 @@ function calculateTrendData(sessions: any[]) {
     last7Days,
     last30Days,
     weeklyAverages,
-    monthlyAverages
+    monthlyAverages,
   };
 }
-

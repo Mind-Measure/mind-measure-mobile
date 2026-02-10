@@ -1,7 +1,6 @@
-import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Play, Eye, Mic, MessageCircle, Shield, Heart } from 'lucide-react';
+import { Play, Eye, Mic, MessageCircle, Shield } from 'lucide-react';
 import mindMeasureLogo from '../../assets/66710e04a85d98ebe33850197f8ef41bd28d8b84.png';
 interface MobileCheckinProps {
   onNavigateToJodie?: () => void;
@@ -12,16 +11,10 @@ export function CheckInScreen({ onNavigateToJodie }: MobileCheckinProps) {
       {/* Header */}
       <div className="text-center pt-8">
         <div className="w-24 h-24 mx-auto mb-6 flex items-center justify-center">
-          <img
-            src={mindMeasureLogo}
-            alt="Mind Measure"
-            className="w-full h-full object-contain"
-          />
+          <img src={mindMeasureLogo} alt="Mind Measure" className="w-full h-full object-contain" />
         </div>
         <h1 className="text-3xl text-gray-900 mb-3">Welcome back, Alex</h1>
-        <p className="text-gray-600 leading-relaxed text-base">
-          Ready for your daily mental wellness check-in?
-        </p>
+        <p className="text-gray-600 leading-relaxed text-base">Ready for your daily mental wellness check-in?</p>
       </div>
       {/* Start Check-in Button */}
       <div className="text-center space-y-4">
@@ -32,9 +25,7 @@ export function CheckInScreen({ onNavigateToJodie }: MobileCheckinProps) {
           <Play className="w-6 h-6 mr-3" />
           Start Check-in with Jodie
         </Button>
-        <p className="text-gray-500 text-sm">
-          Find a quiet, comfortable space where you can speak freely
-        </p>
+        <p className="text-gray-500 text-sm">Find a quiet, comfortable space where you can speak freely</p>
       </div>
       {/* What to Expect */}
       <div className="space-y-4">
@@ -92,16 +83,13 @@ export function CheckInScreen({ onNavigateToJodie }: MobileCheckinProps) {
       {/* Mind Measure Branding */}
       <div className="text-center space-y-6 py-8">
         <div className="w-16 h-16 mx-auto flex items-center justify-center">
-          <img
-            src={mindMeasureLogo}
-            alt="Mind Measure"
-            className="w-full h-full object-contain opacity-80"
-          />
+          <img src={mindMeasureLogo} alt="Mind Measure" className="w-full h-full object-contain opacity-80" />
         </div>
         <div>
           <h3 className="text-gray-900 mb-3">Mind Measure</h3>
           <p className="text-gray-600 text-sm leading-relaxed max-w-sm mx-auto">
-            Your trusted companion for understanding and measuring your mental wellbeing through intelligent conversation and analysis.
+            Your trusted companion for understanding and measuring your mental wellbeing through intelligent
+            conversation and analysis.
           </p>
         </div>
       </div>

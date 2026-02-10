@@ -1,12 +1,12 @@
 /**
  * Baseline Multimodal Assessment Module
- * 
+ *
  * Public API for baseline multimodal feature extraction and scoring.
- * 
+ *
  * PRIMARY API (Recommended):
  * ```typescript
  * import { BaselineEnrichmentService } from '@/services/multimodal/baseline';
- * 
+ *
  * const service = new BaselineEnrichmentService();
  * const result = await service.enrichBaseline({
  *   clinicalScore: 82,
@@ -16,10 +16,10 @@
  *   userId: '...',
  *   fusionOutputId: '...'
  * });
- * 
+ *
  * // result.finalScore = 79 (whole number, 70/30 weighted)
  * ```
- * 
+ *
  */
 
 // Export enrichment service (primary API)
@@ -31,9 +31,8 @@ export type {
   BaselineAudioFeatures,
   BaselineVisualFeatures,
   BaselineScoringBreakdown,
-  MediaCaptureConfig
-};
+  MediaCaptureConfig,
+} from '../types';
 
 // Export error handling
 export { MultimodalError, MultimodalErrorCode } from '../types';
-

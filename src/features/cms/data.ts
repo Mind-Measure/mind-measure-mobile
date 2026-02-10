@@ -61,18 +61,16 @@ export interface LocalResource {
 }
 // Helper to get backend service
 function getBackendService() {
-  return BackendServiceFactory.createService(
-    BackendServiceFactory.getEnvironmentConfig()
-  );
+  return BackendServiceFactory.createService(BackendServiceFactory.getEnvironmentConfig());
 }
 
 // CMS Data Functions
 export async function getAllUniversities(): Promise<University[]> {
   const backendService = getBackendService();
   try {
-    const { data, error } = await backendService.database.select('universities', {
+    const { data, error } = await backendService.database.select<University>('universities', {
       columns: '*',
-      orderBy: [{ column: 'created_at', ascending: false }]
+      orderBy: [{ column: 'created_at', ascending: false }],
     });
     if (error) throw error;
     return data || [];
@@ -84,19 +82,17 @@ export async function getAllUniversities(): Promise<University[]> {
 export async function getUniversityById(id: string): Promise<University | null> {
   try {
     // Initialize backend service
-    const backendService = BackendServiceFactory.createService(
-      BackendServiceFactory.getEnvironmentConfig()
-    );
-    
-    const result = await backendService.database.select('universities', {
-      filters: { id: id }
+    const backendService = BackendServiceFactory.createService(BackendServiceFactory.getEnvironmentConfig());
+
+    const result = await backendService.database.select<University>('universities', {
+      filters: { id: id },
     });
-    
+
     if (result.error) {
       console.error('Error fetching university:', result.error);
       return null;
     }
-    
+
     return result.data && result.data.length > 0 ? result.data[0] : null;
   } catch (error) {
     console.error('Error fetching university:', error);
@@ -107,19 +103,17 @@ export async function getUniversityById(id: string): Promise<University | null> 
 export async function getUniversityBySlug(slug: string): Promise<University | null> {
   try {
     // Initialize backend service
-    const backendService = BackendServiceFactory.createService(
-      BackendServiceFactory.getEnvironmentConfig()
-    );
-    
-    const result = await backendService.database.select('universities', {
-      filters: { slug: slug }
+    const backendService = BackendServiceFactory.createService(BackendServiceFactory.getEnvironmentConfig());
+
+    const result = await backendService.database.select<University>('universities', {
+      filters: { slug: slug },
     });
-    
+
     if (result.error) {
       console.error('Error fetching university by slug:', result.error);
       return null;
     }
-    
+
     return result.data && result.data.length > 0 ? result.data[0] : null;
   } catch (error) {
     console.error('Error fetching university by slug:', error);
@@ -129,20 +123,20 @@ export async function getUniversityBySlug(slug: string): Promise<University | nu
 export async function createUniversity(universityData: Partial<University>): Promise<University | null> {
   try {
     // Initialize backend service
-    const backendService = BackendServiceFactory.createService(
-      BackendServiceFactory.getEnvironmentConfig()
-    );
-    
+    const backendService = BackendServiceFactory.createService(BackendServiceFactory.getEnvironmentConfig());
+
     // Generate university slug if not provided
-    const universitySlug = universityData.slug || 
-      (universityData.name || '').toLowerCase()
+    const universitySlug =
+      universityData.slug ||
+      (universityData.name || '')
+        .toLowerCase()
         .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
         .replace(/\s+/g, '-') // Replace spaces with hyphens
         .replace(/-+/g, '-') // Replace multiple hyphens with single
         .trim();
 
     // 1. Create the university record in database
-    const { data, error } = await backendService.database.insert('universities', {
+    const { data, error } = await backendService.database.insert<University>('universities', {
       id: universityData.id || crypto.randomUUID(),
       name: universityData.name || '',
       short_name: universityData.short_name || '',
@@ -165,14 +159,13 @@ export async function createUniversity(universityData: Partial<University>): Pro
       current_uptake_rate: universityData.current_uptake_rate || 0,
       emergency_contacts: universityData.emergency_contacts || [],
       mental_health_services: universityData.mental_health_services || [],
-      local_resources: universityData.local_resources || []
+      local_resources: universityData.local_resources || [],
     });
     if (error) throw error;
 
     // 2. Create dedicated S3 bucket for this university
     if (universitySlug) {
       try {
-        
         const bucketResponse = await fetch('/api/universities/create-bucket', {
           method: 'POST',
           headers: {
@@ -180,13 +173,14 @@ export async function createUniversity(universityData: Partial<University>): Pro
           },
           body: JSON.stringify({
             universitySlug,
-            universityName: universityData.name
-          })
+            universityName: universityData.name,
+          }),
         });
 
         const bucketResult = await bucketResponse.json();
-        
+
         if (bucketResult.success) {
+          /* intentionally empty */
         } else {
           console.warn(`⚠️ S3 bucket creation failed: ${bucketResult.error}`);
           // Don't fail university creation if bucket creation fails
@@ -197,7 +191,7 @@ export async function createUniversity(universityData: Partial<University>): Pro
       }
     }
 
-    return data;
+    return (Array.isArray(data) ? (data[0] ?? null) : data) as University | null;
   } catch (error) {
     console.error('Error creating university:', error);
     return null;
@@ -206,18 +200,20 @@ export async function createUniversity(universityData: Partial<University>): Pro
 export async function updateUniversity(id: string, updates: Partial<University>): Promise<University | null> {
   try {
     // Initialize backend service
-    const backendService = BackendServiceFactory.createService(
-      BackendServiceFactory.getEnvironmentConfig()
+    const backendService = BackendServiceFactory.createService(BackendServiceFactory.getEnvironmentConfig());
+
+    const { data, error } = await backendService.database.update<University>(
+      'universities',
+      {
+        ...updates,
+        updated_at: new Date().toISOString(),
+      },
+      {
+        id: id,
+      }
     );
-    
-    const { data, error } = await backendService.database.update('universities', {
-      ...updates,
-      updated_at: new Date().toISOString()
-    }, {
-      id: id
-    });
     if (error) throw error;
-    return data;
+    return (Array.isArray(data) ? (data[0] ?? null) : data) as University | null;
   } catch (error) {
     console.error('Error updating university:', error);
     return null;
@@ -226,12 +222,10 @@ export async function updateUniversity(id: string, updates: Partial<University>)
 export async function deleteUniversity(id: string): Promise<boolean> {
   try {
     // Initialize backend service
-    const backendService = BackendServiceFactory.createService(
-      BackendServiceFactory.getEnvironmentConfig()
-    );
-    
+    const backendService = BackendServiceFactory.createService(BackendServiceFactory.getEnvironmentConfig());
+
     const { error } = await backendService.database.delete('universities', {
-      id: id
+      id: id,
     });
     if (error) throw error;
     return true;
@@ -244,16 +238,18 @@ export async function deleteUniversity(id: string): Promise<boolean> {
 export async function updateEmergencyContacts(universityId: string, contacts: EmergencyContact[]): Promise<boolean> {
   try {
     // Initialize backend service
-    const backendService = BackendServiceFactory.createService(
-      BackendServiceFactory.getEnvironmentConfig()
+    const backendService = BackendServiceFactory.createService(BackendServiceFactory.getEnvironmentConfig());
+
+    const { error } = await backendService.database.update(
+      'universities',
+      {
+        emergency_contacts: contacts,
+        updated_at: new Date().toISOString(),
+      },
+      {
+        id: universityId,
+      }
     );
-    
-    const { error } = await backendService.database.update('universities', {
-      emergency_contacts: contacts,
-      updated_at: new Date().toISOString()
-    }, {
-      id: universityId
-    });
     if (error) throw error;
     return true;
   } catch (error) {
@@ -262,19 +258,24 @@ export async function updateEmergencyContacts(universityId: string, contacts: Em
   }
 }
 // Mental Health Services Functions
-export async function updateMentalHealthServices(universityId: string, services: MentalHealthService[]): Promise<boolean> {
+export async function updateMentalHealthServices(
+  universityId: string,
+  services: MentalHealthService[]
+): Promise<boolean> {
   try {
     // Initialize backend service
-    const backendService = BackendServiceFactory.createService(
-      BackendServiceFactory.getEnvironmentConfig()
+    const backendService = BackendServiceFactory.createService(BackendServiceFactory.getEnvironmentConfig());
+
+    const { error } = await backendService.database.update(
+      'universities',
+      {
+        mental_health_services: services,
+        updated_at: new Date().toISOString(),
+      },
+      {
+        id: universityId,
+      }
     );
-    
-    const { error } = await backendService.database.update('universities', {
-      mental_health_services: services,
-      updated_at: new Date().toISOString()
-    }, {
-      id: universityId
-    });
     if (error) throw error;
     return true;
   } catch (error) {
@@ -286,16 +287,18 @@ export async function updateMentalHealthServices(universityId: string, services:
 export async function updateLocalResources(universityId: string, resources: LocalResource[]): Promise<boolean> {
   try {
     // Initialize backend service
-    const backendService = BackendServiceFactory.createService(
-      BackendServiceFactory.getEnvironmentConfig()
+    const backendService = BackendServiceFactory.createService(BackendServiceFactory.getEnvironmentConfig());
+
+    const { error } = await backendService.database.update(
+      'universities',
+      {
+        local_resources: resources,
+        updated_at: new Date().toISOString(),
+      },
+      {
+        id: universityId,
+      }
     );
-    
-    const { error } = await backendService.database.update('universities', {
-      local_resources: resources,
-      updated_at: new Date().toISOString()
-    }, {
-      id: universityId
-    });
     if (error) throw error;
     return true;
   } catch (error) {
@@ -327,6 +330,8 @@ export interface ContentArticle {
   is_featured: boolean;
   view_count: number;
   author_id?: string;
+  author?: string;
+  read_time?: number;
   published_at?: string;
   created_at: string;
   updated_at: string;
@@ -343,12 +348,10 @@ export interface ContentTag {
 export async function getContentCategories(): Promise<ContentCategory[]> {
   try {
     // Initialize backend service
-    const backendService = BackendServiceFactory.createService(
-      BackendServiceFactory.getEnvironmentConfig()
-    );
-    
-    const { data, error } = await backendService.database.select('content_categories', {
-      columns: '*'
+    const backendService = BackendServiceFactory.createService(BackendServiceFactory.getEnvironmentConfig());
+
+    const { data, error } = await backendService.database.select<ContentCategory>('content_categories', {
+      columns: '*',
     });
     if (error) throw error;
     return data || [];
@@ -361,10 +364,8 @@ export async function getContentCategories(): Promise<ContentCategory[]> {
 export async function getContentArticles(universityId?: string, status?: string): Promise<ContentArticle[]> {
   try {
     // Initialize backend service
-    const backendService = BackendServiceFactory.createService(
-      BackendServiceFactory.getEnvironmentConfig()
-    );
-    
+    const backendService = BackendServiceFactory.createService(BackendServiceFactory.getEnvironmentConfig());
+
     const filters: any = {};
     if (universityId) {
       filters.university_id = universityId;
@@ -372,11 +373,11 @@ export async function getContentArticles(universityId?: string, status?: string)
     if (status) {
       filters.status = status;
     }
-    
-    const { data, error } = await backendService.database.select('content_articles', {
+
+    const { data, error } = await backendService.database.select<ContentArticle>('content_articles', {
       columns: '*',
       filters: filters,
-      orderBy: [{ column: 'updated_at', ascending: false }]
+      orderBy: [{ column: 'updated_at', ascending: false }],
     });
     if (error) throw error;
     return data || [];
@@ -388,26 +389,26 @@ export async function getContentArticles(universityId?: string, status?: string)
 export async function getContentArticleById(id: string): Promise<ContentArticle | null> {
   const backendService = getBackendService();
   try {
-    const { data, error } = await backendService.database.select('content_articles', {
+    const { data, error } = await backendService.database.select<ContentArticle>('content_articles', {
       columns: '*',
       filters: { id },
-      limit: 1
+      limit: 1,
     });
     if (error) throw error;
     const article = data?.[0] || null;
-    
+
     // Fetch category separately if article has a category_id
     if (article?.category_id) {
-      const catResult = await backendService.database.select('content_categories', {
+      const catResult = await backendService.database.select<ContentCategory>('content_categories', {
         columns: '*',
         filters: { id: article.category_id },
-        limit: 1
+        limit: 1,
       });
       if (catResult.data?.[0]) {
         article.category = catResult.data[0];
       }
     }
-    
+
     return article;
   } catch (error) {
     console.error('Error fetching content article:', error);
@@ -419,23 +420,29 @@ export async function createContentArticle(articleData: Partial<ContentArticle>)
   try {
     const userResult = await backendService.auth.getCurrentUser();
     const user = userResult?.data;
-    
-    const { data, error } = await backendService.database.insert('content_articles', {
+
+    const { data, error } = await backendService.database.insert<ContentArticle>('content_articles', {
       university_id: articleData.university_id,
       category_id: articleData.category_id,
       title: articleData.title || '',
-      slug: articleData.slug || articleData.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || '',
+      slug:
+        articleData.slug ||
+        articleData.title
+          ?.toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)/g, '') ||
+        '',
       excerpt: articleData.excerpt,
       content: articleData.content || '',
       featured_image: articleData.featured_image,
       status: articleData.status || 'draft',
       is_featured: articleData.is_featured || false,
-      author_id: user?.sub || user?.Username
-    });
+      author_id: (user?.sub as string | undefined) || (user?.Username as string | undefined),
+    } as Partial<ContentArticle>);
     if (error) throw error;
-    
+
     // Return the created article (fetch it back with category)
-    const created = data?.[0] || data;
+    const created = (Array.isArray(data) ? data[0] : data) as ContentArticle | null;
     if (created?.id) {
       return await getContentArticleById(created.id);
     }
@@ -445,7 +452,10 @@ export async function createContentArticle(articleData: Partial<ContentArticle>)
     return null;
   }
 }
-export async function updateContentArticle(id: string, updates: Partial<ContentArticle>): Promise<ContentArticle | null> {
+export async function updateContentArticle(
+  id: string,
+  updates: Partial<ContentArticle>
+): Promise<ContentArticle | null> {
   const backendService = getBackendService();
   try {
     const updateData: any = { ...updates };
@@ -453,10 +463,10 @@ export async function updateContentArticle(id: string, updates: Partial<ContentA
     delete updateData.created_at;
     delete updateData.category;
     delete updateData.tags;
-    
-    const { data, error } = await backendService.database.update('content_articles', updateData, { id });
+
+    const { data: _data, error } = await backendService.database.update('content_articles', updateData, { id });
     if (error) throw error;
-    
+
     // Fetch the updated article with category
     return await getContentArticleById(id);
   } catch (error) {
@@ -479,10 +489,10 @@ export async function incrementArticleViews(id: string): Promise<void> {
   const backendService = getBackendService();
   try {
     // Fetch current view count, then increment
-    const { data } = await backendService.database.select('content_articles', {
+    const { data } = await backendService.database.select<{ view_count: number }>('content_articles', {
       columns: 'view_count',
       filters: { id },
-      limit: 1
+      limit: 1,
     });
     const currentCount = data?.[0]?.view_count || 0;
     await backendService.database.update('content_articles', { view_count: currentCount + 1 }, { id });
@@ -494,9 +504,9 @@ export async function incrementArticleViews(id: string): Promise<void> {
 export async function getContentTags(): Promise<ContentTag[]> {
   const backendService = getBackendService();
   try {
-    const { data, error } = await backendService.database.select('content_tags', {
+    const { data, error } = await backendService.database.select<ContentTag>('content_tags', {
       columns: '*',
-      orderBy: [{ column: 'name', ascending: true }]
+      orderBy: [{ column: 'name', ascending: true }],
     });
     if (error) throw error;
     return data || [];
@@ -508,10 +518,16 @@ export async function getContentTags(): Promise<ContentTag[]> {
 export async function createContentTag(name: string): Promise<ContentTag | null> {
   const backendService = getBackendService();
   try {
-    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-    const { data, error } = await backendService.database.insert('content_tags', { name, slug });
+    const slug = name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
+    const { data, error } = await backendService.database.insert<ContentTag>('content_tags', {
+      name,
+      slug,
+    } as Partial<ContentTag>);
     if (error) throw error;
-    return data?.[0] || data;
+    return (Array.isArray(data) ? (data[0] ?? null) : data) as ContentTag | null;
   } catch (error) {
     console.error('Error creating content tag:', error);
     return null;
@@ -521,16 +537,16 @@ export async function createContentTag(name: string): Promise<ContentTag | null>
 export async function getCMSStatistics() {
   const backendService = getBackendService();
   try {
-    const { data: universities, error } = await backendService.database.select('universities', {
-      columns: 'status, emergency_contacts, total_students'
+    const { data: universities, error } = await backendService.database.select<University>('universities', {
+      columns: 'status, emergency_contacts, total_students',
     });
     if (error) throw error;
     const stats = {
       totalUniversities: universities?.length || 0,
-      activeUniversities: universities?.filter(u => u.status === 'active').length || 0,
-      inSetupUniversities: universities?.filter(u => u.status === 'planning' || u.status === 'launched').length || 0,
+      activeUniversities: universities?.filter((u) => u.status === 'active').length || 0,
+      inSetupUniversities: universities?.filter((u) => u.status === 'planning' || u.status === 'launched').length || 0,
       totalStudents: universities?.reduce((sum, u) => sum + (u.total_students || 0), 0) || 0,
-      totalEmergencyContacts: universities?.reduce((sum, u) => sum + (u.emergency_contacts?.length || 0), 0) || 0
+      totalEmergencyContacts: universities?.reduce((sum, u) => sum + (u.emergency_contacts?.length || 0), 0) || 0,
     };
     return stats;
   } catch (error) {
@@ -540,7 +556,7 @@ export async function getCMSStatistics() {
       activeUniversities: 0,
       inSetupUniversities: 0,
       totalStudents: 0,
-      totalEmergencyContacts: 0
+      totalEmergencyContacts: 0,
     };
   }
 }
@@ -565,10 +581,10 @@ export interface AuthorizedUser {
 export async function getAuthorizedUsers(universityId: string): Promise<AuthorizedUser[]> {
   const backendService = getBackendService();
   try {
-    const { data, error } = await backendService.database.select('university_authorized_users', {
+    const { data, error } = await backendService.database.select<AuthorizedUser>('university_authorized_users', {
       columns: '*',
       filters: { university_id: universityId },
-      orderBy: [{ column: 'created_at', ascending: false }]
+      orderBy: [{ column: 'created_at', ascending: false }],
     });
     if (error) {
       console.error('Error fetching authorized users:', error);
@@ -581,7 +597,9 @@ export async function getAuthorizedUsers(universityId: string): Promise<Authoriz
   }
 }
 // Add authorized user
-export async function addAuthorizedUser(user: Omit<AuthorizedUser, 'id' | 'created_at' | 'updated_at' | 'login_count' | 'last_login'>): Promise<AuthorizedUser | null> {
+export async function addAuthorizedUser(
+  user: Omit<AuthorizedUser, 'id' | 'created_at' | 'updated_at' | 'login_count' | 'last_login'>
+): Promise<AuthorizedUser | null> {
   const backendService = getBackendService();
   try {
     const { data, error } = await backendService.database.insert('university_authorized_users', user);
@@ -589,17 +607,21 @@ export async function addAuthorizedUser(user: Omit<AuthorizedUser, 'id' | 'creat
       console.error('Error adding authorized user:', error);
       return null;
     }
-    return data?.[0] || data;
+    return (Array.isArray(data) ? data[0] : data) as AuthorizedUser | null;
   } catch (error) {
     console.error('Error adding authorized user:', error);
     return null;
   }
 }
 // Update authorized user
-export async function updateAuthorizedUser(id: string, updates: Partial<AuthorizedUser>): Promise<AuthorizedUser | null> {
+export async function updateAuthorizedUser(
+  id: string,
+  updates: Partial<AuthorizedUser>
+): Promise<AuthorizedUser | null> {
   const backendService = getBackendService();
   try {
-    const { data, error } = await backendService.database.update('university_authorized_users', 
+    const { data, error } = await backendService.database.update(
+      'university_authorized_users',
       { ...updates, updated_at: new Date().toISOString() },
       { id }
     );
@@ -607,7 +629,7 @@ export async function updateAuthorizedUser(id: string, updates: Partial<Authoriz
       console.error('Error updating authorized user:', error);
       return null;
     }
-    return data?.[0] || data;
+    return (Array.isArray(data) ? data[0] : data) as AuthorizedUser | null;
   } catch (error) {
     console.error('Error updating authorized user:', error);
     return null;
@@ -640,7 +662,7 @@ export async function isUserAuthorized(email: string, universityId: string): Pro
     const { data, error } = await backendService.database.select('university_authorized_users', {
       columns: 'id',
       filters: { email, university_id: universityId, status: 'active' },
-      limit: 1
+      limit: 1,
     });
     if (error) {
       console.error('Error checking user authorization:', error);
@@ -656,7 +678,8 @@ export async function isUserAuthorized(email: string, universityId: string): Pro
 export async function updateUserLastLogin(email: string): Promise<void> {
   const backendService = getBackendService();
   try {
-    await backendService.database.update('university_authorized_users', 
+    await backendService.database.update(
+      'university_authorized_users',
       { last_login: new Date().toISOString(), login_count: 1 },
       { email }
     );

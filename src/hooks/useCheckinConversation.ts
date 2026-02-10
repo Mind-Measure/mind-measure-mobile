@@ -5,23 +5,29 @@ export interface CheckinConversation {
   messages: any[];
 }
 
-export function useCheckinConversation() {
+export function useCheckinConversation(onEnd?: () => void) {
   const [conversation, setConversation] = useState<CheckinConversation>({
     isActive: false,
-    messages: []
+    messages: [],
   });
 
   const startConversation = () => {
-    setConversation(prev => ({ ...prev, isActive: true }));
+    setConversation((prev) => ({ ...prev, isActive: true }));
   };
 
   const endConversation = () => {
-    setConversation(prev => ({ ...prev, isActive: false }));
+    setConversation((prev) => ({ ...prev, isActive: false }));
+  };
+
+  const endCheckin = () => {
+    setConversation((prev) => ({ ...prev, isActive: false }));
+    onEnd?.();
   };
 
   return {
     conversation,
     startConversation,
-    endConversation
+    endConversation,
+    endCheckin,
   };
 }

@@ -1,26 +1,27 @@
 /**
  * ServiceContext - React context for service management
- * 
+ *
  * Provides centralized service access throughout the React component tree
  * with automatic service lifecycle management and health monitoring.
  */
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { ServiceManager, ServiceConfig, ServiceHealth, getServiceManager } from '../services/ServiceManager';
-import { BackendService, BackendServiceFactory } from '../services/database/BackendServiceFactory';
+import { BackendServiceFactory } from '../services/database/BackendServiceFactory';
+import type { BackendService } from '../services/database/DatabaseService';
 
 interface ServiceContextValue {
   // Service access
   getService: (serviceId?: string) => Promise<BackendService>;
-  
+
   // Health monitoring
   serviceHealth: Record<string, ServiceHealth>;
   isHealthy: boolean;
-  
+
   // Service management
   refreshServices: () => Promise<void>;
   updateConfig: (config: Partial<ServiceConfig>) => void;
-  
+
   // Status
   isInitialized: boolean;
   error: string | null;
@@ -35,11 +36,11 @@ interface ServiceProviderProps {
   healthCheckInterval?: number;
 }
 
-export function ServiceProvider({ 
-  children, 
+export function ServiceProvider({
+  children,
   config,
   enableHealthMonitoring = true,
-  healthCheckInterval = 30000 
+  healthCheckInterval = 30000,
 }: ServiceProviderProps) {
   const [serviceManager, setServiceManager] = useState<ServiceManager | null>(null);
   const [serviceHealth, setServiceHealth] = useState<Record<string, ServiceHealth>>({});
@@ -50,16 +51,15 @@ export function ServiceProvider({
   useEffect(() => {
     const initializeServices = async () => {
       try {
-        
         // Get configuration from environment or props
         const serviceConfig: ServiceConfig = config || BackendServiceFactory.getEnvironmentConfig();
 
         const manager = getServiceManager(serviceConfig);
         setServiceManager(manager);
-        
+
         // Initialize default service to warm up the system
         await manager.getService('default');
-        
+
         setIsInitialized(true);
         setError(null);
       } catch (err) {
@@ -108,19 +108,19 @@ export function ServiceProvider({
       }
       return serviceManager.getService(serviceId);
     },
-    
+
     serviceHealth,
-    isHealthy: Object.values(serviceHealth).every(health => 
-      health.status === 'healthy' || health.status === 'unknown'
+    isHealthy: Object.values(serviceHealth).every(
+      (health) => health.status === 'healthy' || health.status === 'unknown'
     ),
-    
+
     refreshServices: async () => {
       if (!serviceManager) return;
-      
+
       try {
         // Force recreation of services by clearing cache
         serviceManager.cleanup();
-        
+
         // Reinitialize
         await serviceManager.getService('default');
       } catch (err) {
@@ -129,21 +129,17 @@ export function ServiceProvider({
         setError(errorMessage);
       }
     },
-    
+
     updateConfig: (newConfig: Partial<ServiceConfig>) => {
       if (!serviceManager) return;
       serviceManager.updateConfig(newConfig);
     },
-    
+
     isInitialized,
-    error
+    error,
   };
 
-  return (
-    <ServiceContext.Provider value={contextValue}>
-      {children}
-    </ServiceContext.Provider>
-  );
+  return <ServiceContext.Provider value={contextValue}>{children}</ServiceContext.Provider>;
 }
 
 /**
@@ -190,7 +186,7 @@ export function useService(serviceId?: string) {
   return {
     service,
     loading: loading || !isInitialized,
-    error: serviceError || error
+    error: serviceError || error,
   };
 }
 
@@ -199,11 +195,9 @@ export function useService(serviceId?: string) {
  */
 export function useServiceHealth(serviceId?: string) {
   const { serviceHealth, isHealthy } = useServices();
-  
+
   const specificHealth = serviceId ? serviceHealth[serviceId] : null;
-  const overallHealthy = serviceId ? 
-    specificHealth?.status === 'healthy' : 
-    isHealthy;
+  const overallHealthy = serviceId ? specificHealth?.status === 'healthy' : isHealthy;
 
   return {
     health: specificHealth,
@@ -211,6 +205,6 @@ export function useServiceHealth(serviceId?: string) {
     isHealthy: overallHealthy,
     lastCheck: specificHealth?.lastCheck,
     responseTime: specificHealth?.responseTime,
-    error: specificHealth?.error
+    error: specificHealth?.error,
   };
 }

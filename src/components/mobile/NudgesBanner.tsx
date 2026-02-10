@@ -1,14 +1,9 @@
-import React from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 interface NudgesBannerProps {
   score: number | null;
   onNotifyBuddies: () => void;
 }
-const DEFAULT_NUDGES = [
-  "Step outside for 10 minutes",
-  "Message a friend",
-  "Drink some water",
-];
+const DEFAULT_NUDGES = ['Step outside for 10 minutes', 'Message a friend', 'Drink some water'];
 export default function NudgesBanner({ score, onNotifyBuddies }: NudgesBannerProps) {
   if (score == null) return null;
   if (score < 35) {
@@ -18,14 +13,12 @@ export default function NudgesBanner({ score, onNotifyBuddies }: NudgesBannerPro
           <div className="w-3 h-3 rounded-full bg-destructive mt-0.5 animate-pulse" />
           <div>
             <h3 className="font-medium text-destructive mb-1">We're concerned about you</h3>
-            <p className="text-sm text-destructive/80">Your score suggests you might be struggling. Consider reaching out to your support network.</p>
+            <p className="text-sm text-destructive/80">
+              Your score suggests you might be struggling. Consider reaching out to your support network.
+            </p>
           </div>
         </div>
-        <Button
-          onClick={onNotifyBuddies}
-          variant="destructive"
-          className="w-full h-11 rounded-xl font-medium"
-        >
+        <Button onClick={onNotifyBuddies} variant="destructive" className="w-full h-11 rounded-xl font-medium">
           Alert Your Buddies
         </Button>
       </div>
@@ -38,7 +31,9 @@ export default function NudgesBanner({ score, onNotifyBuddies }: NudgesBannerPro
           <div className="w-3 h-3 rounded-full bg-primary mt-0.5" />
           <div>
             <h3 className="font-medium text-primary mb-1">Small steps can help</h3>
-            <p className="text-sm text-muted-foreground mb-3">Here are some gentle suggestions that might lift your mood:</p>
+            <p className="text-sm text-muted-foreground mb-3">
+              Here are some gentle suggestions that might lift your mood:
+            </p>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">

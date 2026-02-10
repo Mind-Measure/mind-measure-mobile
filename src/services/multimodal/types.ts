@@ -1,6 +1,6 @@
 /**
  * Multimodal Assessment - Shared Types
- * 
+ *
  * Type definitions shared across baseline and check-in multimodal assessments
  */
 
@@ -10,64 +10,64 @@
 
 export interface BaselineAudioFeatures {
   // Pitch features
-  meanPitch: number;           // Hz
-  pitchVariability: number;    // Standard deviation
-  
+  meanPitch: number; // Hz
+  pitchVariability: number; // Standard deviation
+
   // Speaking rate
-  speakingRate: number;        // Words per minute
-  
+  speakingRate: number; // Words per minute
+
   // Pause features
-  pauseFrequency: number;      // Pauses per minute
-  pauseDuration: number;       // Average pause duration (seconds)
-  
+  pauseFrequency: number; // Pauses per minute
+  pauseDuration: number; // Average pause duration (seconds)
+
   // Voice quality
-  voiceEnergy: number;         // Average amplitude (0-1)
-  jitter: number;              // Voice stability (0-1)
-  shimmer: number;             // Voice quality (0-1)
-  harmonicRatio: number;       // Harmonic-to-noise ratio (0-1)
-  
+  voiceEnergy: number; // Average amplitude (0-1)
+  jitter: number; // Voice stability (0-1)
+  shimmer: number; // Voice quality (0-1)
+  harmonicRatio: number; // Harmonic-to-noise ratio (0-1)
+
   // Quality metric
-  quality: number;             // Overall signal quality (0-1)
+  quality: number; // Overall signal quality (0-1)
 }
 
 export interface BaselineVisualFeatures {
   // Positive affect
-  smileFrequency: number;      // % of time smiling (0-1)
-  smileIntensity: number;      // Average smile intensity (0-1)
-  
+  smileFrequency: number; // % of time smiling (0-1)
+  smileIntensity: number; // Average smile intensity (0-1)
+
   // Engagement
-  eyeContact: number;          // % of time looking at camera (0-1)
-  
+  eyeContact: number; // % of time looking at camera (0-1)
+
   // Stress indicators
-  eyebrowPosition: number;     // Average eyebrow raise (0-1, higher = more raised)
-  facialTension: number;       // Jaw/forehead tension (0-1)
-  
+  eyebrowPosition: number; // Average eyebrow raise (0-1, higher = more raised)
+  facialTension: number; // Jaw/forehead tension (0-1)
+
   // Fatigue indicators
-  blinkRate: number;           // Blinks per minute
-  
+  blinkRate: number; // Blinks per minute
+
   // Movement
-  headMovement: number;        // Average head movement (0-1)
-  
+  headMovement: number; // Average head movement (0-1)
+
   // Overall affect
-  affect: number;              // -1 (negative) to +1 (positive)
-  
+  affect: number; // -1 (negative) to +1 (positive)
+
   // Quality metrics
   facePresenceQuality: number; // % of time face detected (0-1)
-  overallQuality: number;      // Overall video quality (0-1)
+  overallQuality: number; // Overall video quality (0-1)
 }
 
 export interface BaselineScoringBreakdown {
-  clinicalScore: number;       // 0-100 from PHQ-2/GAD-2/mood
-  clinicalWeight: number;      // 0.7
-  
-  audioScore: number;          // 0-100 from audio features
-  visualScore: number;         // 0-100 from visual features
-  multimodalScore: number;     // Average of audio and visual
-  multimodalWeight: number;    // 0.3
-  
-  finalScore: number;          // Weighted combination
-  
-  confidence: number;          // Overall confidence (0-1)
+  clinicalScore: number; // 0-100 from PHQ-2/GAD-2/mood
+  clinicalWeight: number; // 0.7
+
+  audioScore: number | null; // 0-100 from audio features (null if modality failed)
+  visualScore: number | null; // 0-100 from visual features (null if modality failed)
+  multimodalScore: number | null; // Average of audio and visual (null if both failed)
+  multimodalWeight: number; // 0.3
+
+  finalScore: number; // Weighted combination
+
+  confidence: number; // Overall confidence (0-1)
 }
 
 // ============================================================================
@@ -96,16 +96,16 @@ export interface CheckInTextFeatures {
 export interface MediaCaptureConfig {
   captureAudio: boolean;
   captureVideo: boolean;
-  videoFrameRate?: number;     // Frames per second (default: 1)
-  audioSampleRate?: number;    // Hz (default: 48000)
+  videoFrameRate?: number; // Frames per second (default: 1)
+  audioSampleRate?: number; // Hz (default: 48000)
 }
 
 export interface CapturedMedia {
   audio?: Blob;
-  videoFrames?: Blob[];        // Array of JPEG frames
-  duration: number;            // Seconds
-  startTime: number;           // Unix timestamp
-  endTime: number;             // Unix timestamp
+  videoFrames?: Blob[]; // Array of JPEG frames
+  duration: number; // Seconds
+  startTime: number; // Unix timestamp
+  endTime: number; // Unix timestamp
 }
 
 // ============================================================================
@@ -130,12 +130,3 @@ export enum MultimodalErrorCode {
   INSUFFICIENT_DATA = 'INSUFFICIENT_DATA',
   QUALITY_TOO_LOW = 'QUALITY_TOO_LOW',
 }
-
-
-
-
-
-
-
-
-

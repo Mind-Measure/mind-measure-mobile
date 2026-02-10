@@ -2,12 +2,15 @@
 // Vercel serverless function
 
 import { VercelRequest, VercelResponse } from '@vercel/node';
-// @ts-ignore - pg types not available in Vercel environment
+// @ts-expect-error - pg types not available in Vercel environment
 import { Client } from 'pg';
 
 // Aurora Serverless v2 configuration
 const dbConfig = {
-  host: process.env.AWS_AURORA_HOST || process.env.AWS_RDS_HOST || 'mindmeasure-aurora.cluster-cz8c8wq4k3ak.eu-west-2.rds.amazonaws.com',
+  host:
+    process.env.AWS_AURORA_HOST ||
+    process.env.AWS_RDS_HOST ||
+    'mindmeasure-aurora.cluster-cz8c8wq4k3ak.eu-west-2.rds.amazonaws.com',
   port: parseInt(process.env.AWS_AURORA_PORT || process.env.AWS_RDS_PORT || '5432'),
   database: process.env.AWS_AURORA_DATABASE || process.env.AWS_RDS_DATABASE || 'mindmeasure',
   user: process.env.AWS_AURORA_USERNAME || process.env.AWS_RDS_USERNAME || 'mindmeasure_admin',
@@ -47,9 +50,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         port: dbConfig.port,
         database: dbConfig.database,
         user: dbConfig.user,
-      }
+      },
     });
-
   } catch (error: any) {
     const connectionTime = Date.now() - startTime;
     console.error('Database connection failed:', error);
@@ -76,7 +78,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         syscall: error.syscall,
         address: error.address,
         port: error.port,
-      }
+      },
     });
   }
 }

@@ -26,6 +26,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     // Direct pg client connection (bypassing queryDatabase helper for now)
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { Client } = require('pg');
     const client = new Client({
       host: process.env.AWS_AURORA_HOST,
@@ -33,11 +34,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       database: process.env.AWS_AURORA_DATABASE,
       user: process.env.AWS_AURORA_USERNAME,
       password: process.env.AWS_AURORA_PASSWORD,
-      ssl: { rejectUnauthorized: false } // Vercel serverless doesn't have RDS CA bundle
+      ssl: { rejectUnauthorized: false }, // Vercel serverless doesn't have RDS CA bundle
     });
 
     await client.connect();
-    
+
     const result = await client.query(
       `SELECT id, user_id, final_score, created_at, analysis
        FROM fusion_outputs
@@ -45,20 +46,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
        ORDER BY created_at DESC`,
       [userId]
     );
-    
+
     await client.end();
 
     res.status(200).json({
       data: result.rows,
-      count: result.rows.length
+      count: result.rows.length,
     });
-
   } catch (error: any) {
     console.error(`[API] Assessment history fetch error for user ${userId}:`, error);
     res.status(500).json({
       error: 'Internal server error',
       code: 'ASSESSMENT_HISTORY_FETCH_ERROR',
-      details: error.message
+      details: error.message,
     });
   }
 }

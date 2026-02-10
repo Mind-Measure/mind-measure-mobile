@@ -62,29 +62,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (isExpired(inv.expires_at)) {
-      await client.query(
-        `UPDATE buddy_invites SET status = 'expired', updated_at = NOW() WHERE id = $1`,
-        [inv.id]
-      );
+      await client.query(`UPDATE buddy_invites SET status = 'expired', updated_at = NOW() WHERE id = $1`, [inv.id]);
       await client.end();
       return res.status(400).json({ error: 'Invite expired' });
     }
 
     if (action === 'decline') {
-      await client.query(
-        `UPDATE buddy_invites SET status = 'declined', updated_at = NOW() WHERE id = $1`,
-        [inv.id]
-      );
+      await client.query(`UPDATE buddy_invites SET status = 'declined', updated_at = NOW() WHERE id = $1`, [inv.id]);
       await client.end();
       return res.status(200).json({ ok: true, action: 'declined' });
     }
 
     // accept: create Buddy, mark invite accepted
     await client.query('BEGIN');
-    await client.query(
-      `UPDATE buddy_invites SET status = 'accepted', updated_at = NOW() WHERE id = $1`,
-      [inv.id]
-    );
+    await client.query(`UPDATE buddy_invites SET status = 'accepted', updated_at = NOW() WHERE id = $1`, [inv.id]);
     const maxOrder = await client.query(
       `SELECT COALESCE(MAX(preference_order), 0)::int AS m FROM buddies WHERE user_id = $1`,
       [inv.user_id]
@@ -104,7 +95,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
       await client.query('ROLLBACK');
       await client.end();
-    } catch (_) {}
+    } catch (_) {
+      /* intentionally empty */
+    }
     console.error('[buddies/respond]', e);
     return res.status(500).json({ error: 'Failed to respond', message: e?.message });
   }

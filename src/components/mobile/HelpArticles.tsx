@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Button } from "../ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { Badge } from "../ui/badge";
-import { Input } from "../ui/input";
+import { getImageUrl } from '@/utils/imageUrl';
+import { Button } from '../ui/button';
+import { Card, CardContent } from '../ui/card';
+import { Badge } from '../ui/badge';
+import { Input } from '../ui/input';
 import {
   FileText,
   Search,
-  Filter,
   Eye,
   Star,
   Clock,
@@ -19,10 +19,10 @@ import {
   DollarSign,
   Home,
   Briefcase,
-  Stethoscope
-} from "lucide-react";
-import { getHelpArticles } from "../../features/mobile/data";
-import { ContentArticle } from "../../features/cms/data";
+  Stethoscope,
+} from 'lucide-react';
+import { getHelpArticles } from '../../features/mobile/data';
+import { ContentArticle } from '../../features/cms/data';
 interface HelpArticlesProps {
   onArticleSelect?: (article: ContentArticle) => void;
   category?: string;
@@ -42,7 +42,7 @@ export function HelpArticles({ onArticleSelect, category, showFeaturedOnly }: He
     { slug: 'financial', name: 'Financial', icon: DollarSign, color: '#f59e0b' },
     { slug: 'housing', name: 'Housing', icon: Home, color: '#06b6d4' },
     { slug: 'career', name: 'Career', icon: Briefcase, color: '#84cc16' },
-    { slug: 'health', name: 'Health', icon: Stethoscope, color: '#f97316' }
+    { slug: 'health', name: 'Health', icon: Stethoscope, color: '#f97316' },
   ];
   useEffect(() => {
     loadArticles();
@@ -61,9 +61,10 @@ export function HelpArticles({ onArticleSelect, category, showFeaturedOnly }: He
       setLoading(false);
     }
   };
-  const filteredArticles = articles.filter(article =>
-    article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    article.excerpt?.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredArticles = articles.filter(
+    (article) =>
+      article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      article.excerpt?.toLowerCase().includes(searchQuery.toLowerCase())
   );
   const handleArticleClick = (article: ContentArticle) => {
     if (onArticleSelect) {
@@ -71,19 +72,19 @@ export function HelpArticles({ onArticleSelect, category, showFeaturedOnly }: He
     }
   };
   const getCategoryIcon = (categorySlug?: string) => {
-    const category = categories.find(cat => cat.slug === categorySlug);
+    const category = categories.find((cat) => cat.slug === categorySlug);
     if (!category) return FileText;
     return category.icon;
   };
   const getCategoryColor = (categorySlug?: string) => {
-    const category = categories.find(cat => cat.slug === categorySlug);
+    const category = categories.find((cat) => cat.slug === categorySlug);
     return category?.color || '#6b7280';
   };
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-GB', {
       day: 'numeric',
       month: 'short',
-      year: 'numeric'
+      year: 'numeric',
     });
   };
   return (
@@ -92,9 +93,7 @@ export function HelpArticles({ onArticleSelect, category, showFeaturedOnly }: He
       <div className="text-center">
         <FileText className="w-8 h-8 mx-auto mb-2 text-blue-600" />
         <h2 className="text-xl font-bold">Help & Support</h2>
-        <p className="text-sm text-muted-foreground">
-          Find answers and guidance for your university experience
-        </p>
+        <p className="text-sm text-muted-foreground">Find answers and guidance for your university experience</p>
       </div>
       {/* Search */}
       <div className="relative">
@@ -115,14 +114,10 @@ export function HelpArticles({ onArticleSelect, category, showFeaturedOnly }: He
             return (
               <Button
                 key={cat.slug}
-                variant={selectedCategory === cat.slug ? "default" : "outline"}
+                variant={selectedCategory === cat.slug ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setSelectedCategory(cat.slug)}
-                className={`flex-shrink-0 ${
-                  selectedCategory === cat.slug
-                    ? 'text-white'
-                    : 'text-gray-600'
-                }`}
+                className={`flex-shrink-0 ${selectedCategory === cat.slug ? 'text-white' : 'text-gray-600'}`}
                 style={selectedCategory === cat.slug ? { backgroundColor: cat.color } : {}}
               >
                 <IconComponent className="w-4 h-4 mr-2" />
@@ -148,10 +143,7 @@ export function HelpArticles({ onArticleSelect, category, showFeaturedOnly }: He
                 <FileText className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
                 <h3 className="text-lg font-semibold mb-2">No articles found</h3>
                 <p className="text-muted-foreground">
-                  {searchQuery
-                    ? 'Try adjusting your search terms'
-                    : 'No articles available in this category'
-                  }
+                  {searchQuery ? 'Try adjusting your search terms' : 'No articles available in this category'}
                 </p>
               </CardContent>
             </Card>
@@ -170,8 +162,9 @@ export function HelpArticles({ onArticleSelect, category, showFeaturedOnly }: He
                       {/* Featured Image or Icon */}
                       {article.featured_image ? (
                         <img
-                          src={article.featured_image}
+                          src={getImageUrl(article.featured_image, 'thumbnail')}
                           alt={article.title}
+                          loading="lazy"
                           className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
                         />
                       ) : (
@@ -179,18 +172,13 @@ export function HelpArticles({ onArticleSelect, category, showFeaturedOnly }: He
                           className="w-16 h-16 rounded-lg flex items-center justify-center flex-shrink-0"
                           style={{ backgroundColor: categoryColor + '20' }}
                         >
-                          <IconComponent
-                            className="w-8 h-8"
-                            style={{ color: categoryColor }}
-                          />
+                          <IconComponent className="w-8 h-8" style={{ color: categoryColor }} />
                         </div>
                       )}
                       {/* Content */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between mb-2">
-                          <h3 className="font-semibold text-sm leading-tight pr-2">
-                            {article.title}
-                          </h3>
+                          <h3 className="font-semibold text-sm leading-tight pr-2">{article.title}</h3>
                           <ArrowRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                         </div>
                         {/* Badges */}
@@ -206,7 +194,7 @@ export function HelpArticles({ onArticleSelect, category, showFeaturedOnly }: He
                               className="text-xs"
                               style={{
                                 backgroundColor: categoryColor + '20',
-                                color: categoryColor
+                                color: categoryColor,
                               }}
                             >
                               {article.category.name}
@@ -215,9 +203,7 @@ export function HelpArticles({ onArticleSelect, category, showFeaturedOnly }: He
                         </div>
                         {/* Excerpt */}
                         {article.excerpt && (
-                          <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
-                            {article.excerpt}
-                          </p>
+                          <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{article.excerpt}</p>
                         )}
                         {/* Meta */}
                         <div className="flex items-center space-x-4 text-xs text-muted-foreground">

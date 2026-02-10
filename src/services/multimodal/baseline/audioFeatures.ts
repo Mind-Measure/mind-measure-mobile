@@ -1,6 +1,6 @@
 /**
  * Audio Feature Extraction - Baseline
- * 
+ *
  * Extracts 10 core audio features for baseline reference:
  * - Pitch (mean, variability)
  * - Speaking rate
@@ -14,7 +14,7 @@ import { MultimodalError, MultimodalErrorCode } from '../types';
 export class BaselineAudioExtractor {
   /**
    * Maximum duration of audio to process (in seconds)
-   * 
+   *
    * Rationale:
    * - Voice patterns are consistent across a conversation
    * - Processing full 2+ minute conversations is computationally expensive
@@ -22,19 +22,14 @@ export class BaselineAudioExtractor {
    * - Similar to video frame capping - we don't need every millisecond
    */
   private static readonly MAX_AUDIO_DURATION_SECONDS = 30; // Reduced from 60s to 30s for faster processing
-  
+
   /**
    * Extract audio features from captured media
    */
   async extract(media: CapturedMedia): Promise<BaselineAudioFeatures> {
     if (!media.audio) {
-      throw new MultimodalError(
-        'No audio data available',
-        MultimodalErrorCode.INSUFFICIENT_DATA,
-        false
-      );
+      throw new MultimodalError('No audio data available', MultimodalErrorCode.INSUFFICIENT_DATA, false);
     }
-
 
     try {
       // Decode audio blob to AudioBuffer
@@ -47,7 +42,6 @@ export class BaselineAudioExtractor {
       const sampleRate = audioBuffer.sampleRate;
       const fullDuration = audioBuffer.duration;
 
-
       // Sample audio chunks if duration exceeds max
       const channelData = this.sampleAudioChunks(
         fullChannelData,
@@ -56,10 +50,8 @@ export class BaselineAudioExtractor {
         BaselineAudioExtractor.MAX_AUDIO_DURATION_SECONDS
       );
       const duration = channelData.length / sampleRate;
-      
 
-      // Extract features with timing
-      const extractionStartTime = Date.now();
+      // Extract features
       const features: BaselineAudioFeatures = {
         meanPitch: await this.extractMeanPitch(channelData, sampleRate),
         pitchVariability: await this.extractPitchVariability(channelData, sampleRate),
@@ -67,17 +59,14 @@ export class BaselineAudioExtractor {
         pauseFrequency: this.extractPauseFrequency(channelData, sampleRate, duration),
         pauseDuration: this.extractPauseDuration(channelData, sampleRate),
         voiceEnergy: this.extractVoiceEnergy(channelData),
-        jitter: this.extractJitter(channelData, sampleRate),
+        jitter: await this.extractJitter(channelData, sampleRate),
         shimmer: this.extractShimmer(channelData),
         harmonicRatio: this.extractHarmonicRatio(channelData, sampleRate),
-        quality: this.assessQuality(channelData, duration)
+        quality: this.assessQuality(channelData, duration),
       };
-      const extractionTime = Date.now() - extractionStartTime;
-
       await audioContext.close();
 
       return features;
-
     } catch (error) {
       console.error('[AudioExtractor] ❌ Feature extraction failed:', error);
       throw new MultimodalError(
@@ -98,12 +87,12 @@ export class BaselineAudioExtractor {
     const downsampleRatio = sampleRate / targetSampleRate;
     const downsampledLength = Math.floor(data.length / downsampleRatio);
     const downsampled = new Float32Array(downsampledLength);
-    
+
     for (let i = 0; i < downsampledLength; i++) {
       const srcIndex = Math.floor(i * downsampleRatio);
       downsampled[i] = data[srcIndex];
     }
-    
+
     const effectiveSampleRate = targetSampleRate;
     const pitches: number[] = [];
     const frameSize = Math.floor(effectiveSampleRate * 0.04); // 40ms frames (was 30ms)
@@ -113,17 +102,15 @@ export class BaselineAudioExtractor {
     for (let i = 0; i < downsampled.length - frameSize; i += hopSize * 3) {
       const frame = downsampled.slice(i, i + frameSize);
       const pitch = this.estimatePitchAutocorrelation(frame, effectiveSampleRate);
-      
+
       // Filter out unrealistic pitches (human voice typically 85-300 Hz)
       if (pitch >= 85 && pitch <= 300) {
         pitches.push(pitch);
       }
     }
 
-    const validPitches = pitches.filter(p => p > 0);
-    return validPitches.length > 0 
-      ? validPitches.reduce((a, b) => a + b, 0) / validPitches.length 
-      : 150; // Default if no valid pitch detected
+    const validPitches = pitches.filter((p) => p > 0);
+    return validPitches.length > 0 ? validPitches.reduce((a, b) => a + b, 0) / validPitches.length : 150; // Default if no valid pitch detected
   }
 
   /**
@@ -131,8 +118,8 @@ export class BaselineAudioExtractor {
    */
   private estimatePitchAutocorrelation(frame: Float32Array, sampleRate: number): number {
     const minLag = Math.floor(sampleRate / 300); // Max 300 Hz
-    const maxLag = Math.floor(sampleRate / 85);  // Min 85 Hz
-    
+    const maxLag = Math.floor(sampleRate / 85); // Min 85 Hz
+
     let maxCorrelation = -1;
     let bestLag = 0;
 
@@ -141,7 +128,7 @@ export class BaselineAudioExtractor {
       for (let i = 0; i < frame.length - lag; i++) {
         correlation += frame[i] * frame[i + lag];
       }
-      
+
       if (correlation > maxCorrelation) {
         maxCorrelation = correlation;
         bestLag = lag;
@@ -161,12 +148,12 @@ export class BaselineAudioExtractor {
     const downsampleRatio = sampleRate / targetSampleRate;
     const downsampledLength = Math.floor(data.length / downsampleRatio);
     const downsampled = new Float32Array(downsampledLength);
-    
+
     for (let i = 0; i < downsampledLength; i++) {
       const srcIndex = Math.floor(i * downsampleRatio);
       downsampled[i] = data[srcIndex];
     }
-    
+
     const effectiveSampleRate = targetSampleRate;
     const pitches: number[] = [];
     const frameSize = Math.floor(effectiveSampleRate * 0.04);
@@ -202,7 +189,7 @@ export class BaselineAudioExtractor {
     for (let i = 0; i < data.length - frameSize; i += hopSize) {
       const frame = data.slice(i, i + frameSize);
       const energy = this.calculateEnergy(frame);
-      
+
       if (energy > energyThreshold) {
         voiceFrames++;
       }
@@ -223,7 +210,7 @@ export class BaselineAudioExtractor {
     const frameSize = Math.floor(sampleRate * 0.02);
     const hopSize = frameSize / 2;
     const energyThreshold = this.calculateEnergyThreshold(data);
-    
+
     let pauseCount = 0;
     let inPause = false;
     let pauseFrames = 0;
@@ -232,7 +219,7 @@ export class BaselineAudioExtractor {
     for (let i = 0; i < data.length - frameSize; i += hopSize) {
       const frame = data.slice(i, i + frameSize);
       const energy = this.calculateEnergy(frame);
-      
+
       if (energy < energyThreshold) {
         pauseFrames++;
         if (!inPause && pauseFrames >= minPauseFrames) {
@@ -255,28 +242,27 @@ export class BaselineAudioExtractor {
     const frameSize = Math.floor(sampleRate * 0.02);
     const hopSize = frameSize / 2;
     const energyThreshold = this.calculateEnergyThreshold(data);
-    
+
     const pauseDurations: number[] = [];
     let pauseFrames = 0;
 
     for (let i = 0; i < data.length - frameSize; i += hopSize) {
       const frame = data.slice(i, i + frameSize);
       const energy = this.calculateEnergy(frame);
-      
+
       if (energy < energyThreshold) {
         pauseFrames++;
       } else if (pauseFrames > 0) {
         const pauseDuration = (pauseFrames * hopSize) / sampleRate;
-        if (pauseDuration >= 0.2) { // Min 200ms
+        if (pauseDuration >= 0.2) {
+          // Min 200ms
           pauseDurations.push(pauseDuration);
         }
         pauseFrames = 0;
       }
     }
 
-    return pauseDurations.length > 0
-      ? pauseDurations.reduce((a, b) => a + b, 0) / pauseDurations.length
-      : 0.5; // Default 500ms
+    return pauseDurations.length > 0 ? pauseDurations.reduce((a, b) => a + b, 0) / pauseDurations.length : 0.5; // Default 500ms
   }
 
   /**
@@ -291,10 +277,10 @@ export class BaselineAudioExtractor {
    * Extract jitter (voice stability)
    * Simplified: pitch period variability
    */
-  private extractJitter(data: Float32Array, sampleRate: number): number {
+  private async extractJitter(data: Float32Array, sampleRate: number): Promise<number> {
     // Simplified jitter: we use pitch variability as a proxy
     // Real jitter requires cycle-to-cycle period analysis
-    const pitchVar = this.extractPitchVariability(data, sampleRate);
+    const pitchVar = await this.extractPitchVariability(data, sampleRate);
     // Normalize to 0-1 (higher = more unstable)
     return Math.min(1, pitchVar / 50);
   }
@@ -317,7 +303,7 @@ export class BaselineAudioExtractor {
 
     const mean = amplitudes.reduce((a, b) => a + b, 0) / amplitudes.length;
     const variance = amplitudes.reduce((sum, a) => sum + Math.pow(a - mean, 2), 0) / amplitudes.length;
-    
+
     // Normalize to 0-1
     return Math.min(1, Math.sqrt(variance) * 10);
   }
@@ -326,7 +312,7 @@ export class BaselineAudioExtractor {
    * Extract harmonic-to-noise ratio (voice clarity)
    * Simplified approach
    */
-  private extractHarmonicRatio(data: Float32Array, sampleRate: number): number {
+  private extractHarmonicRatio(data: Float32Array, _sampleRate: number): number {
     // Simplified HNR: ratio of periodic to aperiodic energy
     // Real HNR requires autocorrelation analysis
     const frameSize = 2048;
@@ -337,7 +323,7 @@ export class BaselineAudioExtractor {
       const frame = data.slice(i, i + frameSize);
       const energy = this.calculateEnergy(frame);
       totalEnergy += energy;
-      
+
       // Detect periodicity through autocorrelation peak
       const maxCorr = this.getMaxAutocorrelation(frame);
       periodicEnergy += energy * maxCorr;
@@ -383,12 +369,12 @@ export class BaselineAudioExtractor {
   private calculateEnergyThreshold(data: Float32Array): number {
     const energies: number[] = [];
     const frameSize = 512;
-    
+
     for (let i = 0; i < data.length - frameSize; i += frameSize) {
       const frame = data.slice(i, i + frameSize);
       energies.push(this.calculateEnergy(frame));
     }
-    
+
     energies.sort((a, b) => a - b);
     // Threshold at 25th percentile
     return energies[Math.floor(energies.length * 0.25)] || 0.001;
@@ -412,22 +398,22 @@ export class BaselineAudioExtractor {
   private calculateClippingRatio(data: Float32Array): number {
     let clipped = 0;
     const threshold = 0.95;
-    
+
     for (let i = 0; i < data.length; i++) {
       if (Math.abs(data[i]) > threshold) {
         clipped++;
       }
     }
-    
+
     return clipped / data.length;
   }
 
   /**
    * Sample audio chunks evenly across the conversation
-   * 
+   *
    * If audio is longer than max duration, samples evenly distributed chunks
    * to get representative voice patterns without processing the entire file.
-   * 
+   *
    * @param fullChannelData - Complete audio channel data
    * @param sampleRate - Audio sample rate
    * @param fullDuration - Full audio duration in seconds
@@ -443,36 +429,35 @@ export class BaselineAudioExtractor {
     if (fullDuration <= maxDurationSeconds) {
       return fullChannelData; // Use all audio if under limit
     }
-    
+
     // Calculate chunk size and spacing
     const chunkDuration = 2; // 2-second chunks
     const numChunks = Math.floor(maxDurationSeconds / chunkDuration);
     const chunkSamples = Math.floor(chunkDuration * sampleRate);
     const totalSamples = fullChannelData.length;
     const step = totalSamples / numChunks;
-    
+
     // Sample evenly distributed chunks
     const sampledSamples: number[] = [];
-    
+
     for (let i = 0; i < numChunks; i++) {
       const startIndex = Math.floor(i * step);
       const endIndex = Math.min(startIndex + chunkSamples, totalSamples);
       const chunk = fullChannelData.slice(startIndex, endIndex);
       sampledSamples.push(...Array.from(chunk));
     }
-    
+
     // Always include first and last 2 seconds for context
     const firstChunk = fullChannelData.slice(0, chunkSamples);
     const lastChunk = fullChannelData.slice(totalSamples - chunkSamples, totalSamples);
-    
+
     // Combine: first chunk + sampled chunks + last chunk (avoid duplicates)
     const result = new Float32Array([
       ...Array.from(firstChunk),
       ...sampledSamples.slice(chunkSamples), // Skip first chunk if already included
-      ...Array.from(lastChunk)
+      ...Array.from(lastChunk),
     ]);
-    
+
     return result;
   }
 }
-

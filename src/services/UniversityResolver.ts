@@ -1,12 +1,12 @@
 /**
  * University Resolver Service
- * 
+ *
  * Centralized service for resolving university from email domain.
  * Used by:
  * - Baseline profile creation
  * - Registration flows
  * - Admin user assignment
- * 
+ *
  * Benefits:
  * - Single source of truth for domain → university mapping
  * - Dynamic: reads from universities.domains in database
@@ -20,8 +20,6 @@ export class UniversityResolver {
   private static instance: UniversityResolver;
   private cache: Map<string, string> = new Map(); // domain → university_id
   private cacheExpiry: number = 0;
-  private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-
   private constructor() {}
 
   static getInstance(): UniversityResolver {
@@ -48,7 +46,6 @@ export class UniversityResolver {
       return null;
     }
 
-
     // Check cache first
     if (this.isCacheValid() && this.cache.has(domain)) {
       const universityId = this.cache.get(domain)!;
@@ -57,19 +54,14 @@ export class UniversityResolver {
 
     // Cache miss or expired - query database
     try {
-      const backendService = BackendServiceFactory.createService(
-        BackendServiceFactory.getEnvironmentConfig()
-      );
+      const backendService = BackendServiceFactory.createService(BackendServiceFactory.getEnvironmentConfig());
 
       // Query universities - NOTE: 'domains' column may not exist yet
-      
-      const { data: universities, error } = await backendService.database.select(
-        'universities',
-        {
-          columns: ['id', 'name'],
-          filters: {}, // Get all universities
-        }
-      );
+
+      const { data: universities, error } = await backendService.database.select('universities', {
+        columns: ['id', 'name'],
+        filters: {}, // Get all universities
+      });
 
       if (error) {
         console.warn('[UniversityResolver] DB lookup failed, using default:', error);
@@ -81,12 +73,10 @@ export class UniversityResolver {
         return null;
       }
 
-      
       // For now, we don't have a domains column, so we can't do dynamic mapping
       // Just return null and let the caller use the default
       console.warn('[UniversityResolver] Domain mapping not yet implemented, using default university');
       return null;
-
     } catch (error) {
       console.warn('[UniversityResolver] Error resolving university, using default:', error);
       return null;
@@ -134,12 +124,11 @@ export class UniversityResolver {
 export async function resolveUniversityFromEmail(email: string): Promise<string> {
   const resolver = UniversityResolver.getInstance();
   const universityId = await resolver.resolveFromEmail(email);
-  
+
   if (!universityId) {
     console.warn('[UniversityResolver] No match found, using default university');
     return resolver.getDefaultUniversity();
   }
-  
+
   return universityId;
 }
-

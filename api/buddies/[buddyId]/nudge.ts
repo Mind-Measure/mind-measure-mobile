@@ -42,17 +42,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(404).json({ error: 'Buddy not found' });
     }
 
-    const b = row.rows[0] as { id: string; name: string; email: string; status: string; last_nudged_at: string | null; opt_out_slug: string | null };
+    const b = row.rows[0] as {
+      id: string;
+      name: string;
+      email: string;
+      status: string;
+      last_nudged_at: string | null;
+      opt_out_slug: string | null;
+    };
     if (b.status !== 'active') {
       await client.end();
       return res.status(400).json({ error: 'Buddy is not active' });
     }
 
     // Fetch inviter's full name for the email
-    const inviterRow = await client.query(
-      `SELECT first_name, last_name FROM profiles WHERE user_id = $1`,
-      [userId]
-    );
+    const inviterRow = await client.query(`SELECT first_name, last_name FROM profiles WHERE user_id = $1`, [userId]);
     const inviterData = inviterRow.rows[0] as { first_name?: string; last_name?: string } | undefined;
     const firstName = inviterData?.first_name || '';
     const lastName = inviterData?.last_name || '';
@@ -69,10 +73,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    await client.query(
-      `UPDATE buddies SET last_nudged_at = NOW(), updated_at = NOW() WHERE id = $1 AND user_id = $2`,
-      [buddyId, userId]
-    );
+    await client.query(`UPDATE buddies SET last_nudged_at = NOW(), updated_at = NOW() WHERE id = $1 AND user_id = $2`, [
+      buddyId,
+      userId,
+    ]);
 
     const outUrl = b.opt_out_slug ? optOutUrl(b.opt_out_slug) : '';
     try {
@@ -94,7 +98,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     await client.end();
     return res.status(200).json({ ok: true });
   } catch (e: any) {
-    try { await client.end(); } catch (_) {}
+    try {
+      await client.end();
+    } catch (_) {
+      /* intentionally empty */
+    }
     console.error('[buddies/nudge]', e);
     return res.status(500).json({ error: 'Failed to nudge', message: e?.message });
   }

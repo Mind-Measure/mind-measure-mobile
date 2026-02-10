@@ -1,6 +1,6 @@
 // Role-Based Access Control (RBAC) Service
 // Medical-grade security implementation for enterprise access control
-import { DatabaseService, QueryResult } from '../database/DatabaseService';
+import { DatabaseService } from '../database/DatabaseService';
 import { createAuditLogger, AuditLogger } from './AuditLogger';
 export interface Role {
   id: string;
@@ -67,25 +67,22 @@ export class RBACService {
     try {
       const result = await this.databaseService.insert<Role>('roles', {
         name: roleData.name,
-        display_name: roleData.displayName,
+        displayName: roleData.displayName,
         description: roleData.description,
         level: roleData.level,
-        is_system_role: roleData.isSystemRole,
-      });
+        isSystemRole: roleData.isSystemRole,
+      } as Partial<Role>);
       if (result.error) {
         return { success: false, error: result.error };
       }
-      const role = result.data?.[0];
+      const role = Array.isArray(result.data) ? result.data[0] : result.data;
       if (role) {
-        await this.auditLogger.logAdminAction(
-          'ROLE_CREATE',
-          createdBy,
-          createdBy,
-          role.id,
-          { roleName: roleData.name, roleLevel: roleData.level }
-        );
+        await this.auditLogger.logAdminAction('ROLE_CREATE', createdBy, createdBy, role.id, {
+          roleName: roleData.name,
+          roleLevel: roleData.level,
+        });
       }
-      return { success: true, role };
+      return { success: true, role: role ?? undefined };
     } catch (error: any) {
       return { success: false, error: error.message };
     }
@@ -117,7 +114,10 @@ export class RBACService {
   async getPermissions(): Promise<Permission[]> {
     try {
       const result = await this.databaseService.select<Permission>('permissions', {
-        orderBy: [{ column: 'resource', ascending: true }, { column: 'action', ascending: true }],
+        orderBy: [
+          { column: 'resource', ascending: true },
+          { column: 'action', ascending: true },
+        ],
       });
       return result.data || [];
     } catch (error) {
@@ -129,10 +129,11 @@ export class RBACService {
     try {
       // This would need a custom query or view in a real implementation
       // For now, we'll use a simplified approach
-      const result = await this.databaseService.rpc<Permission>(
-        'get_role_permissions',
-        { role_id: roleId }
-      );
+      const result = await (
+        this.databaseService as DatabaseService & {
+          rpc: <T>(fn: string, params: Record<string, unknown>) => Promise<{ data: T[] | null; error: string | null }>;
+        }
+      ).rpc<Permission>('get_role_permissions', { role_id: roleId });
       return result.data || [];
     } catch (error) {
       console.error('Failed to get role permissions:', error);
@@ -153,13 +154,10 @@ export class RBACService {
       if (result.error) {
         return { success: false, error: result.error };
       }
-      await this.auditLogger.logAdminAction(
-        'PERMISSION_GRANT',
-        grantedBy,
-        grantedBy,
-        roleId,
-        { permissionId, action: 'grant' }
-      );
+      await this.auditLogger.logAdminAction('PERMISSION_GRANT', grantedBy, grantedBy, roleId, {
+        permissionId,
+        action: 'grant',
+      });
       return { success: true };
     } catch (error: any) {
       return { success: false, error: error.message };
@@ -183,13 +181,10 @@ export class RBACService {
       if (result.error) {
         return { success: false, error: result.error };
       }
-      await this.auditLogger.logAdminAction(
-        'ROLE_ASSIGN',
-        assignedBy,
-        assignedBy,
-        userId,
-        { roleId, expiresAt: expiresAt?.toISOString() }
-      );
+      await this.auditLogger.logAdminAction('ROLE_ASSIGN', assignedBy, assignedBy, userId, {
+        roleId,
+        expiresAt: expiresAt?.toISOString(),
+      });
       return { success: true };
     } catch (error: any) {
       return { success: false, error: error.message };
@@ -222,13 +217,7 @@ export class RBACService {
       if (result.error) {
         return { success: false, error: result.error };
       }
-      await this.auditLogger.logAdminAction(
-        'ROLE_ASSIGN',
-        removedBy,
-        removedBy,
-        userId,
-        { roleId, action: 'remove' }
-      );
+      await this.auditLogger.logAdminAction('ROLE_ASSIGN', removedBy, removedBy, userId, { roleId, action: 'remove' });
       return { success: true };
     } catch (error: any) {
       return { success: false, error: error.message };
@@ -266,20 +255,14 @@ export class RBACService {
         roleNames.push(role.name);
         // Check if role has required permission
         const permissions = await this.getRolePermissions(userRole.roleId);
-        const hasPermission = permissions.some(
-          (p) => p.resource === resource && p.action === action
-        );
+        const hasPermission = permissions.some((p) => p.resource === resource && p.action === action);
         if (hasPermission) {
           matchedPermissions.push(`${resource}:${action}`);
         }
       }
       // Check resource-specific policies
       if (resourceId) {
-        const resourcePolicies = await this.getResourcePolicies(
-          resource,
-          resourceId,
-          userId
-        );
+        const resourcePolicies = await this.getResourcePolicies(resource, resourceId, userId);
         for (const policy of resourcePolicies) {
           if (policy.permissions.includes(action)) {
             // Check conditions (IP, time, etc.)
@@ -307,9 +290,7 @@ export class RBACService {
       });
       return {
         allowed,
-        reason: allowed
-          ? 'Access granted based on role permissions'
-          : 'No matching permissions found',
+        reason: allowed ? 'Access granted based on role permissions' : 'No matching permissions found',
         matchedPermissions,
         userRoles: roleNames,
       };
@@ -329,43 +310,33 @@ export class RBACService {
   ): Promise<{ success: boolean; policy?: ResourcePolicy; error?: string }> {
     try {
       const result = await this.databaseService.insert<ResourcePolicy>('resource_policies', {
-        resource_type: policyData.resourceType,
-        resource_id: policyData.resourceId,
-        user_id: policyData.userId,
-        role_id: policyData.roleId,
+        resourceType: policyData.resourceType,
+        resourceId: policyData.resourceId,
+        userId: policyData.userId,
+        roleId: policyData.roleId,
         permissions: policyData.permissions,
-        conditions: policyData.conditions ? JSON.stringify(policyData.conditions) : null,
-        created_by: createdBy,
-        expires_at: policyData.expiresAt,
-        is_active: policyData.isActive,
-      });
+        conditions: policyData.conditions,
+        createdBy: createdBy,
+        expiresAt: policyData.expiresAt,
+        isActive: policyData.isActive,
+      } as Partial<ResourcePolicy>);
       if (result.error) {
         return { success: false, error: result.error };
       }
-      const policy = result.data?.[0];
+      const policy = Array.isArray(result.data) ? result.data[0] : result.data;
       if (policy) {
-        await this.auditLogger.logAdminAction(
-          'PERMISSION_GRANT',
-          createdBy,
-          createdBy,
-          policy.id,
-          {
-            resourceType: policyData.resourceType,
-            resourceId: policyData.resourceId,
-            permissions: policyData.permissions,
-          }
-        );
+        await this.auditLogger.logAdminAction('PERMISSION_GRANT', createdBy, createdBy, policy.id, {
+          resourceType: policyData.resourceType,
+          resourceId: policyData.resourceId,
+          permissions: policyData.permissions,
+        });
       }
-      return { success: true, policy };
+      return { success: true, policy: policy ?? undefined };
     } catch (error: any) {
       return { success: false, error: error.message };
     }
   }
-  async getResourcePolicies(
-    resourceType: string,
-    resourceId: string,
-    userId?: string
-  ): Promise<ResourcePolicy[]> {
+  async getResourcePolicies(resourceType: string, resourceId: string, userId?: string): Promise<ResourcePolicy[]> {
     try {
       const filters: Record<string, any> = {
         resource_type: resourceType,
@@ -386,16 +357,11 @@ export class RBACService {
     }
   }
   // ===== UTILITY METHODS =====
-  private evaluatePolicyConditions(
-    conditions?: Record<string, any>,
-    context?: Record<string, any>
-  ): boolean {
+  private evaluatePolicyConditions(conditions?: Record<string, any>, context?: Record<string, any>): boolean {
     if (!conditions || !context) return true;
     // IP address restrictions
     if (conditions.allowedIPs && context.ipAddress) {
-      const allowedIPs = Array.isArray(conditions.allowedIPs)
-        ? conditions.allowedIPs
-        : [conditions.allowedIPs];
+      const allowedIPs = Array.isArray(conditions.allowedIPs) ? conditions.allowedIPs : [conditions.allowedIPs];
       if (!allowedIPs.includes(context.ipAddress)) {
         return false;
       }
@@ -404,10 +370,7 @@ export class RBACService {
     if (conditions.allowedHours) {
       const currentHour = new Date().getHours();
       const allowedHours = conditions.allowedHours;
-      if (
-        currentHour < allowedHours.start ||
-        currentHour > allowedHours.end
-      ) {
+      if (currentHour < allowedHours.start || currentHour > allowedHours.end) {
         return false;
       }
     }
@@ -433,8 +396,7 @@ export class RBACService {
       }
       // Remove duplicates
       const uniquePermissions = allPermissions.filter(
-        (permission, index, self) =>
-          index === self.findIndex((p) => p.id === permission.id)
+        (permission, index, self) => index === self.findIndex((p) => p.id === permission.id)
       );
       return uniquePermissions;
     } catch (error) {
@@ -442,20 +404,11 @@ export class RBACService {
       return [];
     }
   }
-  async hasPermission(
-    userId: string,
-    resource: string,
-    action: string
-  ): Promise<boolean> {
+  async hasPermission(userId: string, resource: string, action: string): Promise<boolean> {
     const accessResult = await this.checkAccess(userId, resource, action);
     return accessResult.allowed;
   }
-  async requirePermission(
-    userId: string,
-    resource: string,
-    action: string,
-    resourceId?: string
-  ): Promise<void> {
+  async requirePermission(userId: string, resource: string, action: string, resourceId?: string): Promise<void> {
     const accessResult = await this.checkAccess(userId, resource, action, resourceId);
     if (!accessResult.allowed) {
       throw new Error(`Access denied: ${accessResult.reason}`);

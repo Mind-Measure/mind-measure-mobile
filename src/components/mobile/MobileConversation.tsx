@@ -1,13 +1,66 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Play, Eye, Mic, MessageCircle, Shield, Heart, Brain, ArrowLeft, Volume2, VolumeX } from 'lucide-react';
+import { Play, Eye, Mic, MessageCircle, Shield, Volume2, VolumeX } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { BackendServiceFactory } from '@/services/database/BackendServiceFactory';
 import { useCheckinConversation } from '@/hooks/useCheckinConversation';
 import { useSession } from '@/components/SessionManager';
 import { useCostTracking } from '@/hooks/useCostTracking';
-import { StillImageCapture, StillImageCaptureRef } from '@/components/StillImageCapture';
+import { StillImageCapture } from '@/components/StillImageCapture';
+import type { StillImageCaptureRef } from '@/components/StillImageCapture';
+import type { VisualCaptureData, ConversationMessage, SessionTextData } from '@/types/assessment';
+import type { ElevenLabsWidgetElement } from '@/types/elevenlabs';
+
+// Declare the ElevenLabs custom element for JSX
+declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
+  namespace JSX {
+    interface IntrinsicElements {
+      'elevenlabs-convai': React.DetailedHTMLProps<
+        React.HTMLAttributes<HTMLElement> & {
+          'agent-id'?: string;
+          'auto-start'?: string;
+          'conversation-mode'?: string;
+          language?: string;
+        },
+        HTMLElement
+      >;
+    }
+  }
+}
+
+declare module 'react' {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
+  namespace JSX {
+    interface IntrinsicElements {
+      'elevenlabs-convai': React.DetailedHTMLProps<
+        React.HTMLAttributes<HTMLElement> & {
+          'agent-id'?: string;
+          'auto-start'?: string;
+          'conversation-mode'?: string;
+          language?: string;
+        },
+        HTMLElement
+      >;
+    }
+  }
+}
+
+/** Shape of the user context loaded for personalised conversations. */
+interface UserContextData {
+  user: {
+    name: string;
+    fullName: string;
+    university?: string;
+    course?: string;
+    yearOfStudy?: string;
+  };
+  assessmentHistory: Array<{ created_at: string; [key: string]: unknown }>;
+  wellnessTrends: Array<{ score: number; created_at: string }>;
+  isFirstTime: boolean;
+  platform: string;
+}
 /** When false (default), skip assessment_sessions writes in widget path to avoid schema coupling. */
 const ENABLE_ASSESSMENT_SESSIONS_WIDGET = import.meta.env.VITE_ENABLE_ASSESSMENT_SESSIONS_WIDGET === 'true';
 
@@ -15,18 +68,22 @@ interface MobileConversationProps {
   onNavigateBack: () => void;
   assessmentMode?: 'baseline' | 'checkin';
 }
-export const MobileConversation: React.FC<MobileConversationProps> = ({ onNavigateBack, assessmentMode = 'checkin' }) => {
+export const MobileConversation: React.FC<MobileConversationProps> = ({
+  onNavigateBack,
+  assessmentMode = 'checkin',
+}) => {
   const { user } = useAuth();
   const { currentSession, createSession, updateSessionData } = useSession();
   const { endCheckin } = useCheckinConversation(() => handleConversationEnd());
-  const { trackElevenLabsUsage } = useCostTracking();
-  const [currentStep, setCurrentStep] = useState<'welcome' | 'recording'>('recording');
+  const { trackElevenLabsUsage: _trackElevenLabsUsage } = useCostTracking();
+  const [currentStep, setCurrentStep] = useState<'welcome' | 'recording' | 'conversation'>('recording');
+  const [_isProcessing, setIsProcessing] = useState(false);
   const [conversationState, setConversationState] = useState<'idle' | 'active' | 'processing'>('idle');
   const [isMuted, setIsMuted] = useState(false);
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const [cameraActive, setCameraActive] = useState(false);
-  const [visualData, setVisualData] = useState<any>(null);
-  const [userContext, setUserContext] = useState<any>(null);
+  const [visualData, setVisualData] = useState<VisualCaptureData | null>(null);
+  const [userContext, setUserContext] = useState<UserContextData | null>(null);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -38,17 +95,10 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({ onNaviga
   const stillImageCaptureRef = useRef<StillImageCaptureRef>(null);
   // Use the assessmentMode prop instead of URL parameter
   const actualMode = assessmentMode === 'baseline';
-  
+
   // AWS Backend Service
-  const backendService = BackendServiceFactory.createService(
-    BackendServiceFactory.getEnvironmentConfig()
-  );
-  
-  // Load user context on mount
-  useEffect(() => {
-    loadUserContext();
-  }, [loadUserContext]);
-  
+  const backendService = BackendServiceFactory.createService(BackendServiceFactory.getEnvironmentConfig());
+
   // Load user context for personalized conversations
   const loadUserContext = useCallback(async () => {
     if (!user?.id) return null;
@@ -57,37 +107,38 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({ onNaviga
       const { data: profile } = await backendService.database.select('profiles', {
         columns: 'first_name, last_name, university, course, year_of_study',
         filters: { id: user.id },
-        limit: 1
+        limit: 1,
       });
-      
+
       // Get recent assessment history for context
       const { data: recentAssessments } = await backendService.database.select('assessment_sessions', {
         columns: 'assessment_type, created_at, meta',
         filters: { user_id: user.id },
         orderBy: [{ column: 'created_at', ascending: false }],
-        limit: 3
+        limit: 3,
       });
-      
+
       // Get wellness trends
       const { data: wellnessData } = await backendService.database.select('fusion_outputs', {
         columns: 'score, created_at',
         filters: { user_id: user.id },
         orderBy: [{ column: 'created_at', ascending: false }],
-        limit: 5
+        limit: 5,
       });
-      
-      const context = {
+
+      const p = profile?.[0] as Record<string, unknown> | undefined;
+      const context: UserContextData = {
         user: {
-          name: profile?.[0]?.first_name || 'there',
-          fullName: `${profile?.[0]?.first_name || ''} ${profile?.[0]?.last_name || ''}`.trim(),
-          university: profile?.[0]?.university,
-          course: profile?.[0]?.course,
-          yearOfStudy: profile?.[0]?.year_of_study
+          name: (p?.first_name as string) || 'there',
+          fullName: `${(p?.first_name as string) || ''} ${(p?.last_name as string) || ''}`.trim(),
+          university: (p?.university as string | undefined) ?? undefined,
+          course: (p?.course as string | undefined) ?? undefined,
+          yearOfStudy: (p?.year_of_study as string | undefined) ?? undefined,
         },
-        assessmentHistory: recentAssessments || [],
-        wellnessTrends: wellnessData || [],
+        assessmentHistory: (recentAssessments || []) as UserContextData['assessmentHistory'],
+        wellnessTrends: (wellnessData || []) as UserContextData['wellnessTrends'],
         isFirstTime: !recentAssessments || recentAssessments.length === 0,
-        platform: 'mobile'
+        platform: 'mobile',
       };
       setUserContext(context);
       return context;
@@ -96,6 +147,12 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({ onNaviga
       return null;
     }
   }, [user?.id, backendService]);
+
+  // Load user context on mount
+  useEffect(() => {
+    loadUserContext();
+  }, [loadUserContext]);
+
   // Load ElevenLabs script
   useEffect(() => {
     const id = 'elevenlabs-convai-embed';
@@ -115,6 +172,7 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({ onNaviga
       // Add a timeout to check if the widget is actually working
       setTimeout(() => {
         if (customElements.get('elevenlabs-convai')) {
+          /* intentionally empty */
         } else {
           console.error('❌ Widget custom element NOT registered');
         }
@@ -122,10 +180,12 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({ onNaviga
       // Check if the custom element is available
       setTimeout(() => {
         if (customElements.get('elevenlabs-convai')) {
+          /* intentionally empty */
         } else {
           console.error('❌ ElevenLabs custom element not available after script load');
           // Fallback: try to manually register the element
           if (window.customElements && !customElements.get('elevenlabs-convai')) {
+            /* intentionally empty */
           }
         }
       }, 1000);
@@ -182,7 +242,7 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({ onNaviga
       // Retry mechanism
       if (retryCount < 3) {
         setTimeout(() => {
-          setRetryCount(prev => prev + 1);
+          setRetryCount((prev) => prev + 1);
           // Instead of calling loadScript() which doesn't exist, reload the page or handle differently
         }, 2000);
       }
@@ -203,15 +263,14 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({ onNaviga
     // Set up client tools for the ElevenLabs widget
     const setupClientTools = () => {
       const widget = widgetRef.current?.querySelector('elevenlabs-convai');
-      if (widget && (widget as any).shadowRoot) {
+      if (widget && (widget as ElevenLabsWidgetElement).shadowRoot) {
         // Inject client tools into the widget
-        (window as any).mobileClientTools = {
+        window.mobileClientTools = {
           endConversation: () => {
             endCheckin();
             return 'Mobile conversation completed';
           },
           getConversationContext: () => {
-            
             // Check if userContext is available
             if (!userContext) {
               console.warn('[ClientTools] No userContext available, returning basic context');
@@ -224,35 +283,39 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({ onNaviga
                 studentName: 'there',
                 lastCheckinDays: null,
                 recentTrend: [],
-                currentPeriod: 'General'
+                currentPeriod: 'General',
               });
             }
-            
+
             // Calculate daysSinceLastCheckin from assessmentHistory
             let lastCheckinDays = null;
-            if (userContext.assessmentHistory && userContext.assessmentHistory.length > 0) {
-              const lastCheckin = userContext.assessmentHistory[0];
+            const assessmentHistory = userContext.assessmentHistory as Array<{ created_at: string }> | undefined;
+            if (assessmentHistory && assessmentHistory.length > 0) {
+              const lastCheckin = assessmentHistory[0];
               const lastCheckinDate = new Date(lastCheckin.created_at);
               const now = new Date();
               const diffTime = Math.abs(now.getTime() - lastCheckinDate.getTime());
               lastCheckinDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
             } else {
+              /* intentionally empty */
             }
-            
+
             // Extract last 3 scores from wellnessTrends
-            const recentTrend = [];
-            if (userContext.wellnessTrends && userContext.wellnessTrends.length > 0) {
-              for (let i = 0; i < Math.min(3, userContext.wellnessTrends.length); i++) {
-                recentTrend.push(userContext.wellnessTrends[i].score);
+            const recentTrend: number[] = [];
+            const wellnessTrends = userContext.wellnessTrends as Array<{ score: number }> | undefined;
+            if (wellnessTrends && wellnessTrends.length > 0) {
+              for (let i = 0; i < Math.min(3, wellnessTrends.length); i++) {
+                recentTrend.push(wellnessTrends[i].score);
               }
             } else {
+              /* intentionally empty */
             }
-            
+
             // Determine current period (e.g., "Exam Season")
             const now = new Date();
             const month = now.getMonth(); // 0-11
             let currentPeriod = 'General';
-            
+
             // UK Academic Calendar approximate periods
             if (month >= 0 && month <= 1) {
               currentPeriod = 'Exam Season'; // Jan-Feb
@@ -267,8 +330,7 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({ onNaviga
             } else {
               currentPeriod = 'Winter Break'; // Dec
             }
-            
-            
+
             // Build rich context object
             const context = {
               platform: 'mobile',
@@ -276,32 +338,30 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({ onNaviga
               userId: user?.id,
               assessmentType: actualMode ? 'baseline' : 'checkin',
               conversationStage: 'active',
-              
+
               // Dynamic user data
               studentName: userContext.user?.name || 'there',
               fullName: userContext.user?.fullName || '',
               university: userContext.user?.university || '',
               course: userContext.user?.course || '',
               yearOfStudy: userContext.user?.yearOfStudy || '',
-              
+
               // Wellness tracking data
               lastCheckinDays: lastCheckinDays,
               recentTrend: recentTrend,
               currentPeriod: currentPeriod,
-              isFirstTime: userContext.isFirstTime
+              isFirstTime: userContext.isFirstTime,
             };
-            
+
             return JSON.stringify(context);
-          }
+          },
         };
         // Add event listeners for cost tracking
-        widget.addEventListener('conversationstarted', () => {
-        });
-        widget.addEventListener('conversationended', () => {
-        });
+        widget.addEventListener('conversationstarted', () => {});
+        widget.addEventListener('conversationended', () => {});
       }
     };
-    let conversationHistory = [];
+    let conversationHistory: ConversationMessage[] = [];
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         if (mutation.type === 'childList' || mutation.type === 'attributes') {
@@ -309,17 +369,22 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({ onNaviga
           // Check for conversation end indicators
           const widget = widgetRef.current?.querySelector('elevenlabs-convai');
           if (widget) {
-            const shadowRoot = (widget as any).shadowRoot;
+            const shadowRoot = (widget as ElevenLabsWidgetElement).shadowRoot;
             if (shadowRoot) {
               // Capture conversation data
               const messages = shadowRoot.querySelectorAll('.message, .chat-message, [data-role], [role]');
-              const newConversationData = [];
-              const transcripts = [];
+              const newConversationData: Array<{ role: string; text: string; timestamp: number }> = [];
+              const transcripts: string[] = [];
               messages.forEach((msg: Element) => {
                 const text = msg.textContent?.trim() || '';
-                const role = msg.getAttribute('data-role') || msg.getAttribute('role') ||
-                            (msg.classList.contains('user') ? 'user' :
-                             msg.classList.contains('assistant') || msg.classList.contains('ai') ? 'ai' : 'unknown');
+                const role =
+                  msg.getAttribute('data-role') ||
+                  msg.getAttribute('role') ||
+                  (msg.classList.contains('user')
+                    ? 'user'
+                    : msg.classList.contains('assistant') || msg.classList.contains('ai')
+                      ? 'ai'
+                      : 'unknown');
                 if (text && text.length > 5) {
                   newConversationData.push({ role, text, timestamp: Date.now() });
                   if (role === 'user') {
@@ -329,25 +394,34 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({ onNaviga
               });
               // Update conversation history if new content detected
               if (newConversationData.length > conversationHistory.length) {
-                conversationHistory = newConversationData;
+                conversationHistory = newConversationData as ConversationMessage[];
                 // Store conversation data in session
                 if (currentSession && conversationHistory.length > 0) {
-                  const textData = {
+                  const textData: SessionTextData = {
                     transcripts,
                     textInputs: transcripts,
-                    fullConversation: conversationHistory.map(m => `${m.role === 'user' ? 'User' : 'Jodie'}: ${m.text}`).join('\n'),
-                    conversationData: conversationHistory
+                    fullConversation: conversationHistory
+                      .map((m) => `${m.role === 'user' ? 'User' : 'Jodie'}: ${m.text}`)
+                      .join('\n'),
+                    conversationData: conversationHistory,
                   };
                   updateSessionData({ text_data: textData });
                 }
               }
               // Look for conversation end indicators
-              const endIndicators = shadowRoot.querySelectorAll('[data-conversation-ended], .conversation-ended, .call-ended');
+              const endIndicators = shadowRoot.querySelectorAll(
+                '[data-conversation-ended], .conversation-ended, .call-ended'
+              );
               const textElements = shadowRoot.querySelectorAll('*');
               let hasEndText = false;
               textElements.forEach((el: Element) => {
                 const text = el.textContent?.toLowerCase() || '';
-                if (text.includes('caller ended') || text.includes('conversation ended') || text.includes('call ended') || text.includes('disconnected')) {
+                if (
+                  text.includes('caller ended') ||
+                  text.includes('conversation ended') ||
+                  text.includes('call ended') ||
+                  text.includes('disconnected')
+                ) {
                   hasEndText = true;
                 }
               });
@@ -364,14 +438,14 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({ onNaviga
       childList: true,
       subtree: true,
       attributes: true,
-      attributeFilter: ['class', 'data-state']
+      attributeFilter: ['class', 'data-state'],
     });
     // Setup initial client tools
     setupClientTools();
     return () => {
       observer.disconnect();
       // Clean up client tools
-      delete (window as any).mobileClientTools;
+      delete window.mobileClientTools;
     };
   }, [scriptLoaded]); // Simplified dependencies to prevent death loop
   // Activate camera when recording starts
@@ -385,6 +459,7 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({ onNaviga
     // Also check parent container dimensions
     const parentContainer = widgetRef.current.parentElement;
     if (parentContainer) {
+      /* intentionally empty */
     }
     // Check if widget already exists
     const existingWidget = widgetRef.current.querySelector('elevenlabs-convai');
@@ -428,13 +503,14 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({ onNaviga
     });
     // Listen for agent ready event
     widget.addEventListener('ready', () => {
+      /* intentionally empty */
     });
     // Append to container
     widgetRef.current.appendChild(widget);
     // Force widget initialization after append
     setTimeout(() => {
-      if (widget && typeof (widget as any).connect === 'function') {
-        (widget as any).connect();
+      if (widget && typeof (widget as ElevenLabsWidgetElement).connect === 'function') {
+        (widget as ElevenLabsWidgetElement).connect!();
       }
     }, 1500);
     // Check if widget is actually in the DOM
@@ -444,7 +520,9 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({ onNaviga
         // Check for iframe content
         const iframe = widgetInDOM.querySelector('iframe');
         if (iframe) {
+          /* intentionally empty */
         } else {
+          /* intentionally empty */
         }
       } else {
         console.error('❌ Widget not found in DOM after append');
@@ -461,7 +539,8 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({ onNaviga
         sessionCreatedRef.current = true;
         if (ENABLE_ASSESSMENT_SESSIONS_WIDGET) {
           try {
-            await backendService.database.update('assessment_sessions',
+            await backendService.database.update(
+              'assessment_sessions',
               { status: 'cancelled' },
               { user_id: user?.id, status: 'pending' }
             );
@@ -482,36 +561,35 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({ onNaviga
       console.error('Error starting mobile conversation:', error);
       sessionCreatedRef.current = false;
     } finally {
-      setTimeout(() => { startingRef.current = false; }, 1500);
+      setTimeout(() => {
+        startingRef.current = false;
+      }, 1500);
     }
-  };
-  const handleBackToWelcome = () => {
-    setCurrentStep('welcome');
   };
   const handleConversationEnd = async () => {
     if (!currentSession) return;
-    
+
     // CRITICAL VALIDATION: Check if we have actual conversation data for check-in
-    const sessionData = currentSession.text_data || {};
-    const transcripts = sessionData.transcripts || [];
-    const conversationHistory = sessionData.conversationData || [];
-    
+    const sessionData = currentSession.text_data;
+    const transcripts = sessionData?.transcripts || [];
+    const conversationHistory = sessionData?.conversationData || [];
+
     const hasTranscript = transcripts.length > 0 && transcripts.join(' ').length > 50; // At least 50 characters total
     const hasConversation = conversationHistory.length >= 4; // At least 2 user messages + 2 AI responses
-    
+
     if (!hasTranscript || !hasConversation) {
       console.error('❌ Insufficient conversation data - cannot create check-in assessment');
       alert(
         'Unable to Complete Check-in\n\n' +
-        'We didn\'t capture enough conversation data to create a new wellbeing score.\n\n' +
-        'Please try again and spend a little more time talking with Jodie.'
+          "We didn't capture enough conversation data to create a new wellbeing score.\n\n" +
+          'Please try again and spend a little more time talking with Jodie.'
       );
-      
+
       // Navigate back to allow retry
       onNavigateBack();
       return;
     }
-    
+
     setIsProcessing(true);
     setCameraActive(false); // Turn off camera indicator immediately
     try {
@@ -527,16 +605,17 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({ onNaviga
       onNavigateBack();
     }
   };
-  const finalizeSession = async (data: any) => {
+  const finalizeSession = async (data: VisualCaptureData | null) => {
     if (!currentSession || !user) return;
     try {
       if (ENABLE_ASSESSMENT_SESSIONS_WIDGET) {
         try {
-          await backendService.database.update('assessment_sessions',
+          await backendService.database.update(
+            'assessment_sessions',
             {
               status: 'completed',
               visual_data: data,
-              assessment_type: actualMode ? 'baseline' : 'checkin'
+              assessment_type: actualMode ? 'baseline' : 'checkin',
             },
             { id: currentSession.id }
           );
@@ -554,14 +633,14 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({ onNaviga
       setIsProcessing(false);
     }
   };
-  const handleVisualDataCapture = (data: any) => {
+  const handleVisualDataCapture = (data: VisualCaptureData) => {
     setVisualData(data);
     // Update session with visual data
     if (currentSession) {
       updateSessionData({ visual_data: data });
     }
   };
-  const handleComplete = async (data: any) => {
+  const handleComplete = async (_data: unknown) => {
     // Use the proper conversation end handler
     await handleConversationEnd();
   };
@@ -593,7 +672,7 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({ onNaviga
         style={{
           position: 'relative',
           zIndex: 1000,
-          isolation: 'isolate'
+          isolation: 'isolate',
         }}
       >
         {/* Header - Mind Measure Logo and Title */}
@@ -605,7 +684,9 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({ onNaviga
               className="w-full h-full object-contain"
             />
           </div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">Mind Measure</h1>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
+            Mind Measure
+          </h1>
         </div>
         {/* ElevenLabs Widget Container - Full Screen Text */}
         <div className="flex-1 flex flex-col relative overflow-hidden" style={{ minHeight: '70vh' }}>
@@ -618,13 +699,17 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({ onNaviga
                     <MessageCircle className="w-8 h-8 text-white" />
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">Processing Results...</h3>
-                  <p className="text-gray-600 text-sm">
-                    Analyzing your conversation with Mind Measure GPT
-                  </p>
+                  <p className="text-gray-600 text-sm">Analyzing your conversation with Mind Measure GPT</p>
                   <div className="flex items-center justify-center space-x-2 mt-4">
                     <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    <div
+                      className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
+                      style={{ animationDelay: '0.1s' }}
+                    ></div>
+                    <div
+                      className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
+                      style={{ animationDelay: '0.2s' }}
+                    ></div>
                   </div>
                 </div>
               </div>
@@ -644,10 +729,7 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({ onNaviga
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">Loading Conversation...</h3>
                   <p className="text-gray-600 text-sm">
-                    {needsBaseline
-                      ? 'Preparing your baseline assessment'
-                      : 'Preparing your check-in conversation'
-                    }
+                    {actualMode ? 'Preparing your baseline assessment' : 'Preparing your check-in conversation'}
                   </p>
                 </div>
               </div>
@@ -692,7 +774,12 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({ onNaviga
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
                 <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                  />
                 </svg>
               </div>
               <div className="flex-1">
@@ -703,7 +790,7 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({ onNaviga
                 onClick={() => {
                   setConnectionError(null);
                   setRetryCount(0);
-                  loadScript();
+                  window.location.reload();
                 }}
                 className="h-8 px-3 bg-red-600 hover:bg-red-700 text-white text-xs"
               >
@@ -723,7 +810,7 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({ onNaviga
                     const sessionId = await createSession(actualMode ? 'baseline' : 'checkin');
                     if (!sessionId) {
                       console.error('❌ Failed to create session');
-                      toast.error('Failed to start conversation. Please try again.');
+                      console.error('Failed to start conversation. Please try again.');
                       return;
                     }
                   }
@@ -735,10 +822,11 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({ onNaviga
                     const widget = document.querySelector('elevenlabs-convai');
                     if (widget) {
                       // Try to find and click the start button
-                      const startButton = widget.shadowRoot?.querySelector('[data-testid="start-button"]') ||
-                                        widget.shadowRoot?.querySelector('button') ||
-                                        widget.shadowRoot?.querySelector('[aria-label*="start"]') ||
-                                        widget.shadowRoot?.querySelector('[aria-label*="Start"]');
+                      const startButton =
+                        widget.shadowRoot?.querySelector('[data-testid="start-button"]') ||
+                        widget.shadowRoot?.querySelector('button') ||
+                        widget.shadowRoot?.querySelector('[aria-label*="start"]') ||
+                        widget.shadowRoot?.querySelector('[aria-label*="Start"]');
                       if (startButton && startButton instanceof HTMLElement) {
                         startButton.click();
                       } else {
@@ -762,8 +850,9 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({ onNaviga
                 // Toggle audio by muting/unmuting the widget
                 const widget = document.querySelector('elevenlabs-convai');
                 if (widget) {
-                  const audioElements = widget.shadowRoot?.querySelectorAll('audio') || [];
-                  audioElements.forEach(audio => {
+                  const audioElements: NodeListOf<HTMLAudioElement> | HTMLAudioElement[] =
+                    widget.shadowRoot?.querySelectorAll('audio') || [];
+                  audioElements.forEach((audio) => {
                     audio.muted = !isMuted;
                   });
                 }
@@ -800,9 +889,8 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({ onNaviga
         </h1>
         <p className="text-gray-600 leading-relaxed text-sm sm:text-base px-4 sm:px-0">
           {actualMode
-            ? 'Let\'s get to know you better with a brief assessment to establish your wellness baseline'
-            : 'Ready for your regular wellness check?'
-          }
+            ? "Let's get to know you better with a brief assessment to establish your wellness baseline"
+            : 'Ready for your regular wellness check?'}
         </p>
       </div>
       {/* Start Button */}
@@ -831,7 +919,11 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({ onNaviga
                 </div>
                 <div className="flex-1 min-w-0">
                   <h4 className="text-blue-900 mb-1 text-sm sm:text-base font-semibold">Visual Analysis</h4>
-                  <p className="text-blue-700 text-xs sm:text-sm leading-relaxed">We use your phone's camera to assess your facial expressions. We do not store any images of you, they are analysed for facial landmarks, emotion categories (happy, sad, angry, confused, calm, etc.), and attention markers (e.g., eyes closed, head down).</p>
+                  <p className="text-blue-700 text-xs sm:text-sm leading-relaxed">
+                    We use your phone's camera to assess your facial expressions. We do not store any images of you,
+                    they are analysed for facial landmarks, emotion categories (happy, sad, angry, confused, calm,
+                    etc.), and attention markers (e.g., eyes closed, head down).
+                  </p>
                 </div>
               </div>
             </Card>
@@ -842,7 +934,11 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({ onNaviga
                 </div>
                 <div className="flex-1 min-w-0">
                   <h4 className="text-green-900 mb-1 text-sm sm:text-base font-semibold">Voice Patterns</h4>
-                  <p className="text-green-700 text-xs sm:text-sm leading-relaxed">The human voice is a rich source of affective information. Acoustic features such as pitch, jitter, speaking rate, and pauses correlate strongly with depression, anxiety, and stress. We listen to how you sound not just what you say.</p>
+                  <p className="text-green-700 text-xs sm:text-sm leading-relaxed">
+                    The human voice is a rich source of affective information. Acoustic features such as pitch, jitter,
+                    speaking rate, and pauses correlate strongly with depression, anxiety, and stress. We listen to how
+                    you sound not just what you say.
+                  </p>
                 </div>
               </div>
             </Card>
@@ -853,7 +949,12 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({ onNaviga
                 </div>
                 <div className="flex-1 min-w-0">
                   <h4 className="text-purple-900 mb-1 text-sm sm:text-base font-semibold">Conversation</h4>
-                  <p className="text-purple-700 text-xs sm:text-sm leading-relaxed">When Jodie asks a question ("On a scale of 1–10, how is your mood right now?"), Mind Measure evaluates your response quantitatively (the numerical score) and qualitatively (tone of voice, hesitation, choice of words), this ensures a 'multi-modal' form of assessment, because we are not always completely honest in what we say!</p>
+                  <p className="text-purple-700 text-xs sm:text-sm leading-relaxed">
+                    When Jodie asks a question ("On a scale of 1–10, how is your mood right now?"), Mind Measure
+                    evaluates your response quantitatively (the numerical score) and qualitatively (tone of voice,
+                    hesitation, choice of words), this ensures a 'multi-modal' form of assessment, because we are not
+                    always completely honest in what we say!
+                  </p>
                 </div>
               </div>
             </Card>
@@ -870,7 +971,10 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({ onNaviga
                 </div>
                 <div className="flex-1 min-w-0">
                   <h4 className="text-purple-900 mb-1 text-sm sm:text-base font-semibold">Quick Check-in</h4>
-                  <p className="text-purple-700 text-xs sm:text-sm leading-relaxed">Jodie will have a brief conversation with you to understand how you're feeling today compared to your previous check-ins. This helps us track your wellness journey over time.</p>
+                  <p className="text-purple-700 text-xs sm:text-sm leading-relaxed">
+                    Jodie will have a brief conversation with you to understand how you're feeling today compared to
+                    your previous check-ins. This helps us track your wellness journey over time.
+                  </p>
                 </div>
               </div>
             </Card>
@@ -886,7 +990,9 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({ onNaviga
           <div className="min-w-0">
             <h4 className="text-indigo-900 mb-2 text-sm sm:text-base font-semibold">Private & Secure</h4>
             <p className="text-indigo-700 text-xs sm:text-sm leading-relaxed">
-              Your data is encrypted and confidential. Mind Measure complies with GDPR, UK ICO guidance, and aligns with NHS Clinical Governance frameworks (NHS England, 2023). Identifiable raw media (audio and images) are discarded after feature extraction and analysis.
+              Your data is encrypted and confidential. Mind Measure complies with GDPR, UK ICO guidance, and aligns with
+              NHS Clinical Governance frameworks (NHS England, 2023). Identifiable raw media (audio and images) are
+              discarded after feature extraction and analysis.
             </p>
           </div>
         </div>
@@ -923,9 +1029,12 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({ onNaviga
           />
         </div>
         <div>
-          <h3 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent mb-2 sm:mb-3">Mind Measure</h3>
+          <h3 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent mb-2 sm:mb-3">
+            Mind Measure
+          </h3>
           <p className="text-gray-600 text-xs sm:text-sm leading-relaxed max-w-sm mx-auto px-4 sm:px-0">
-            Your trusted companion for understanding and measuring your mental wellbeing through intelligent conversation and analysis.
+            Your trusted companion for understanding and measuring your mental wellbeing through intelligent
+            conversation and analysis.
           </p>
         </div>
       </div>

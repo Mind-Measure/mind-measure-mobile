@@ -9,10 +9,7 @@
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { Client } from 'pg';
-import {
-  CognitoIdentityProviderClient,
-  AdminGetUserCommand
-} from '@aws-sdk/client-cognito-identity-provider';
+import { CognitoIdentityProviderClient, AdminGetUserCommand } from '@aws-sdk/client-cognito-identity-provider';
 
 function getDbConfig() {
   return {
@@ -21,7 +18,7 @@ function getDbConfig() {
     database: process.env.AWS_AURORA_DATABASE || 'mindmeasure',
     user: process.env.AWS_AURORA_USERNAME || 'mindmeasure_admin',
     password: process.env.AWS_AURORA_PASSWORD || '',
-    ssl: { rejectUnauthorized: false }
+    ssl: { rejectUnauthorized: false },
   };
 }
 
@@ -38,14 +35,14 @@ async function existsInCognito(email: string): Promise<boolean> {
 
   const client = new CognitoIdentityProviderClient({
     region,
-    credentials: { accessKeyId, secretAccessKey }
+    credentials: { accessKeyId, secretAccessKey },
   });
 
   try {
     await client.send(
       new AdminGetUserCommand({
         UserPoolId: userPoolId,
-        Username: email
+        Username: email,
       })
     );
     return true;
@@ -57,7 +54,20 @@ async function existsInCognito(email: string): Promise<boolean> {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // CORS — public endpoint for mobile app, needs capacitor/ionic origins
+  const origin = req.headers.origin || '';
+  const allowedOrigins = [
+    'https://mobile.mindmeasure.app',
+    'https://buddy.mindmeasure.app',
+    'https://admin.mindmeasure.co.uk',
+    'capacitor://localhost',
+    'ionic://localhost',
+    'http://localhost:5173',
+    'http://localhost:3000',
+  ];
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
@@ -79,10 +89,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const pg = new Client(getDbConfig());
   try {
     await pg.connect();
-    const r = await pg.query(
-      'SELECT 1 FROM profiles WHERE LOWER(TRIM(email)) = $1 LIMIT 1',
-      [trimmed]
-    );
+    const r = await pg.query('SELECT 1 FROM profiles WHERE LOWER(TRIM(email)) = $1 LIMIT 1', [trimmed]);
     existsInProfiles = (r.rowCount ?? 0) > 0;
   } catch (e: any) {
     console.error('[check-email]', e?.message);

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { ChevronLeft, Mail, Lock, Loader2, Eye, EyeOff } from 'lucide-react';
+import { ChevronLeft, Mail, Loader2, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import mindMeasureLogo from '../../assets/66710e04a85d98ebe33850197f8ef41bd28d8b84.png';
 
@@ -17,7 +17,7 @@ export function SignInScreen({ onSignInComplete, onBack, onForgotPassword, preFi
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const { signIn } = useAuth();
 
   // Sync preFilledEmail when it changes
@@ -29,7 +29,7 @@ export function SignInScreen({ onSignInComplete, onBack, onForgotPassword, preFi
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email || !password) {
       setError('Please enter both email and password');
       return;
@@ -60,9 +60,9 @@ export function SignInScreen({ onSignInComplete, onBack, onForgotPassword, preFi
       y: 0,
       transition: {
         duration: 0.5,
-        staggerChildren: 0.1
-      }
-    }
+        staggerChildren: 0.1,
+      },
+    },
   };
 
   const itemVariants = {
@@ -70,8 +70,8 @@ export function SignInScreen({ onSignInComplete, onBack, onForgotPassword, preFi
     visible: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.4 }
-    }
+      transition: { duration: 0.4 },
+    },
   };
 
   return (
@@ -104,11 +104,7 @@ export function SignInScreen({ onSignInComplete, onBack, onForgotPassword, preFi
           {/* Logo */}
           <motion.div variants={itemVariants} className="flex justify-center mb-6">
             <div className="w-20 h-20 flex items-center justify-center">
-              <img
-                src={mindMeasureLogo}
-                alt="Mind Measure"
-                className="w-full h-full object-contain"
-              />
+              <img src={mindMeasureLogo} alt="Mind Measure" className="w-full h-full object-contain" />
             </div>
           </motion.div>
 
@@ -192,7 +188,7 @@ export function SignInScreen({ onSignInComplete, onBack, onForgotPassword, preFi
                 className="p-4 bg-red-50 text-red-800 rounded-lg border border-red-200"
               >
                 <p className="text-sm font-medium">{error}</p>
-                
+
                 {/* Sign Out Button if already signed in */}
                 {error.includes('already a signed in user') && (
                   <button
@@ -205,12 +201,12 @@ export function SignInScreen({ onSignInComplete, onBack, onForgotPassword, preFi
                         const { cognitoApiClient } = await import('@/services/cognito-api-client');
                         await cognitoApiClient.signOut();
                         console.log('✅ Signed out successfully');
-                        
+
                         // Clear device preferences too
                         const { Preferences } = await import('@capacitor/preferences');
                         await Preferences.clear();
                         console.log('✅ Device data cleared');
-                        
+
                         // Reload the page to start fresh
                         window.location.reload();
                       } catch (err) {
@@ -236,7 +232,7 @@ export function SignInScreen({ onSignInComplete, onBack, onForgotPassword, preFi
               className="w-full h-14 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold text-lg rounded-xl shadow-lg disabled:opacity-50 disabled:cursor-not-allowed hover:from-purple-700 hover:to-blue-700 hover:shadow-xl transition-all flex items-center justify-center gap-2"
               style={{
                 background: isLoading ? undefined : 'linear-gradient(to right, rgb(147 51 234), rgb(37 99 235))',
-                color: 'white'
+                color: 'white',
               }}
             >
               {isLoading ? (
@@ -253,7 +249,8 @@ export function SignInScreen({ onSignInComplete, onBack, onForgotPassword, preFi
           {/* Help Text */}
           <motion.div variants={itemVariants} className="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-100">
             <p className="text-sm text-blue-900 text-center">
-              First time signing in after verifying your email?<br />
+              First time signing in after verifying your email?
+              <br />
               Use the password you created during registration.
             </p>
           </motion.div>

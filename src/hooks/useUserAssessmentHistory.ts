@@ -19,7 +19,7 @@ export function useUserAssessmentHistory(): UserAssessmentHistory {
 
   const checkAssessmentHistory = useCallback(async () => {
     const userId = user?.id;
-    
+
     // Early return if no userId
     if (!userId) {
       setNeedsBaseline(true);
@@ -31,7 +31,7 @@ export function useUserAssessmentHistory(): UserAssessmentHistory {
 
     try {
       setLoading(true);
-      
+
       // Get JWT token for authentication
       const idToken = await cognitoApiClient.getIdToken();
       if (!idToken) {
@@ -43,13 +43,12 @@ export function useUserAssessmentHistory(): UserAssessmentHistory {
         return;
       }
 
-
       // Call secure assessment history endpoint
       const response = await fetch('https://mobile.mindmeasure.app/api/assessments/history', {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${idToken}`
-        }
+          Authorization: `Bearer ${idToken}`,
+        },
       });
 
       if (!response.ok) {
@@ -60,9 +59,9 @@ export function useUserAssessmentHistory(): UserAssessmentHistory {
         setNeedsBaseline(true);
         setNeedsCheckin(false);
       } else {
-        const data = await response.json();
+        const data = (await response.json()) as { data?: Array<{ id: string }> };
         const assessments = data.data || [];
-        
+
         if (assessments.length > 0) {
           setHasAssessmentHistory(true);
           setNeedsBaseline(false);
@@ -96,6 +95,6 @@ export function useUserAssessmentHistory(): UserAssessmentHistory {
     needsCheckin,
     hasAssessmentHistory,
     loading,
-    refetch: checkAssessmentHistory
+    refetch: checkAssessmentHistory,
   };
 }

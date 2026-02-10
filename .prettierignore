@@ -1,0 +1,8 @@
+dist
+node_modules
+android
+ios
+.vercel
+*.min.js
+*.min.css
+package-lock.json

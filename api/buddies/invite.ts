@@ -61,10 +61,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     await client.connect();
 
-    const inviterRow = await client.query(
-      `SELECT first_name, last_name FROM profiles WHERE user_id = $1`,
-      [userId]
-    );
+    const inviterRow = await client.query(`SELECT first_name, last_name FROM profiles WHERE user_id = $1`, [userId]);
     const inviterData = inviterRow.rows[0] as { first_name?: string; last_name?: string } | undefined;
     const firstName = inviterData?.first_name || '';
     const lastName = inviterData?.last_name || '';
@@ -132,7 +129,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     await client.end();
     return res.status(200).json({ invite });
   } catch (e: any) {
-    try { await client.end(); } catch (_) {}
+    try {
+      await client.end();
+    } catch (_) {
+      /* intentionally empty */
+    }
     console.error('[buddies/invite]', e);
     return res.status(500).json({
       error: 'Failed to create invite',

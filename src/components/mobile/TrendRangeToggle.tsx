@@ -1,13 +1,12 @@
-import React from "react";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-export type TrendRange = "W" | "M";
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+export type TrendRange = 'W' | 'M';
 interface TrendRangeToggleProps {
   value: TrendRange;
   onChange: (val: TrendRange) => void;
-  size?: "default" | "sm";
+  size?: 'default' | 'sm';
 }
-export default function TrendRangeToggle({ value, onChange, size = "default" }: TrendRangeToggleProps) {
-  const isSmall = size === "sm";
+export default function TrendRangeToggle({ value, onChange, size = 'default' }: TrendRangeToggleProps) {
+  const isSmall = size === 'sm';
   return (
     <ToggleGroup
       type="single"

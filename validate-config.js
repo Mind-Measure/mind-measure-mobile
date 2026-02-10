@@ -104,7 +104,7 @@ class ConfigValidator {
     }
 
     if (process.env.VITE_SUPABASE_URL || process.env.VITE_SUPABASE_ANON_KEY) {
-      this.warning('Supabase environment variables detected - ensure AWS migration is complete');
+      this.error('Supabase environment variables detected — these should be removed. AWS migration is complete.');
     }
   }
 
@@ -184,7 +184,7 @@ class ConfigValidator {
     if (!packageJson) return;
 
     const requiredDeps = {
-      'aws-amplify': 'AWS authentication',
+      '@aws-sdk/client-cognito-identity-provider': 'AWS Cognito authentication',
       '@aws-sdk/client-lambda': 'Lambda function calls',
       '@capacitor/core': 'Capacitor framework',
       '@capacitor/ios': 'iOS platform support',

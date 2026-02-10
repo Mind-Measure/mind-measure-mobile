@@ -2,8 +2,8 @@
 // TYPES
 // ==========================================================================
 
-export type RiskLevel = "none" | "mild" | "moderate" | "high";
-export type DirectionOfChange = "better" | "worse" | "same" | "unclear";
+export type RiskLevel = 'none' | 'mild' | 'moderate' | 'high';
+export type DirectionOfChange = 'better' | 'worse' | 'same' | 'unclear';
 
 export interface TextAnalysisResult {
   version: string; // "v1.0"
@@ -11,19 +11,19 @@ export interface TextAnalysisResult {
   keywords: string[]; // shorter, more concrete phrases
   risk_level: RiskLevel;
   direction_of_change: DirectionOfChange;
-  
+
   // Explicit mood rating from user (1-10 scale, extracted from conversation)
   mood_score: number;
-  
+
   // 0–100 score for text modality only
   text_score: number;
-  
+
   // 0–1, higher means "less sure"
   uncertainty: number;
-  
+
   drivers_positive: string[];
   drivers_negative: string[];
-  
+
   conversation_summary: string;
   notable_quotes: string[];
 }
@@ -48,15 +48,15 @@ export async function analyzeTextWithBedrock(
   transcript: string,
   context: TextAnalysisContext
 ): Promise<TextAnalysisResult> {
-  
   // Handle empty/short transcripts
   if (!transcript || transcript.trim().length < 10) {
     console.warn('[BedrockTextAnalyzer] Transcript too short, returning high uncertainty result');
-    return getEmptyResult("There was not enough information in this check in to understand how the student is feeling.");
+    return getEmptyResult(
+      'There was not enough information in this check in to understand how the student is feeling.'
+    );
   }
-  
+
   try {
-    
     // Call server-side API
     const response = await fetch('/api/bedrock/analyze-text', {
       method: 'POST',
@@ -65,40 +65,39 @@ export async function analyzeTextWithBedrock(
       },
       body: JSON.stringify({
         transcript,
-        context
-      })
+        context,
+      }),
     });
-    
+
     if (!response.ok) {
       throw new Error(`API returned ${response.status}: ${response.statusText}`);
     }
-    
+
     const result = await response.json();
-    
+
     if (!result.success || !result.data) {
       console.error('[BedrockTextAnalyzer] ❌ API returned unsuccessful result:', result);
-      return getEmptyResult("Text analysis did not return usable content for this check in.");
+      return getEmptyResult('Text analysis did not return usable content for this check in.');
     }
-    
-    
+
     return result.data as TextAnalysisResult;
-    
   } catch (error: any) {
     console.error('[BedrockTextAnalyzer] ❌ API call failed:', error);
     console.error('[BedrockTextAnalyzer] Error details:', error?.message || String(error));
-    
+
     // Fallback with high uncertainty
-    return getEmptyResult("Text analysis was not available for this check in.");
+    return getEmptyResult('Text analysis was not available for this check in.');
   }
 }
 
 function getEmptyResult(summary: string): TextAnalysisResult {
   return {
-    version: "v1.0",
+    version: 'v1.0',
     themes: [],
     keywords: [],
-    risk_level: "none",
-    direction_of_change: "unclear",
+    risk_level: 'none',
+    direction_of_change: 'unclear',
+    mood_score: 5,
     text_score: 50,
     uncertainty: 0.9,
     drivers_positive: [],
@@ -107,4 +106,3 @@ function getEmptyResult(summary: string): TextAnalysisResult {
     notable_quotes: [],
   };
 }
-

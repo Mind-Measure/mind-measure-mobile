@@ -59,10 +59,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (isExpired(inv.expires_at)) {
-      await client.query(
-        `UPDATE buddy_invites SET status = 'expired', updated_at = NOW() WHERE id = $1`,
-        [inv.id]
-      );
+      await client.query(`UPDATE buddy_invites SET status = 'expired', updated_at = NOW() WHERE id = $1`, [inv.id]);
       await client.end();
       return res.status(400).json({ error: 'Invite expired' });
     }
@@ -77,7 +74,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       inviteeName: inv.invitee_name,
     });
   } catch (e: any) {
-    try { await client.end(); } catch (_) {}
+    try {
+      await client.end();
+    } catch (_) {
+      /* intentionally empty */
+    }
     console.error('[buddies/consent]', e);
     return res.status(500).json({ error: 'Failed to fetch invite', message: e?.message });
   }

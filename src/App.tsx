@@ -1,4 +1,4 @@
-import React from 'react';
+import {} from 'react';
 import { MobileAppStructure } from './components/mobile/MobileAppStructure';
 import { AuthProvider } from './contexts/AuthContext';
 

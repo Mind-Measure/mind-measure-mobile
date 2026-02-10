@@ -10,7 +10,7 @@ import {
   ConfirmSignUpCommand,
   SignUpCommand,
   GetUserCommand,
-  AdminSetUserMFAPreferenceCommand
+  type ChallengeNameType,
 } from '@aws-sdk/client-cognito-identity-provider';
 export interface MFASetupResult {
   success: boolean;
@@ -35,7 +35,6 @@ export interface MFAAuthResult {
 }
 export class MFAService {
   private cognitoClient: CognitoIdentityProviderClient;
-  private userPoolId: string;
   private clientId: string;
   private clientSecret?: string;
   constructor(config: {
@@ -53,7 +52,6 @@ export class MFAService {
         secretAccessKey: config.secretAccessKey,
       },
     });
-    this.userPoolId = config.userPoolId;
     this.clientId = config.clientId;
     this.clientSecret = config.clientSecret;
   }
@@ -66,6 +64,7 @@ export class MFAService {
     if (typeof window !== 'undefined') {
       throw new Error('MFAService cannot be used in browser environment. Use API endpoints for MFA operations.');
     }
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const crypto = require('crypto');
     const message = username + this.clientId;
     return crypto.createHmac('SHA256', this.clientSecret).update(message).digest('base64');
@@ -75,9 +74,7 @@ export class MFAService {
    */
   async signUpWithMFA(email: string, password: string, phoneNumber?: string): Promise<MFAAuthResult> {
     try {
-      const userAttributes = [
-        { Name: 'email', Value: email },
-      ];
+      const userAttributes = [{ Name: 'email', Value: email }];
       if (phoneNumber) {
         userAttributes.push({ Name: 'phone_number', Value: phoneNumber });
       }
@@ -93,11 +90,11 @@ export class MFAService {
         success: true,
         session: result.Session,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('MFA Sign Up failed:', error);
       return {
         success: false,
-        error: error.message || 'Sign up failed',
+        error: error instanceof Error ? error.message : 'Sign up failed',
       };
     }
   }
@@ -116,11 +113,11 @@ export class MFAService {
       return {
         success: true,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Confirm Sign Up failed:', error);
       return {
         success: false,
-        error: error.message || 'Confirmation failed',
+        error: error instanceof Error ? error.message : 'Confirmation failed',
       };
     }
   }
@@ -154,11 +151,11 @@ export class MFAService {
         idToken: result.AuthenticationResult?.IdToken,
         refreshToken: result.AuthenticationResult?.RefreshToken,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('MFA Auth initiation failed:', error);
       return {
         success: false,
-        error: error.message || 'Authentication failed',
+        error: error instanceof Error ? error.message : 'Authentication failed',
       };
     }
   }
@@ -186,7 +183,7 @@ export class MFAService {
       }
       const command = new RespondToAuthChallengeCommand({
         ClientId: this.clientId,
-        ChallengeName: challengeName as any,
+        ChallengeName: challengeName as ChallengeNameType,
         Session: session,
         ChallengeResponses: challengeResponses,
       });
@@ -206,11 +203,11 @@ export class MFAService {
         idToken: result.AuthenticationResult?.IdToken,
         refreshToken: result.AuthenticationResult?.RefreshToken,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('MFA Challenge response failed:', error);
       return {
         success: false,
-        error: error.message || 'MFA verification failed',
+        error: error instanceof Error ? error.message : 'MFA verification failed',
       };
     }
   }
@@ -236,11 +233,11 @@ export class MFAService {
         success: false,
         error: 'Failed to generate TOTP secret',
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('TOTP setup failed:', error);
       return {
         success: false,
-        error: error.message || 'TOTP setup failed',
+        error: error instanceof Error ? error.message : 'TOTP setup failed',
       };
     }
   }
@@ -258,11 +255,11 @@ export class MFAService {
         success: result.Status === 'SUCCESS',
         session: result.Session,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('TOTP verification failed:', error);
       return {
         success: false,
-        error: error.message || 'TOTP verification failed',
+        error: error instanceof Error ? error.message : 'TOTP verification failed',
       };
     }
   }
@@ -280,24 +277,28 @@ export class MFAService {
     try {
       const command = new SetUserMFAPreferenceCommand({
         AccessToken: accessToken,
-        SMSMfaSettings: preferences.smsEnabled ? {
-          Enabled: true,
-          PreferredMfa: preferences.preferredMFA === 'SMS',
-        } : undefined,
-        SoftwareTokenMfaSettings: preferences.totpEnabled ? {
-          Enabled: true,
-          PreferredMfa: preferences.preferredMFA === 'TOTP',
-        } : undefined,
+        SMSMfaSettings: preferences.smsEnabled
+          ? {
+              Enabled: true,
+              PreferredMfa: preferences.preferredMFA === 'SMS',
+            }
+          : undefined,
+        SoftwareTokenMfaSettings: preferences.totpEnabled
+          ? {
+              Enabled: true,
+              PreferredMfa: preferences.preferredMFA === 'TOTP',
+            }
+          : undefined,
       });
       await this.cognitoClient.send(command);
       return {
         success: true,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Set MFA preference failed:', error);
       return {
         success: false,
-        error: error.message || 'Failed to set MFA preferences',
+        error: error instanceof Error ? error.message : 'Failed to set MFA preferences',
       };
     }
   }
@@ -328,10 +329,10 @@ export class MFAService {
       const userMFASettingList = result.UserMFASettingList || [];
       return {
         mfaEnabled: mfaOptions.length > 0 || userMFASettingList.length > 0,
-        mfaMethods: [...mfaOptions.map(opt => opt.DeliveryMedium || ''), ...userMFASettingList],
+        mfaMethods: [...mfaOptions.map((opt) => opt.DeliveryMedium || ''), ...userMFASettingList],
         preferredMFA: result.PreferredMfaSetting,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Get MFA status failed:', error);
       return {
         mfaEnabled: false,

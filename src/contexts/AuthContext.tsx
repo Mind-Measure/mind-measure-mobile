@@ -1,13 +1,18 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { cognitoApiClient } from '../services/cognito-api-client';
 
 export interface AuthUser {
   id: string;
   email: string;
   email_confirmed_at?: string | null;
+  university_id?: string;
   user_metadata?: {
     first_name?: string;
     last_name?: string;
+    given_name?: string;
+    family_name?: string;
+    name?: string;
+    full_name?: string;
   };
   hasCompletedBaseline?: boolean;
 }
@@ -15,8 +20,16 @@ export interface AuthUser {
 interface AuthContextType {
   user: AuthUser | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: string | null; user?: AuthUser }>;
-  signUp: (data: { firstName: string; lastName: string; email: string; password: string }) => Promise<{ error: string | null }>;
+  signIn: (
+    email: string,
+    password: string
+  ) => Promise<{ error: string | null; user?: AuthUser; needsVerification?: boolean; email?: string }>;
+  signUp: (data: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    password: string;
+  }) => Promise<{ error: string | null }>;
   signOut: () => Promise<{ error: string | null }>;
   updateProfile: (updates: any) => Promise<{ error: string | null }>;
   completeOnboarding: () => Promise<{ error: string | null }>;
@@ -48,7 +61,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const initializeAuth = async () => {
       try {
         const { data, error } = await cognitoApiClient.getUser();
-        
+
         if (error) {
           setUser(null);
         } else if (data?.user && data.user.email) {
@@ -58,7 +71,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
 
         // Set up auth state listener (simplified - no polling)
-        unsubscribe = cognitoApiClient.onAuthStateChange((event, user) => {
+        unsubscribe = cognitoApiClient.onAuthStateChange((_event, user) => {
           setUser(user);
         });
       } catch (error) {
@@ -76,20 +89,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
   }, []); // Run ONCE on mount
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (
+    email: string,
+    password: string
+  ): Promise<{ error: string | null; user?: AuthUser; needsVerification?: boolean; email?: string }> => {
     setLoading(true);
     try {
       const result = await cognitoApiClient.signInWithPassword(email, password);
       if (result.error) {
         // Pass through needsVerification flag for unverified emails
-        return { 
-          error: result.error, 
+        return {
+          error: result.error,
           needsVerification: result.needsVerification,
-          email: result.email
+          email: result.email,
         };
       }
       setUser(result.data.user);
-      return { error: null, user: result.data.user };
+      return { error: null, user: result.data.user ?? undefined };
     } catch (error) {
       console.error('Sign in error:', error);
       return { error: 'Sign in failed' };
@@ -101,21 +117,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const signUp = async (data: { firstName: string; lastName: string; email: string; password: string }) => {
     setLoading(true);
     try {
-      const { data: authData, error } = await cognitoApiClient.signUp(
-        data.email,
-        data.password,
-        {
-          data: {
-            first_name: data.firstName,
-            last_name: data.lastName
-          }
-        }
-      );
-      
+      const { data: authData, error } = await cognitoApiClient.signUp(data.email, data.password, {
+        data: {
+          first_name: data.firstName,
+          last_name: data.lastName,
+        },
+      });
+
       if (error) {
         return { error };
       }
-      
+
       // Phase 1: Auth only handles Cognito signup
       // Profile creation will be moved to BaselineAssessment in Phase 2
 
@@ -143,22 +155,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  const updateProfile = async (updates: any) => {
+  const updateProfile = async (_updates: any) => {
     // TODO: Implement profile updates
-    return { error: null };
+    return { error: null as string | null };
   };
 
   const completeOnboarding = async () => {
     // TODO: Implement onboarding completion
-    return { error: null };
+    return { error: null as string | null };
   };
 
-  const completeBaseline = async (sessionId: string) => {
+  const completeBaseline = async (_sessionId: string) => {
     if (user) {
       const updatedUser = { ...user, hasCompletedBaseline: true };
       setUser(updatedUser);
     }
-    return { error: null };
+    return { error: null as string | null };
   };
 
   const confirmEmail = async (email: string, code: string) => {
@@ -225,14 +237,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     resendConfirmation,
     forgotPassword,
     confirmForgotPassword,
-    refetchUser
+    refetchUser,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

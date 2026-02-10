@@ -111,7 +111,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     await client.end();
     return res.status(200).json({ ok: true, message: 'Invite resent' });
   } catch (e: any) {
-    try { await client.end(); } catch (_) {}
+    try {
+      await client.end();
+    } catch (_) {
+      /* intentionally empty */
+    }
     console.error('[buddies/resend]', e);
     return res.status(500).json({ error: 'Failed to resend', message: e?.message });
   }

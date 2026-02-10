@@ -4,6 +4,7 @@
 let createCipher: any, createDecipher: any, randomBytes: any, createHash: any;
 if (typeof window === 'undefined') {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const crypto = require('crypto');
     createCipher = crypto.createCipher;
     createDecipher = crypto.createDecipher;
@@ -52,11 +53,7 @@ export class PHIEncryption {
       encrypted += cipher.final('hex');
       const authTag = cipher.getAuthTag();
       // Combine IV, auth tag, and encrypted data
-      const combined = Buffer.concat([
-        iv,
-        authTag,
-        Buffer.from(encrypted, 'hex')
-      ]);
+      const combined = Buffer.concat([iv, authTag, Buffer.from(encrypted, 'hex')]);
       return {
         encryptedData: combined.toString('base64'),
         keyId: this.keyId,
@@ -83,7 +80,6 @@ export class PHIEncryption {
       }
       const combined = Buffer.from(encryptedData, 'base64');
       // Extract IV, auth tag, and encrypted data
-      const iv = combined.subarray(0, PHIEncryption.IV_LENGTH);
       const authTag = combined.subarray(PHIEncryption.IV_LENGTH, PHIEncryption.IV_LENGTH + 16);
       const encrypted = combined.subarray(PHIEncryption.IV_LENGTH + 16);
       const decipher = createDecipher(PHIEncryption.ALGORITHM, this.masterKey);
@@ -203,11 +199,13 @@ export function createPHIEncryption(masterKey?: string): PHIEncryption {
 }
 // Utility function to check if a field contains PHI
 export function isPHIField(fieldName: string): boolean {
-  return PHI_FIELDS.includes(fieldName) ||
-         fieldName.toLowerCase().includes('name') ||
-         fieldName.toLowerCase().includes('email') ||
-         fieldName.toLowerCase().includes('phone') ||
-         fieldName.toLowerCase().includes('address') ||
-         fieldName.toLowerCase().includes('medical') ||
-         fieldName.toLowerCase().includes('health');
+  return (
+    PHI_FIELDS.includes(fieldName) ||
+    fieldName.toLowerCase().includes('name') ||
+    fieldName.toLowerCase().includes('email') ||
+    fieldName.toLowerCase().includes('phone') ||
+    fieldName.toLowerCase().includes('address') ||
+    fieldName.toLowerCase().includes('medical') ||
+    fieldName.toLowerCase().includes('health')
+  );
 }

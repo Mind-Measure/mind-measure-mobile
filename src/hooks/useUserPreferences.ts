@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 export interface UserPreferences {
   theme: 'light' | 'dark';
@@ -10,15 +10,15 @@ export function useUserPreferences() {
   const [preferences, setPreferences] = useState<UserPreferences>({
     theme: 'light',
     notifications: true,
-    language: 'en'
+    language: 'en',
   });
 
   const updatePreferences = (newPreferences: Partial<UserPreferences>) => {
-    setPreferences(prev => ({ ...prev, ...newPreferences }));
+    setPreferences((prev) => ({ ...prev, ...newPreferences }));
   };
 
   return {
     preferences,
-    updatePreferences
+    updatePreferences,
   };
 }

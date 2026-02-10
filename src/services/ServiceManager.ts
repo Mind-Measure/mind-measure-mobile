@@ -1,6 +1,6 @@
 /**
  * ServiceManager - Centralized service management and lifecycle
- * 
+ *
  * This class provides:
  * - Singleton service instances
  * - Service health monitoring
@@ -9,7 +9,8 @@
  * - Performance optimization
  */
 
-import { BackendServiceFactory, BackendService } from './database/BackendServiceFactory';
+import { BackendServiceFactory } from './database/BackendServiceFactory';
+import type { BackendService } from './database/DatabaseService';
 import { DatabaseConfig } from './database/DatabaseService';
 
 // Service health status
@@ -28,12 +29,12 @@ export interface ServiceConfig extends DatabaseConfig {
   healthCheckTimeout?: number; // ms
   maxRetries?: number;
   retryDelay?: number; // ms
-  
+
   // Performance settings
   connectionPoolSize?: number;
   cacheEnabled?: boolean;
   cacheTTL?: number; // ms
-  
+
   // Monitoring
   enableMetrics?: boolean;
   logLevel?: 'debug' | 'info' | 'warn' | 'error';
@@ -91,7 +92,7 @@ export class ServiceManager {
       if (this.services.has(serviceId)) {
         const service = this.services.get(serviceId)!;
         const health = await this.checkServiceHealth(serviceId, service);
-        
+
         if (health.status === 'healthy') {
           return service;
         } else {
@@ -103,18 +104,18 @@ export class ServiceManager {
       // Create new service instance
       this.log('info', `Creating new service instance: ${serviceId}`);
       const startTime = Date.now();
-      
+
       const service = BackendServiceFactory.createService(this.config);
-      
+
       const creationTime = Date.now() - startTime;
       this.log('info', `Service ${serviceId} created in ${creationTime}ms`);
 
       // Cache the service
       this.services.set(serviceId, service);
-      
+
       // Initialize health monitoring for this service
       this.startHealthMonitoring(serviceId, service);
-      
+
       return service;
     } catch (error) {
       const serviceError = new ServiceError(
@@ -124,7 +125,7 @@ export class ServiceManager {
         true,
         { serviceId, originalError: error }
       );
-      
+
       this.log('error', serviceError.message, serviceError.details);
       throw serviceError;
     }
@@ -134,11 +135,13 @@ export class ServiceManager {
    * Get service health status
    */
   public getServiceHealth(serviceId: string = 'default'): ServiceHealth {
-    return this.healthStatus.get(serviceId) || {
-      status: 'unknown',
-      lastCheck: new Date(),
-      error: 'Service not found'
-    };
+    return (
+      this.healthStatus.get(serviceId) || {
+        status: 'unknown',
+        lastCheck: new Date(),
+        error: 'Service not found',
+      }
+    );
   }
 
   /**
@@ -157,14 +160,14 @@ export class ServiceManager {
    */
   public async checkServiceHealth(serviceId: string, service?: BackendService): Promise<ServiceHealth> {
     const startTime = Date.now();
-    
+
     try {
       const targetService = service || this.services.get(serviceId);
       if (!targetService) {
         const health: ServiceHealth = {
           status: 'unhealthy',
           lastCheck: new Date(),
-          error: 'Service not found'
+          error: 'Service not found',
         };
         this.healthStatus.set(serviceId, health);
         return health;
@@ -174,11 +177,11 @@ export class ServiceManager {
       // Use a more basic table that's guaranteed to exist
       const { data, error } = await targetService.database.select('universities', {
         columns: 'id',
-        limit: 1
+        limit: 1,
       });
 
       const responseTime = Date.now() - startTime;
-      
+
       const health: ServiceHealth = {
         status: error ? 'unhealthy' : 'healthy',
         lastCheck: new Date(),
@@ -186,8 +189,8 @@ export class ServiceManager {
         error: error || undefined,
         details: {
           hasData: !!data,
-          recordCount: data?.length || 0
-        }
+          recordCount: data?.length || 0,
+        },
       };
 
       this.healthStatus.set(serviceId, health);
@@ -199,7 +202,7 @@ export class ServiceManager {
         lastCheck: new Date(),
         responseTime,
         error: error instanceof Error ? error.message : 'Unknown error',
-        details: { originalError: error }
+        details: { originalError: error },
       };
 
       this.healthStatus.set(serviceId, health);
@@ -216,25 +219,29 @@ export class ServiceManager {
     maxRetries: number = this.config.maxRetries || 3
   ): Promise<T> {
     let lastError: Error;
-    
+
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         return await operation();
       } catch (error) {
         lastError = error instanceof Error ? error : new Error('Unknown error');
-        
+
         if (attempt === maxRetries) {
           break;
         }
 
         const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000); // Max 10s
-        this.log('warn', `Service ${serviceId} operation failed (attempt ${attempt}/${maxRetries}), retrying in ${delay}ms`, {
-          error: lastError.message,
-          attempt,
-          maxRetries
-        });
-        
-        await new Promise(resolve => setTimeout(resolve, delay));
+        this.log(
+          'warn',
+          `Service ${serviceId} operation failed (attempt ${attempt}/${maxRetries}), retrying in ${delay}ms`,
+          {
+            error: lastError.message,
+            attempt,
+            maxRetries,
+          }
+        );
+
+        await new Promise((resolve) => setTimeout(resolve, delay));
       }
     }
 
@@ -252,13 +259,13 @@ export class ServiceManager {
    */
   public cleanup(): void {
     this.log('info', 'Cleaning up ServiceManager resources');
-    
+
     // Clear health check intervals
-    for (const [serviceId, interval] of this.healthCheckIntervals.entries()) {
+    for (const [_serviceId, interval] of this.healthCheckIntervals.entries()) {
       clearInterval(interval);
     }
     this.healthCheckIntervals.clear();
-    
+
     // Cleanup services if they have cleanup methods
     for (const [serviceId, service] of this.services.entries()) {
       if (service && typeof (service as any).cleanup === 'function') {
@@ -270,11 +277,11 @@ export class ServiceManager {
         }
       }
     }
-    
+
     // Clear services and health status
     this.services.clear();
     this.healthStatus.clear();
-    
+
     // Force garbage collection hint (if available)
     if (typeof window !== 'undefined' && (window as any).gc) {
       try {
@@ -291,20 +298,20 @@ export class ServiceManager {
   public optimizeMemory(): void {
     const now = Date.now();
     const inactiveThreshold = 5 * 60 * 1000; // 5 minutes
-    
+
     for (const [serviceId, health] of this.healthStatus.entries()) {
       const timeSinceLastCheck = now - health.lastCheck.getTime();
-      
+
       if (timeSinceLastCheck > inactiveThreshold && health.status !== 'healthy') {
         this.log('info', `Cleaning up inactive service: ${serviceId}`);
-        
+
         // Clear health check interval
         const interval = this.healthCheckIntervals.get(serviceId);
         if (interval) {
           clearInterval(interval);
           this.healthCheckIntervals.delete(serviceId);
         }
-        
+
         // Remove service and health status
         this.services.delete(serviceId);
         this.healthStatus.delete(serviceId);
@@ -331,10 +338,10 @@ export class ServiceManager {
 
   private validateConfig(config: ServiceConfig): ServiceConfig {
     const validated: ServiceConfig = {
-      // Required fields
-      provider: config.provider,
-      
-      // Optional fields with defaults
+      // Pass through all config first
+      ...config,
+
+      // Then apply defaults for optional fields
       healthCheckInterval: config.healthCheckInterval || 120000, // 2 minutes (reduced frequency for mobile)
       healthCheckTimeout: config.healthCheckTimeout || 5000, // 5s
       maxRetries: config.maxRetries || 3,
@@ -344,18 +351,11 @@ export class ServiceManager {
       cacheTTL: config.cacheTTL || 300000, // 5 minutes
       enableMetrics: config.enableMetrics !== false, // Default true
       logLevel: config.logLevel || 'info',
-      
-      // Pass through other config
-      ...config
     };
 
     // Validate required fields
     if (!validated.provider) {
-      throw new ServiceError(
-        'Provider is required in service configuration',
-        'INVALID_CONFIG',
-        'ServiceManager'
-      );
+      throw new ServiceError('Provider is required in service configuration', 'INVALID_CONFIG', 'ServiceManager');
     }
 
     return validated;
@@ -389,7 +389,7 @@ export class ServiceManager {
     if (messageLevel >= currentLevel) {
       const timestamp = new Date().toISOString();
       const logMessage = `[${timestamp}] [ServiceManager] [${level.toUpperCase()}] ${message}`;
-      
+
       if (details) {
         console[level === 'debug' ? 'log' : level](logMessage, details);
       } else {

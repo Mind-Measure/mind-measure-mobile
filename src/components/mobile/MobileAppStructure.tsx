@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Preferences } from '@capacitor/preferences';
 import { BottomNav } from '@/components/BottomNavigation';
 import { DashboardScreen } from './MobileDashboard';
-import { MobileConversation } from './MobileConversation';
 import { CheckInWelcome } from './CheckInWelcome';
 import { CheckinAssessmentSDK } from './CheckinAssessmentSDK';
 import { HelpScreen } from './HelpPage';
@@ -10,7 +9,7 @@ import { BuddiesScreen } from './BuddiesScreen';
 import { MobileProfile } from './MobileProfile';
 import { ContentPage } from './ContentPage';
 import { MobileSettings } from './MobileSettings';
-import { RegistrationFlow } from "./RegistrationFlow";
+import { RegistrationFlow } from './RegistrationFlow';
 import { ReturningSplashScreen } from './ReturningSplashScreen';
 import { BaselineAssessmentScreen } from './BaselineWelcome';
 import { BaselineAssessmentSDK } from './BaselineAssessmentSDK';
@@ -50,7 +49,7 @@ const shouldShowProfileReminderThisVisit = async (userId: string): Promise<boole
     const backend = BackendServiceFactory.createService(BackendServiceFactory.getEnvironmentConfig());
     const { data } = await backend.database.select('profiles', {
       filters: { user_id: userId },
-      columns: 'profile_completed'
+      columns: 'profile_completed',
     });
     const profileCompleted = !!(data?.[0] as { profile_completed?: boolean } | undefined)?.profile_completed;
     if (profileCompleted) return false;
@@ -97,7 +96,7 @@ const shouldShowBuddyReminderThisVisit = async (userId: string): Promise<boolean
       filters: { user_id: userId },
       columns: 'analysis',
       orderBy: [{ column: 'created_at', ascending: false }],
-      limit: 200
+      limit: 200,
     });
     const rows = Array.isArray(sessions) ? sessions : [];
     const checkInCount = rows.filter((r: { analysis?: unknown }) => {
@@ -124,15 +123,15 @@ const saveUserToDevice = async (userId: string, baselineCompleted: boolean = fal
       userId,
       baselineCompleted,
       lastLogin: Date.now(),
-      savedAt: new Date().toISOString()
+      savedAt: new Date().toISOString(),
     };
     await Preferences.set({
       key: 'mindmeasure_user',
-      value: JSON.stringify(userData)
+      value: JSON.stringify(userData),
     });
-    
+
     // Verify it was saved
-    const { value } = await Preferences.get({ key: 'mindmeasure_user' });
+    const { value: _value } = await Preferences.get({ key: 'mindmeasure_user' });
     return true;
   } catch (error) {
     console.error('❌ Failed to save user data to device:', error);
@@ -149,11 +148,11 @@ const markBaselineComplete = async () => {
       userData.baselineCompletedAt = new Date().toISOString();
       await Preferences.set({
         key: 'mindmeasure_user',
-        value: JSON.stringify(userData)
+        value: JSON.stringify(userData),
       });
-      
+
       // Verify
-      const { value: newValue } = await Preferences.get({ key: 'mindmeasure_user' });
+      const { value: _newValue } = await Preferences.get({ key: 'mindmeasure_user' });
       return true;
     }
   } catch (error) {
@@ -161,14 +160,9 @@ const markBaselineComplete = async () => {
   }
   return false;
 };
-import {
-  Home,
-  BookOpen,
-  User,
-  Users
-} from 'lucide-react';
+
 type MobileTab = 'dashboard' | 'content' | 'buddies' | 'profile';
-type Screen = MobileTab | 'settings' | 'checkin_welcome' | 'checkin_assessment';
+type Screen = MobileTab | 'settings' | 'checkin_welcome' | 'checkin_assessment' | 'checkin' | 'help';
 type OnboardingScreen = 'splash' | 'auth' | 'baseline_welcome' | 'returning_splash' | 'baseline_assessment';
 
 type BaselineReturnContext = 'dashboard' | 'export_data';
@@ -179,7 +173,7 @@ export const MobileAppStructure: React.FC = () => {
   const [onboardingScreen, setOnboardingScreen] = useState<OnboardingScreen | null>(null);
   const [baselineReturnContext, setBaselineReturnContext] = useState<BaselineReturnContext>('dashboard');
   const baselineReturnContextRef = useRef<BaselineReturnContext>('dashboard');
-  const [deviceUserData, setDeviceUserData] = useState<any>(null);
+  const [_deviceUserData, setDeviceUserData] = useState<any>(null);
   const [showProfileReminderModal, setShowProfileReminderModal] = useState(false);
   const [profileInitialTab, setProfileInitialTab] = useState<'details' | undefined>(undefined);
   const [profileHasUnsavedChanges, setProfileHasUnsavedChanges] = useState(false);
@@ -193,19 +187,18 @@ export const MobileAppStructure: React.FC = () => {
   useEffect(() => {
     baselineReturnContextRef.current = baselineReturnContext;
   }, [baselineReturnContext]);
-  
-  useEffect(() => {
-  }, [onboardingScreen]);
+
+  useEffect(() => {}, [onboardingScreen]);
 
   // Clear profile initial tab when leaving profile so next open uses default tab
   useEffect(() => {
     if (currentScreen !== 'profile') setProfileInitialTab(undefined);
   }, [currentScreen]);
-  
+
   const [hasCompletedInitialSplash, setHasCompletedInitialSplash] = useState(false);
-  const { user, loading: authLoading } = useAuth();
-  const { hasAssessmentHistory, loading: historyLoading } = useUserAssessmentHistory();
-  
+  const { user, loading: _authLoading } = useAuth();
+  const { hasAssessmentHistory, loading: _historyLoading } = useUserAssessmentHistory();
+
   // Check device preferences on mount to determine if this is a returning user
   useEffect(() => {
     const checkDeviceUser = async () => {
@@ -224,7 +217,7 @@ export const MobileAppStructure: React.FC = () => {
     };
     checkDeviceUser();
   }, []);
-  
+
   // Simple logic: Always show returning splash on launch, then route after 5 seconds
   useEffect(() => {
     // On first mount, always show returning splash
@@ -239,7 +232,7 @@ export const MobileAppStructure: React.FC = () => {
 
   const handleReturningSplashComplete = useCallback(async () => {
     setHasCompletedInitialSplash(true);
-    
+
     if (!user) {
       setOnboardingScreen('splash');
       return;
@@ -283,20 +276,19 @@ export const MobileAppStructure: React.FC = () => {
     }
   }, [user]);
 
-  const handleTabChange = useCallback((tab: MobileTab) => {
-    // If leaving profile with unsaved changes, show warning
-    if (currentScreen === 'profile' && tab !== 'profile' && profileHasUnsavedChanges) {
-      setPendingTabChange(tab);
-      setShowProfileUnsavedWarning(true);
-      return;
-    }
-    setActiveTab(tab);
-    setCurrentScreen(tab);
-  }, [currentScreen, profileHasUnsavedChanges]);
-
-  const handleNavigateToProfile = useCallback(() => {
-    setCurrentScreen('profile');
-  }, []);
+  const handleTabChange = useCallback(
+    (tab: MobileTab) => {
+      // If leaving profile with unsaved changes, show warning
+      if (currentScreen === 'profile' && tab !== 'profile' && profileHasUnsavedChanges) {
+        setPendingTabChange(tab);
+        setShowProfileUnsavedWarning(true);
+        return;
+      }
+      setActiveTab(tab);
+      setCurrentScreen(tab);
+    },
+    [currentScreen, profileHasUnsavedChanges]
+  );
 
   const handleNavigateToSettings = useCallback(() => {
     setCurrentScreen('settings');
@@ -306,15 +298,7 @@ export const MobileAppStructure: React.FC = () => {
     setCurrentScreen(activeTab);
   }, [activeTab]);
 
-  const navItems = [
-    { id: 'dashboard', label: 'Home', icon: Home },
-    { id: 'content', label: 'Content', icon: BookOpen },
-    { id: 'buddies', label: 'Buddies', icon: Users },
-    { id: 'profile', label: 'Profile', icon: User },
-  ];
-
   const renderContent = () => {
-    
     if (onboardingScreen) {
       switch (onboardingScreen) {
         case 'splash':
@@ -342,24 +326,27 @@ export const MobileAppStructure: React.FC = () => {
           return <SplashScreen onGetStarted={handleSplashComplete} />;
       }
     }
-    
+
     if (!onboardingScreen && !user) {
       return <SplashScreen onGetStarted={handleSplashComplete} />;
     }
-    
+
     switch (currentScreen) {
       case 'dashboard':
-        return <DashboardScreen
-          onNeedHelp={() => setCurrentScreen('help')}
-          onCheckIn={() => setCurrentScreen('checkin')}
-          onRetakeBaseline={() => {
-            setOnboardingScreen('baseline_welcome');
-          }}
-        />;
-      case 'checkin':
+        return (
+          <DashboardScreen
+            onNeedHelp={() => setCurrentScreen('help')}
+            onCheckIn={() => setCurrentScreen('checkin')}
+            onRetakeBaseline={() => {
+              setOnboardingScreen('baseline_welcome');
+            }}
+          />
+        );
+      case 'checkin': {
         // Show welcome screen with user's first name
         const firstName = user?.user_metadata?.first_name || 'there';
         return <CheckInWelcome userName={firstName} onStartCheckIn={() => setCurrentScreen('checkin_assessment')} />;
+      }
       case 'checkin_assessment':
         return (
           <CheckinAssessmentSDK
@@ -384,38 +371,37 @@ export const MobileAppStructure: React.FC = () => {
         return <ContentPage universityName="University of Worcester" />;
       case 'help':
         return <HelpScreen onNavigateBack={handleNavigateBack} />;
-      case 'profile':
+      case 'profile': {
         const shouldAutoExport = baselineReturnContext === 'export_data';
-        return <MobileProfile 
-          onNavigateBack={handleNavigateBack} 
-          onNavigateToSettings={handleNavigateToSettings}
-          initialTab={profileInitialTab}
-          onNavigateToBaseline={() => {
-            setBaselineReturnContext('export_data');
-            setOnboardingScreen('baseline_welcome');
-          }}
-          autoTriggerExport={shouldAutoExport}
-          onExportTriggered={() => {
-            // Reset context AFTER export is triggered
-            setBaselineReturnContext('dashboard');
-          }}
-          onUnsavedChangesChange={setProfileHasUnsavedChanges}
-          saveRef={profileSaveRef}
-        />;
+        return (
+          <MobileProfile
+            onNavigateBack={handleNavigateBack}
+            onNavigateToSettings={handleNavigateToSettings}
+            initialTab={profileInitialTab}
+            onNavigateToBaseline={() => {
+              setBaselineReturnContext('export_data');
+              setOnboardingScreen('baseline_welcome');
+            }}
+            autoTriggerExport={shouldAutoExport}
+            onExportTriggered={() => {
+              // Reset context AFTER export is triggered
+              setBaselineReturnContext('dashboard');
+            }}
+            onUnsavedChangesChange={setProfileHasUnsavedChanges}
+            saveRef={profileSaveRef}
+          />
+        );
+      }
       case 'settings':
         return <MobileSettings onNavigateBack={handleNavigateBack} />;
       default:
-        return <DashboardScreen
-          onNeedHelp={() => setCurrentScreen('help')}
-        />;
+        return <DashboardScreen onNeedHelp={() => setCurrentScreen('help')} />;
     }
   };
-  
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <div className="pb-24">
-        {renderContent()}
-      </div>
+      <div className="pb-24">{renderContent()}</div>
       {!onboardingScreen && ['dashboard', 'content', 'buddies', 'profile'].includes(currentScreen) && (
         <BottomNav
           activeView={activeTab === 'dashboard' ? 'home' : activeTab}
@@ -459,7 +445,7 @@ export const MobileAppStructure: React.FC = () => {
             alignItems: 'center',
             justifyContent: 'center',
             zIndex: 1000,
-            padding: '20px'
+            padding: '20px',
           }}
           onClick={() => {
             setShowProfileUnsavedWarning(false);
@@ -473,24 +459,28 @@ export const MobileAppStructure: React.FC = () => {
               padding: '24px',
               maxWidth: '400px',
               width: '100%',
-              boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)'
+              boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 style={{
-              fontSize: '18px',
-              fontWeight: '600',
-              color: '#1a1a1a',
-              margin: '0 0 16px 0'
-            }}>
+            <h3
+              style={{
+                fontSize: '18px',
+                fontWeight: '600',
+                color: '#1a1a1a',
+                margin: '0 0 16px 0',
+              }}
+            >
               Unsaved changes
             </h3>
-            <p style={{
-              fontSize: '14px',
-              color: '#666666',
-              margin: '0 0 24px 0',
-              lineHeight: '1.6'
-            }}>
+            <p
+              style={{
+                fontSize: '14px',
+                color: '#666666',
+                margin: '0 0 24px 0',
+                lineHeight: '1.6',
+              }}
+            >
               You have unsaved changes in your profile. Do you want to save before leaving?
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -517,7 +507,7 @@ export const MobileAppStructure: React.FC = () => {
                   color: 'white',
                   fontSize: '14px',
                   fontWeight: '600',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
                 }}
               >
                 Save changes
@@ -542,7 +532,7 @@ export const MobileAppStructure: React.FC = () => {
                   color: '#666666',
                   fontSize: '14px',
                   fontWeight: '600',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
                 }}
               >
                 Discard changes
@@ -562,7 +552,7 @@ export const MobileAppStructure: React.FC = () => {
                   color: '#999999',
                   fontSize: '14px',
                   fontWeight: '500',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
                 }}
               >
                 Cancel

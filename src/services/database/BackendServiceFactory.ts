@@ -2,16 +2,15 @@
 // This creates the appropriate backend service based on configuration
 // Allows easy switching between AWS, AWS, or other providers
 import { BackendService, DatabaseConfig } from './DatabaseService';
-import { AWSBackendService } from './AWSService';
 import { AWSBrowserBackendService } from './AWSBrowserService';
 import { LocalBackendService } from './LocalBackendService';
-export type BackendProvider = 'aurora-serverless' | 'postgresql' | 'local';
+export type BackendProvider = 'aws' | 'aurora-serverless' | 'postgresql' | 'local';
 export interface BackendServiceConfig extends DatabaseConfig {
   provider: BackendProvider;
 }
 export class BackendServiceFactory {
   private static instance: BackendService | null = null;
-  private static config: BackendServiceConfig | null = null;
+  static config: BackendServiceConfig | null = null;
   private static instances: Map<string, BackendService> = new Map();
   /**
    * Initialize the backend service with configuration
@@ -39,13 +38,15 @@ export class BackendServiceFactory {
   static getNamedInstance(instanceId: string, config?: BackendServiceConfig): BackendService {
     const serviceConfig = config || this.config;
     if (!serviceConfig) {
-      throw new Error('Backend service not initialized. Provide config or call BackendServiceFactory.initialize() first.');
+      throw new Error(
+        'Backend service not initialized. Provide config or call BackendServiceFactory.initialize() first.'
+      );
     }
 
     if (!this.instances.has(instanceId)) {
       this.instances.set(instanceId, this.createService(serviceConfig));
     }
-    
+
     return this.instances.get(instanceId)!;
   }
 
@@ -82,18 +83,17 @@ export class BackendServiceFactory {
         if (!config.host || !config.database || !config.username || !config.password) {
           throw new Error('Aurora Serverless v2 provider requires host, database, username, and password');
         }
-        return new AWSBackendService(config);
+        throw new Error(
+          'Aurora Serverless server-side provider is not available in the mobile app. Use browser-compatible AWSBrowserBackendService instead.'
+        );
       case 'postgresql':
-        // Check if we're in browser environment
-        if (typeof window !== 'undefined') {
-          throw new Error('PostgreSQL provider cannot be used in browser environment. Use Aurora Serverless for client-side operations.');
-        }
-        if (!config.host || !config.database || !config.username || !config.password) {
-          throw new Error('PostgreSQL provider requires host, database, username, and password');
-        }
-        return new AWSBackendService(config);
+        throw new Error(
+          'PostgreSQL provider is not available in the mobile app. Use the AWS browser provider instead.'
+        );
       default:
-        throw new Error(`Unsupported backend provider: ${config.provider}. Supported providers: aws, local, aurora-serverless, postgresql`);
+        throw new Error(
+          `Unsupported backend provider: ${config.provider}. Supported providers: aws, local, aurora-serverless, postgresql`
+        );
     }
   }
   /**
@@ -122,14 +122,15 @@ export class BackendServiceFactory {
   static getEnvironmentConfig(): BackendServiceConfig {
     // Safe environment access for browser compatibility
     const environment = this.getEnv('NODE_ENV', 'development');
-    
+
     // Check localStorage for user preference first, then environment
     const storedProvider = typeof window !== 'undefined' ? localStorage.getItem('backend_provider') : null;
-    
+
     // 🏠 FORCE LOCAL BACKEND FOR MOBILE - Override everything
-    const backendProvider = (storedProvider as BackendProvider) || 'aws' as BackendProvider;
+    const backendProvider = (storedProvider as BackendProvider) || ('aws' as BackendProvider);
     const baseConfig: Partial<BackendServiceConfig> = {
-      provider: backendProvider};
+      provider: backendProvider,
+    };
     switch (backendProvider) {
       case 'aws':
         return {
@@ -137,29 +138,32 @@ export class BackendServiceFactory {
           provider: 'aws',
           awsRegion: this.getEnv('VITE_AWS_REGION', 'eu-west-2'),
           // Note: Cognito credentials removed - auth now handled server-side via /api/auth endpoints
-          apiBaseUrl: this.getEnv('VITE_API_BASE_URL', 'https://api.mindmeasure.co.uk')
-        } as BackendServiceConfig;      case 'local':
+          apiBaseUrl: this.getEnv('VITE_API_BASE_URL', 'https://api.mindmeasure.co.uk'),
+        } as BackendServiceConfig;
+      case 'local':
         return {
           ...baseConfig,
-          provider: 'local'
+          provider: 'local',
         } as BackendServiceConfig;
       case 'aurora-serverless':
+        // SECURITY: No hardcoded credentials — all values from environment variables only
         return {
           ...baseConfig,
           provider: 'aurora-serverless',
-          host: this.getEnv('VITE_DB_HOST', 'mindmeasure-aurora.cluster-cz8c8wq4k3ak.eu-west-2.rds.amazonaws.com'),
+          host: this.getEnv('VITE_DB_HOST'),
           port: parseInt(this.getEnv('VITE_DB_PORT', '5432')),
-          database: this.getEnv('VITE_DB_NAME', 'mindmeasure'),
-          username: this.getEnv('VITE_DB_USERNAME', 'mindmeasure_admin'),
-          password: this.getEnv('VITE_DB_PASSWORD', 'MindMeasure2024!'),
+          database: this.getEnv('VITE_DB_NAME'),
+          username: this.getEnv('VITE_DB_USERNAME'),
+          password: this.getEnv('VITE_DB_PASSWORD'),
           ssl: environment === 'production',
           awsRegion: this.getEnv('VITE_AWS_REGION', 'eu-west-2'),
           awsCredentials: {
-            accessKeyId: this.getEnv('VITE_AWS_ACCESS_KEY_ID', ''),
-            secretAccessKey: this.getEnv('VITE_AWS_SECRET_ACCESS_KEY', '')},
-          // Note: Cognito credentials removed - auth now handled server-side via /api/auth endpoints
-          s3BucketName: this.getEnv('VITE_AWS_S3_BUCKET_NAME', 'mindmeasure-user-content-459338929203'),
-          s3Region: this.getEnv('VITE_AWS_S3_REGION', this.getEnv('VITE_AWS_REGION', 'eu-west-2'))} as BackendServiceConfig;
+            accessKeyId: this.getEnv('VITE_AWS_ACCESS_KEY_ID'),
+            secretAccessKey: this.getEnv('VITE_AWS_SECRET_ACCESS_KEY'),
+          },
+          s3BucketName: this.getEnv('VITE_AWS_S3_BUCKET_NAME'),
+          s3Region: this.getEnv('VITE_AWS_S3_REGION', this.getEnv('VITE_AWS_REGION', 'eu-west-2')),
+        } as BackendServiceConfig;
       case 'postgresql':
         return {
           ...baseConfig,
@@ -170,9 +174,12 @@ export class BackendServiceFactory {
           database: this.getEnv('VITE_DB_NAME', ''),
           username: this.getEnv('VITE_DB_USERNAME', ''),
           password: this.getEnv('VITE_DB_PASSWORD', ''),
-          ssl: environment === 'production'} as BackendServiceConfig;
+          ssl: environment === 'production',
+        } as BackendServiceConfig;
       default:
-        throw new Error(`Unsupported backend provider: ${backendProvider}. Supported providers: aws, local, aurora-serverless, postgresql`);
+        throw new Error(
+          `Unsupported backend provider: ${backendProvider}. Supported providers: aws, local, aurora-serverless, postgresql`
+        );
     }
   }
 }
@@ -184,9 +191,6 @@ export const getRealtime = () => BackendServiceFactory.getInstance().realtime;
 // Environment configuration helper
 export const initializeBackendService = () => {
   // AWS Backend Service
-  const backendService = BackendServiceFactory.createService(
-    BackendServiceFactory.getEnvironmentConfig()
-  );
   const config = BackendServiceFactory.getEnvironmentConfig();
   BackendServiceFactory.initialize(config);
   return BackendServiceFactory.getInstance();
@@ -197,12 +201,13 @@ export const performHealthCheck = async () => {
   try {
     const backend = BackendServiceFactory.getInstance();
     const results = {
-      database: await backend.database.healthCheck(),
+      database: backend.database.healthCheck ? await backend.database.healthCheck() : true,
       auth: true, // Auth services typically don't have health checks
       storage: true, // Storage services typically don't have health checks
       realtime: true, // Realtime services typically don't have health checks
       provider: BackendServiceFactory.config?.provider || 'unknown',
-      timestamp: new Date().toISOString()};
+      timestamp: new Date().toISOString(),
+    };
     return results;
   } catch (error) {
     console.error('Backend health check failed:', error);
@@ -213,7 +218,8 @@ export const performHealthCheck = async () => {
       realtime: false,
       provider: BackendServiceFactory.config?.provider || 'unknown',
       error: error instanceof Error ? error.message : 'Unknown error',
-      timestamp: new Date().toISOString()};
+      timestamp: new Date().toISOString(),
+    };
   }
 };
 // Development helper - switch providers at runtime
@@ -225,7 +231,8 @@ export const switchProvider = (provider: BackendProvider, additionalConfig: Part
   const newConfig = {
     ...baseConfig,
     ...additionalConfig,
-    provider};
+    provider,
+  };
   BackendServiceFactory.initialize(newConfig);
   return BackendServiceFactory.getInstance();
 };

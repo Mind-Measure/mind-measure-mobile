@@ -8,41 +8,33 @@ import {
   AuthService,
   StorageService,
   RealtimeService,
-  QueryResult,
+  DatabaseResult,
   InsertResult,
-  UpdateResult,
   DeleteResult,
-  DatabaseConfig,
-  FunctionService
+  FunctionService,
+  QueryOptions,
 } from './DatabaseService';
-
 
 // Local Database Service using Capacitor Preferences
 class LocalDatabaseService implements DatabaseService {
-  constructor() {
-  }
+  constructor() {}
 
-  async select<T = any>(
-    table: string,
-    options?: {
-      columns?: string;
-      filters?: Record<string, any>;
-      orderBy?: { column: string; ascending?: boolean }[];
-      limit?: number;
-      offset?: number;
-    }
-  ): Promise<QueryResult<T>> {
+  async select<T = Record<string, unknown>>(table: string, options?: QueryOptions): Promise<DatabaseResult<T>> {
     try {
-      
       // Get data from Capacitor Preferences
       const { value } = await Preferences.get({ key: `table_${table}` });
       let data: T[] = value ? JSON.parse(value) : [];
 
       // Apply filters
       if (options?.filters) {
-        data = data.filter(item => {
-          return Object.entries(options.filters!).every(([key, value]) => {
-            return (item as any)[key] === value;
+        data = data.filter((item) => {
+          return Object.entries(options.filters!).every(([key, filterVal]) => {
+            // Handle QueryFilter (could be object with operator or a primitive)
+            const actualValue =
+              typeof filterVal === 'object' && filterVal !== null && 'operator' in filterVal
+                ? filterVal.value
+                : filterVal;
+            return (item as Record<string, unknown>)[key] === actualValue;
           });
         });
       }
@@ -51,12 +43,12 @@ class LocalDatabaseService implements DatabaseService {
       if (options?.orderBy) {
         data.sort((a, b) => {
           for (const order of options.orderBy!) {
-            const aVal = (a as any)[order.column];
-            const bVal = (b as any)[order.column];
+            const aVal = (a as Record<string, unknown>)[order.column];
+            const bVal = (b as Record<string, unknown>)[order.column];
             const ascending = order.ascending !== false;
-            
-            if (aVal < bVal) return ascending ? -1 : 1;
-            if (aVal > bVal) return ascending ? 1 : -1;
+
+            if ((aVal as string) < (bVal as string)) return ascending ? -1 : 1;
+            if ((aVal as string) > (bVal as string)) return ascending ? 1 : -1;
           }
           return 0;
         });
@@ -77,12 +69,15 @@ class LocalDatabaseService implements DatabaseService {
     }
   }
 
-  async insert<T = any>(table: string, data: Partial<T> | Partial<T>[]): Promise<InsertResult<T>> {
+  async insert<T = Record<string, unknown>>(
+    table: string,
+    data: Partial<T> | Partial<T>[],
+    _options?: Record<string, unknown>
+  ): Promise<InsertResult<T> | DatabaseResult<T>> {
     try {
-      
       // Get existing data
       const { value } = await Preferences.get({ key: `table_${table}` });
-      let existingData: T[] = value ? JSON.parse(value) : [];
+      const existingData: T[] = value ? JSON.parse(value) : [];
 
       // Prepare new data
       const newData = Array.isArray(data) ? data : [data];
@@ -91,10 +86,10 @@ class LocalDatabaseService implements DatabaseService {
       for (const item of newData) {
         // Add ID and timestamps if not present
         const newItem = {
-          id: (item as any).id || `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          created_at: (item as any).created_at || new Date().toISOString(),
-          updated_at: (item as any).updated_at || new Date().toISOString(),
-          ...item
+          id: (item as Record<string, unknown>).id || `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          created_at: (item as Record<string, unknown>).created_at || new Date().toISOString(),
+          updated_at: (item as Record<string, unknown>).updated_at || new Date().toISOString(),
+          ...item,
         } as T;
 
         existingData.push(newItem);
@@ -102,85 +97,84 @@ class LocalDatabaseService implements DatabaseService {
       }
 
       // Save back to storage
-      await Preferences.set({ 
-        key: `table_${table}`, 
-        value: JSON.stringify(existingData) 
+      await Preferences.set({
+        key: `table_${table}`,
+        value: JSON.stringify(existingData),
       });
 
-      return { data: insertedData, error: null };
+      // Return as DatabaseResult (data is T[])
+      return { data: insertedData, error: null } as DatabaseResult<T>;
     } catch (error) {
       console.error('❌ Local insert error:', error);
-      return { data: [], error: error instanceof Error ? error.message : 'Unknown error' };
+      return { data: null, error: error instanceof Error ? error.message : 'Unknown error' } as DatabaseResult<T>;
     }
   }
 
-  async update<T = any>(
+  async update<T = Record<string, unknown>>(
     table: string,
     data: Partial<T>,
-    filters: Record<string, any>
-  ): Promise<UpdateResult<T>> {
+    filtersOrOptions?: Record<string, unknown>
+  ): Promise<DatabaseResult<T>> {
     try {
-      
       // Get existing data
       const { value } = await Preferences.get({ key: `table_${table}` });
       let existingData: T[] = value ? JSON.parse(value) : [];
+      const filters = filtersOrOptions ?? {};
 
       // Find and update matching rows
       const updatedData: T[] = [];
-      let updatedCount = 0;
 
-      existingData = existingData.map(item => {
+      existingData = existingData.map((item) => {
         const matches = Object.entries(filters).every(([key, value]) => {
-          return (item as any)[key] === value;
+          return (item as Record<string, unknown>)[key] === value;
         });
 
         if (matches) {
           const updatedItem = {
             ...item,
             ...data,
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
           } as T;
           updatedData.push(updatedItem);
-          updatedCount++;
           return updatedItem;
         }
         return item;
       });
 
       // Save back to storage
-      await Preferences.set({ 
-        key: `table_${table}`, 
-        value: JSON.stringify(existingData) 
+      await Preferences.set({
+        key: `table_${table}`,
+        value: JSON.stringify(existingData),
       });
 
       return { data: updatedData, error: null };
     } catch (error) {
       console.error('❌ Local update error:', error);
-      return { data: [], error: error instanceof Error ? error.message : 'Unknown error' };
+      return { data: null, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
 
-  async delete(table: string, filters: Record<string, any>): Promise<DeleteResult> {
+  async delete<T = Record<string, unknown>>(
+    table: string,
+    filtersOrOptions?: Record<string, unknown>
+  ): Promise<DeleteResult<T> | DatabaseResult<void>> {
     try {
-      
       // Get existing data
       const { value } = await Preferences.get({ key: `table_${table}` });
-      let existingData: any[] = value ? JSON.parse(value) : [];
+      let existingData: Record<string, unknown>[] = value ? JSON.parse(value) : [];
+      const filters = filtersOrOptions ?? {};
 
       // Filter out matching rows
-      const originalCount = existingData.length;
-      existingData = existingData.filter(item => {
+      existingData = existingData.filter((item) => {
         return !Object.entries(filters).every(([key, value]) => {
           return item[key] === value;
         });
       });
 
-      const deletedCount = originalCount - existingData.length;
-
       // Save back to storage
-      await Preferences.set({ 
-        key: `table_${table}`, 
-        value: JSON.stringify(existingData) 
+      await Preferences.set({
+        key: `table_${table}`,
+        value: JSON.stringify(existingData),
       });
 
       return { error: null };
@@ -205,119 +199,128 @@ class LocalDatabaseService implements DatabaseService {
 
 // Local Auth Service (mock implementation)
 class LocalAuthService implements AuthService {
-  async signUp(email: string, password: string, options?: any): Promise<any> {
+  async signUp(
+    email: string | { email: string; password: string; firstName?: string; lastName?: string },
+    _password?: string,
+    _options?: Record<string, unknown>
+  ): Promise<{ user?: null; data?: Record<string, unknown> | null; error: string | null }> {
+    const userEmail = typeof email === 'string' ? email : email.email;
     // Mock successful signup
-    return { 
-      data: { 
-        user: { 
-          id: `local_${Date.now()}`, 
-          email, 
-          email_confirmed_at: new Date().toISOString() 
-        } 
-      }, 
-      error: null 
+    return {
+      data: {
+        user: {
+          id: `local_${Date.now()}`,
+          email: userEmail,
+          email_confirmed_at: new Date().toISOString(),
+        },
+      },
+      error: null,
     };
   }
 
-  async signInWithPassword(email: string, password: string): Promise<any> {
+  async signIn(
+    email: string | { email: string; password: string },
+    _password?: string
+  ): Promise<{ user?: null; data?: Record<string, unknown> | null; error: string | null }> {
+    const userEmail = typeof email === 'string' ? email : email.email;
     // Mock successful signin
-    return { 
-      data: { 
-        user: { 
-          id: `local_${Date.now()}`, 
-          email, 
-          email_confirmed_at: new Date().toISOString() 
-        } 
-      }, 
-      error: null 
+    return {
+      data: {
+        user: {
+          id: `local_${Date.now()}`,
+          email: userEmail,
+          email_confirmed_at: new Date().toISOString(),
+        },
+      },
+      error: null,
     };
   }
 
-  async signOut(): Promise<any> {
+  async signOut(): Promise<{ error: string | null }> {
     return { error: null };
   }
 
-  async getUser(): Promise<any> {
-    return { data: { user: null }, error: null };
+  async getCurrentUser(): Promise<{ user?: null; data?: null; error: string | null }> {
+    return { data: null, user: null, error: null };
   }
 
-  async confirmSignUp(email: string, code: string): Promise<any> {
+  async resetPassword(_email: string): Promise<{ error: string | null }> {
     return { error: null };
   }
 
-  async resendConfirmationCode(email: string): Promise<any> {
+  async resendConfirmationCode(_email: string): Promise<{ error: string | null }> {
     return { error: null };
-  }
-
-  async resetPassword(email: string): Promise<any> {
-    return { error: null };
-  }
-
-  async confirmResetPassword(email: string, code: string, newPassword: string): Promise<any> {
-    return { error: null };
-  }
-
-  onAuthStateChange(callback: (event: string, user: any) => void): () => void {
-    // Return no-op unsubscribe function
-    return () => {};
   }
 }
 
 // Local Storage Service (mock implementation)
 class LocalStorageService implements StorageService {
-  async uploadFile(file: File, path: string): Promise<any> {
-    return { data: { path }, error: null };
+  async upload(
+    _bucket: string,
+    path: string,
+    _file: File | Blob,
+    _options?: { contentType?: string; metadata?: Record<string, string> }
+  ): Promise<{ url?: string; key?: string; error: string | null }> {
+    return { url: `local://file/${path}`, key: path, error: null };
   }
 
-  async downloadFile(path: string): Promise<any> {
+  async download(_bucket: string, _path: string): Promise<{ data: Blob | null; error: string | null }> {
     return { data: null, error: 'Local storage download not implemented' };
   }
 
-  async deleteFile(path: string): Promise<any> {
+  async delete(_bucket: string, _path: string): Promise<{ error: string | null }> {
     return { error: null };
   }
 
-  async getSignedUrl(path: string, expiresIn?: number): Promise<any> {
-    return { data: { signedUrl: `local://file/${path}` }, error: null };
-  }
-
-  async listFiles(path: string): Promise<any> {
-    return { data: [], error: null };
+  async getSignedUrl(
+    _bucket: string,
+    path: string,
+    _expiresIn?: number
+  ): Promise<{ url: string | null; error: string | null }> {
+    return { url: `local://file/${path}`, error: null };
   }
 }
 
 // Local Realtime Service (mock implementation)
 class LocalRealtimeService implements RealtimeService {
-  subscribe(table: string, callback: (payload: any) => void): any {
+  subscribe<T = Record<string, unknown>>(
+    _table: string,
+    _options?: {
+      event?: 'INSERT' | 'UPDATE' | 'DELETE' | '*';
+      schema?: string;
+      filter?: string;
+    },
+    _callback?: (payload: {
+      eventType: string;
+      new: T;
+      old: T;
+      errors: Array<{ message: string; code?: string }>;
+    }) => void
+  ): { unsubscribe: () => void } {
     return { unsubscribe: () => {} };
   }
 
-  unsubscribe(subscription: any): void {
-  }
-
-  removeAllSubscriptions(): void {
-  }
+  removeAllSubscriptions(): void {}
 }
 
 // Local Functions Service (mock implementation)
 class LocalFunctionsService implements FunctionService {
-  async invoke(functionName: string, payload?: any): Promise<{ data: any; error: any }> {
-    
+  async invoke(functionName: string, _payload?: Record<string, unknown>): Promise<{ data: any; error: any }> {
     // Mock some common function responses
     if (functionName === 'analyze-baseline') {
       return {
         data: {
           score: Math.floor(Math.random() * 30) + 70, // Random score 70-100
           analysis: 'Local mock analysis completed',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         },
-        error: null
+        error: null,
       };
     }
 
     return {
       data: { message: 'Local function executed successfully' },
-      error: null
+      error: null,
     };
   }
 }
@@ -328,15 +331,13 @@ export class LocalBackendService implements BackendService {
   public auth: AuthService;
   public storage: StorageService;
   public realtime: RealtimeService;
-  public functions: LocalFunctionsService;
+  public functions: FunctionService;
 
   constructor() {
-    
     this.database = new LocalDatabaseService();
     this.auth = new LocalAuthService();
     this.storage = new LocalStorageService();
     this.realtime = new LocalRealtimeService();
     this.functions = new LocalFunctionsService();
-    
   }
 }
