@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { cognitoApiClient } from '../services/cognito-api-client';
+import { saveUserToDevice } from '../components/mobile/MobileAppWrapper';
 
 export interface AuthUser {
   id: string;
@@ -104,8 +105,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
           email: result.email,
         };
       }
-      setUser(result.data.user);
-      return { error: null, user: result.data.user ?? undefined };
+      const signedInUser = result.data.user;
+      setUser(signedInUser);
+
+      // Save to device preferences so the app recognises them on next launch
+      if (signedInUser) {
+        await saveUserToDevice(signedInUser.id, signedInUser.hasCompletedBaseline ?? false);
+      }
+
+      return { error: null, user: signedInUser ?? undefined };
     } catch (error) {
       console.error('Sign in error:', error);
       return { error: 'Sign in failed' };
