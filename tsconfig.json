@@ -28,8 +28,8 @@
       "@/*": ["./src/*"]
     },
 
-    /* Test framework types (vitest globals mode) + Node for server-side code */
-    "types": ["vitest/globals", "node"]
+    /* Test framework + Node type definitions */
+    "types": ["vitest", "node"]
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist", "api", "aws", "scripts", "tests"]
