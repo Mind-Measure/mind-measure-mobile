@@ -26,7 +26,10 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+
+    /* Test framework types (vitest globals mode) + Node for server-side code */
+    "types": ["vitest/globals", "node"]
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist", "api", "aws", "scripts", "tests"]
