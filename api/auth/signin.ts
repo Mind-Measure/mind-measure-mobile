@@ -5,6 +5,7 @@
 
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { CognitoIdentityProviderClient, InitiateAuthCommand } from '@aws-sdk/client-cognito-identity-provider';
+import { Client } from 'pg';
 
 /** Decode a JWT payload without verifying (server already issued it). */
 function decodeJwtPayload(token: string): Record<string, unknown> | null {
@@ -83,8 +84,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let hasCompletedBaseline = false;
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { Client } = require('pg');
       const pgClient = new Client({
         host: process.env.AWS_AURORA_HOST,
         port: parseInt(process.env.AWS_AURORA_PORT || '5432'),
