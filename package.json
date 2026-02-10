@@ -2,6 +2,9 @@
   "name": "Mind Measure Mobile App Redesign",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "20.x"
+  },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.947.0",
     "@aws-sdk/client-cognito-identity-provider": "^3.894.0",
