@@ -143,31 +143,58 @@ export function MobileAppWrapper() {
   const [_hasCheckedUserStatus, setHasCheckedUserStatus] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, loading: _authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
-  // Check device preferences for returning user status
+  // Check auth + device preferences to route returning users
   useEffect(() => {
     const checkDeviceUserStatus = async () => {
+      // Wait for auth to finish loading
+      if (authLoading) return;
+
       // Only redirect on the root path
-      if (location.pathname === '/') {
-        try {
-          const { value } = await Preferences.get({ key: 'mindmeasure_user' });
-          if (value) {
-            const userData = JSON.parse(value);
-            if (userData.baselineCompleted) {
-              navigate('/welcome-back');
-            } else {
-              navigate('/baseline-welcome');
-            }
-          }
-        } catch (error) {
-          console.error('Error reading device preferences:', error);
-        }
+      if (location.pathname !== '/') {
+        setHasCheckedUserStatus(true);
+        return;
       }
+
+      // If user is authenticated (has valid session), use their profile data
+      if (user) {
+        if (user.hasCompletedBaseline) {
+          // Returning user with baseline — update device and go to dashboard
+          await saveUserToDevice(user.id, true);
+          navigate('/welcome-back');
+        } else {
+          // Authenticated but no baseline yet
+          await saveUserToDevice(user.id, false);
+          navigate('/baseline-welcome');
+        }
+        setHasCheckedUserStatus(true);
+        return;
+      }
+
+      // No active auth session — check device preferences for quick recognition
+      try {
+        const { value } = await Preferences.get({ key: 'mindmeasure_user' });
+        if (value) {
+          const userData = JSON.parse(value);
+          if (userData.baselineCompleted) {
+            // Device remembers a completed user — send to welcome-back
+            // (they'll need to re-authenticate via token refresh or sign-in)
+            navigate('/welcome-back');
+          } else {
+            // Device has user data but no baseline — clear stale data,
+            // let them sign in fresh so we can look up their real status
+            await clearUserFromDevice();
+          }
+        }
+      } catch (error) {
+        console.error('Error reading device preferences:', error);
+      }
+
       setHasCheckedUserStatus(true);
     };
     checkDeviceUserStatus();
-  }, [location.pathname, navigate]);
+  }, [location.pathname, navigate, user, authLoading]);
 
   try {
     // Update activeScreen based on current route
