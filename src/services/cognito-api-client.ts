@@ -257,18 +257,27 @@ export const cognitoApiClient = {
           expiresIn: result.expiresIn || 3600,
         });
 
-        // Parse ID token to get user info
+        // Parse ID token for fallback identity info
         const idPayload = parseJwtPayload(result.idToken);
 
+        // Prefer profile data from Aurora over JWT claims
+        const profile = result.profile;
+
         const user: AuthUser = {
-          id: idPayload?.sub || idPayload?.['cognito:username'] || email,
-          email: idPayload?.email || email,
+          id: profile?.user_id || idPayload?.sub || idPayload?.['cognito:username'] || email,
+          email: profile?.email || idPayload?.email || email,
           email_confirmed_at: new Date().toISOString(),
+          university_id: profile?.university_id,
           user_metadata: {
-            first_name: idPayload?.given_name,
-            last_name: idPayload?.family_name,
+            first_name: profile?.first_name || idPayload?.given_name,
+            last_name: profile?.last_name || idPayload?.family_name,
           },
+          hasCompletedBaseline: result.hasCompletedBaseline ?? false,
         };
+
+        console.log(
+          `✅ Signed in as: ${user.user_metadata?.first_name} ${user.user_metadata?.last_name} (baseline: ${user.hasCompletedBaseline})`
+        );
 
         return { data: { user }, error: null as string | null };
       }

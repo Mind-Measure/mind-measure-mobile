@@ -73,6 +73,17 @@ export interface SignInResponse {
   challengeName?: string;
   session?: string;
   error?: string | null;
+  /** User profile from Aurora database (looked up by email) */
+  profile?: {
+    user_id?: string;
+    email?: string;
+    first_name?: string;
+    last_name?: string;
+    university_id?: string;
+    [key: string]: unknown;
+  } | null;
+  /** Whether the user has completed at least one assessment */
+  hasCompletedBaseline?: boolean;
 }
 
 export interface TokenRefreshResponse {
