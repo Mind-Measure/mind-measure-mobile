@@ -1,10 +1,10 @@
 /**
  * Get Assessment History for Authenticated User
- * Uses Cognito GetUser for authentication (no jsonwebtoken/jwks-rsa dependency)
+ * Accepts both Cognito access tokens and ID tokens.
  */
 
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { CognitoIdentityProviderClient, GetUserCommand } from '@aws-sdk/client-cognito-identity-provider';
+import { authenticateRequest } from '../_lib/cognito-auth';
 import { Client } from 'pg';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -24,37 +24,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // ── Authenticate via Cognito GetUser ──────────────────────────
-  const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'No authentication token provided' });
-  }
-
-  const accessToken = authHeader.substring(7);
+  // ── Authenticate (accepts access token OR ID token) ────────────
   let userId: string;
-
   try {
-    const cognito = new CognitoIdentityProviderClient({
-      region: (process.env.AWS_REGION || 'eu-west-2').trim(),
-      credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID?.trim() || '',
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY?.trim() || '',
-      },
-    });
-
-    const result = await cognito.send(new GetUserCommand({ AccessToken: accessToken }));
-
-    // Extract sub (user ID) from Cognito attributes
-    const subAttr = result.UserAttributes?.find((a) => a.Name === 'sub');
-    userId = subAttr?.Value || result.Username || '';
-
-    if (!userId) {
-      return res.status(401).json({ error: 'Could not determine user identity' });
-    }
+    const auth = await authenticateRequest(req.headers.authorization);
+    userId = auth.userId;
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : 'Authentication failed';
     console.error('[history] Auth error:', msg);
-    return res.status(401).json({ error: 'Invalid or expired token' });
+    return res.status(401).json({ error: msg });
   }
 
   // ── Fetch assessment history from Aurora ──────────────────────

@@ -5,7 +5,7 @@
  */
 
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { CognitoIdentityProviderClient, GetUserCommand } from '@aws-sdk/client-cognito-identity-provider';
+import { authenticateRequest } from '../_lib/cognito-auth';
 import { Client } from 'pg';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -26,32 +26,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // ── Authenticate via Cognito access token ──────────────────────
-  const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'No authentication token provided' });
-  }
-  const accessToken = authHeader.substring(7);
-
+  // ── Authenticate (accepts access token OR ID token) ─────────
   let userId: string;
   try {
-    const cognito = new CognitoIdentityProviderClient({
-      region: (process.env.AWS_REGION || 'eu-west-2').trim(),
-      credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID?.trim() || '',
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY?.trim() || '',
-      },
-    });
-    const userResult = await cognito.send(new GetUserCommand({ AccessToken: accessToken }));
-    const subAttr = userResult.UserAttributes?.find((a) => a.Name === 'sub');
-    userId = subAttr?.Value || userResult.Username || '';
-    if (!userId) {
-      return res.status(401).json({ error: 'Could not determine user identity' });
-    }
+    const auth = await authenticateRequest(req.headers.authorization);
+    userId = auth.userId;
   } catch (authError: unknown) {
     const errMsg = authError instanceof Error ? authError.message : String(authError);
-    console.error('❌ Cognito auth failed in profile:', errMsg);
-    return res.status(401).json({ error: 'Authentication failed', message: errMsg });
+    console.error('❌ Auth failed in profile:', errMsg);
+    return res.status(401).json({ error: errMsg });
   }
 
   const client = new Client({
