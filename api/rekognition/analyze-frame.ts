@@ -48,43 +48,43 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (rekognitionResponse.FaceDetails && rekognitionResponse.FaceDetails.length > 0) {
       const faceDetails = rekognitionResponse.FaceDetails[0]; // Focus on the most prominent face
-      
+
       analysisResult = {
         ...analysisResult,
         faceDetected: true,
-        emotions: faceDetails.Emotions?.map(e => ({ 
-          type: e.Type, 
-          confidence: e.Confidence 
-        })) || [],
-        dominantEmotion: faceDetails.Emotions?.sort((a, b) => (b.Confidence || 0) - (a.Confidence || 0))[0]?.Type || null,
+        emotions:
+          faceDetails.Emotions?.map((e) => ({
+            type: e.Type,
+            confidence: e.Confidence,
+          })) || [],
+        dominantEmotion:
+          faceDetails.Emotions?.sort((a, b) => (b.Confidence || 0) - (a.Confidence || 0))[0]?.Type || null,
         confidence: faceDetails.Confidence || 0,
         smile: faceDetails.Smile?.Value || false,
         eyesOpen: faceDetails.EyesOpen?.Value || false,
         mouthOpen: faceDetails.MouthOpen?.Value || false,
-        ageRange: faceDetails.AgeRange ? {
-          low: faceDetails.AgeRange.Low,
-          high: faceDetails.AgeRange.High
-        } : null,
-        gender: faceDetails.Gender ? {
-          value: faceDetails.Gender.Value,
-          confidence: faceDetails.Gender.Confidence
-        } : null,
+        ageRange: faceDetails.AgeRange
+          ? {
+              low: faceDetails.AgeRange.Low,
+              high: faceDetails.AgeRange.High,
+            }
+          : null,
+        gender: faceDetails.Gender
+          ? {
+              value: faceDetails.Gender.Value,
+              confidence: faceDetails.Gender.Confidence,
+            }
+          : null,
         brightness: faceDetails.Quality?.Brightness || 128,
       };
     }
 
     res.status(200).json(analysisResult);
-
   } catch (error) {
     console.error('❌ Rekognition analysis error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Rekognition analysis failed',
-      details: (error as Error).message 
+      details: (error as Error).message,
     });
   }
 }
-
-
-
-
-

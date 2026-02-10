@@ -1,5 +1,6 @@
 /* Capacitor keyboard handling styles */
-html, body {
+html,
+body {
   height: 100%;
   overflow: hidden;
 }
@@ -18,9 +19,9 @@ body.keyboard-open {
 }
 
 /* Prevent zoom on input focus (iOS) */
-input[type="text"],
-input[type="email"],
-input[type="password"],
+input[type='text'],
+input[type='email'],
+input[type='password'],
 textarea {
   font-size: 16px !important;
 }

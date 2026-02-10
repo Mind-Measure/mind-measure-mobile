@@ -27,20 +27,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     await client.connect();
 
     // Delete the article
-    const result = await client.query(
-      'DELETE FROM content_articles WHERE id = $1 RETURNING title',
-      [articleId]
-    );
+    const result = await client.query('DELETE FROM content_articles WHERE id = $1 RETURNING title', [articleId]);
 
     if (result.rowCount === 0) {
       return res.status(404).json({ error: 'Article not found' });
     }
 
-    return res.status(200).json({ 
-      success: true, 
-      message: `Article "${result.rows[0].title}" deleted successfully` 
+    return res.status(200).json({
+      success: true,
+      message: `Article "${result.rows[0].title}" deleted successfully`,
     });
-
   } catch (error: any) {
     console.error('Error deleting article:', error);
     return res.status(500).json({ error: error.message || 'Failed to delete article' });

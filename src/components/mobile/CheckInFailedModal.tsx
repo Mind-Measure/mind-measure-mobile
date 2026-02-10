@@ -92,7 +92,8 @@ export function CheckInFailedModal({ isOpen, onReturnToDashboard }: CheckInFaile
               margin: '0 0 32px 0',
             }}
           >
-            Sorry, unfortunately your check-in was not long enough to give us an accurate reading of your mood. Please try again.
+            Sorry, unfortunately your check-in was not long enough to give us an accurate reading of your mood. Please
+            try again.
           </p>
 
           {/* Return to Dashboard Button */}

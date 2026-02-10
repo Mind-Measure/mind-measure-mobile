@@ -4,7 +4,7 @@ interface Nudge {
   id: string;
   template: 'event' | 'service' | 'tip';
   isPinned: boolean;
-  
+
   // Event fields
   eventTitle?: string;
   eventDescription?: string;
@@ -12,13 +12,13 @@ interface Nudge {
   eventDateTime?: string;
   eventButtonText?: string;
   eventButtonLink?: string;
-  
+
   // Service fields
   serviceTitle?: string;
   serviceDescription?: string;
   serviceAccess?: string;
   serviceLink?: string;
-  
+
   // Tip fields
   tipText?: string;
   tipArticleLink?: string;
@@ -40,17 +40,15 @@ export function useActiveNudges(universityId: string | null | undefined) {
       try {
         setLoading(true);
         setError(null);
-        
-        
+
         const response = await fetch(`/api/nudges/active?universityId=${universityId}`);
-        
+
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);
         }
-        
+
         const data = await response.json();
-        
-        
+
         setPinned(data.pinned || null);
         setRotated(data.rotated || null);
       } catch (err) {
@@ -60,7 +58,7 @@ export function useActiveNudges(universityId: string | null | undefined) {
         setLoading(false);
       }
     }
-    
+
     fetchNudges();
   }, [universityId]);
 

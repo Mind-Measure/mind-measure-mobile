@@ -56,7 +56,7 @@ export function AddBuddyModal({ isOpen, onClose, onAdd, currentBuddyCount }: Add
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '16px'
+          padding: '16px',
         }}
       >
         <div
@@ -69,36 +69,42 @@ export function AddBuddyModal({ isOpen, onClose, onAdd, currentBuddyCount }: Add
             width: '100%',
             maxHeight: '90vh',
             overflowY: 'auto',
-            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15)'
+            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15)',
           }}
         >
           <div style={{ marginBottom: '28px' }}>
-            <h2 style={{
-              fontSize: '24px',
-              fontWeight: '600',
-              color: '#0F172A',
-              margin: '0 0 8px 0'
-            }}>
+            <h2
+              style={{
+                fontSize: '24px',
+                fontWeight: '600',
+                color: '#0F172A',
+                margin: '0 0 8px 0',
+              }}
+            >
               Invite a Buddy
             </h2>
-            <p style={{
-              fontSize: '14px',
-              color: '#64748B',
-              margin: 0
-            }}>
+            <p
+              style={{
+                fontSize: '14px',
+                color: '#64748B',
+                margin: 0,
+              }}
+            >
               Inviting buddy {currentBuddyCount + 1} of 5
             </p>
           </div>
 
           <form onSubmit={handleSubmit}>
             <div style={{ marginBottom: '20px' }}>
-              <label style={{
-                display: 'block',
-                fontSize: '14px',
-                fontWeight: '600',
-                color: '#334155',
-                marginBottom: '8px'
-              }}>
+              <label
+                style={{
+                  display: 'block',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#334155',
+                  marginBottom: '8px',
+                }}
+              >
                 Name *
               </label>
               <input
@@ -116,21 +122,27 @@ export function AddBuddyModal({ isOpen, onClose, onAdd, currentBuddyCount }: Add
                   boxSizing: 'border-box',
                   backgroundColor: '#FFFFFF',
                   transition: 'border-color 0.2s',
-                  color: '#0F172A'
+                  color: '#0F172A',
                 }}
-                onFocus={(e) => { e.currentTarget.style.borderColor = '#8B5CF6'; }}
-                onBlur={(e) => { e.currentTarget.style.borderColor = '#E2E8F0'; }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = '#8B5CF6';
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = '#E2E8F0';
+                }}
               />
             </div>
 
             <div style={{ marginBottom: '20px' }}>
-              <label style={{
-                display: 'block',
-                fontSize: '14px',
-                fontWeight: '600',
-                color: '#334155',
-                marginBottom: '8px'
-              }}>
+              <label
+                style={{
+                  display: 'block',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#334155',
+                  marginBottom: '8px',
+                }}
+              >
                 Email address *
               </label>
               <input
@@ -148,21 +160,27 @@ export function AddBuddyModal({ isOpen, onClose, onAdd, currentBuddyCount }: Add
                   boxSizing: 'border-box',
                   backgroundColor: '#FFFFFF',
                   transition: 'border-color 0.2s',
-                  color: '#0F172A'
+                  color: '#0F172A',
                 }}
-                onFocus={(e) => { e.currentTarget.style.borderColor = '#8B5CF6'; }}
-                onBlur={(e) => { e.currentTarget.style.borderColor = '#E2E8F0'; }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = '#8B5CF6';
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = '#E2E8F0';
+                }}
               />
             </div>
 
             <div style={{ marginBottom: '28px' }}>
-              <label style={{
-                display: 'block',
-                fontSize: '14px',
-                fontWeight: '600',
-                color: '#334155',
-                marginBottom: '8px'
-              }}>
+              <label
+                style={{
+                  display: 'block',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#334155',
+                  marginBottom: '8px',
+                }}
+              >
                 Personal message (optional)
               </label>
               <textarea
@@ -180,10 +198,14 @@ export function AddBuddyModal({ isOpen, onClose, onAdd, currentBuddyCount }: Add
                   transition: 'border-color 0.2s',
                   color: '#0F172A',
                   fontFamily: 'inherit',
-                  resize: 'vertical'
+                  resize: 'vertical',
                 }}
-                onFocus={(e) => { e.currentTarget.style.borderColor = '#8B5CF6'; }}
-                onBlur={(e) => { e.currentTarget.style.borderColor = '#E2E8F0'; }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = '#8B5CF6';
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = '#E2E8F0';
+                }}
               />
             </div>
 
@@ -201,10 +223,14 @@ export function AddBuddyModal({ isOpen, onClose, onAdd, currentBuddyCount }: Add
                   fontWeight: '600',
                   color: '#475569',
                   cursor: 'pointer',
-                  transition: 'background-color 0.2s'
+                  transition: 'background-color 0.2s',
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#E2E8F0'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#F1F5F9'; }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#E2E8F0';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#F1F5F9';
+                }}
               >
                 Cancel
               </button>
@@ -221,7 +247,7 @@ export function AddBuddyModal({ isOpen, onClose, onAdd, currentBuddyCount }: Add
                   color: 'white',
                   cursor: 'pointer',
                   transition: 'transform 0.2s, box-shadow 0.2s',
-                  boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)'
+                  boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)',
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = 'translateY(-2px)';

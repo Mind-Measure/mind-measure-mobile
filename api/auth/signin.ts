@@ -2,10 +2,7 @@
 // Vercel serverless function
 
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import {
-  CognitoIdentityProviderClient,
-  InitiateAuthCommand
-} from '@aws-sdk/client-cognito-identity-provider';
+import { CognitoIdentityProviderClient, InitiateAuthCommand } from '@aws-sdk/client-cognito-identity-provider';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Only allow POST requests
@@ -36,8 +33,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       region: region,
       credentials: {
         accessKeyId: accessKeyId,
-        secretAccessKey: secretAccessKey
-      }
+        secretAccessKey: secretAccessKey,
+      },
     });
 
     const command = new InitiateAuthCommand({
@@ -45,8 +42,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       AuthFlow: 'USER_PASSWORD_AUTH',
       AuthParameters: {
         USERNAME: email,
-        PASSWORD: password
-      }
+        PASSWORD: password,
+      },
     });
 
     const result = await client.send(command);
@@ -58,14 +55,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).json({
           needsNewPassword: true,
           session: result.Session,
-          error: null
+          error: null,
         });
       }
-      
+
       return res.status(200).json({
         challengeName: result.ChallengeName,
         session: result.Session,
-        error: 'Additional verification required'
+        error: 'Additional verification required',
       });
     }
 
@@ -76,15 +73,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       refreshToken: result.AuthenticationResult?.RefreshToken,
       expiresIn: result.AuthenticationResult?.ExpiresIn,
       tokenType: result.AuthenticationResult?.TokenType,
-      error: null
+      error: null,
     });
-
   } catch (error: any) {
     console.error('Cognito sign in error:', error);
-    
+
     let errorMessage = 'Sign in failed';
     let needsVerification = false;
-    
+
     if (error.name === 'NotAuthorizedException') {
       errorMessage = 'Incorrect email or password';
     } else if (error.name === 'UserNotConfirmedException') {
@@ -97,10 +93,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     } else if (error.message) {
       errorMessage = error.message;
     }
-    
+
     res.status(401).json({
       error: errorMessage,
-      needsVerification
+      needsVerification,
     });
   }
 }

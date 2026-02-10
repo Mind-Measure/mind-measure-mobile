@@ -2,18 +2,15 @@
 // Vercel serverless function
 
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import {
-  CognitoIdentityProviderClient,
-  GlobalSignOutCommand
-} from '@aws-sdk/client-cognito-identity-provider';
+import { CognitoIdentityProviderClient, GlobalSignOutCommand } from '@aws-sdk/client-cognito-identity-provider';
 
 // AWS Cognito configuration
 const cognitoConfig = {
   region: process.env.AWS_REGION || 'eu-west-2',
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || ''
-  }
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+  },
 };
 
 const client = new CognitoIdentityProviderClient(cognitoConfig);
@@ -32,20 +29,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const command = new GlobalSignOutCommand({
-      AccessToken: session.AccessToken
+      AccessToken: session.AccessToken,
     });
 
     await client.send(command);
 
     res.status(200).json({
       success: true,
-      error: null
+      error: null,
     });
-
   } catch (error: any) {
     console.error('Cognito sign out error:', error);
     res.status(500).json({
-      error: error.message || 'Sign out failed'
+      error: error.message || 'Sign out failed',
     });
   }
 }

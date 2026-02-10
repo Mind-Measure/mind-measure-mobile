@@ -1,6 +1,6 @@
 /**
  * SECURED Generic Database INSERT Endpoint
- * 
+ *
  * Security measures:
  * - JWT authentication required
  * - Table allowlist (only safe tables)
@@ -21,7 +21,7 @@ const ALLOWED_TABLES = new Set([
   'assessment_transcripts',
   'assessment_items',
   'weekly_summary',
-  'buddy_contacts'  // User's emergency support contacts
+  'buddy_contacts', // User's emergency support contacts
 ]);
 
 interface InsertRequest {
@@ -52,7 +52,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(403).json({
         error: 'Forbidden',
         message: `Cannot insert into table '${table}'`,
-        code: 'TABLE_NOT_ALLOWED'
+        code: 'TABLE_NOT_ALLOWED',
       });
     }
 
@@ -66,7 +66,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       database: process.env.AWS_AURORA_DATABASE,
       user: process.env.AWS_AURORA_USERNAME,
       password: process.env.AWS_AURORA_PASSWORD,
-      ssl: { rejectUnauthorized: false }
+      ssl: { rejectUnauthorized: false },
     });
 
     await client.connect();
@@ -74,7 +74,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const columns = Object.keys(data);
     const values = Object.values(data);
     const placeholders = values.map((_, index) => `$${index + 1}`).join(', ');
-    
+
     const sql = `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${placeholders}) RETURNING *`;
 
     const result = await client.query(sql, values);
@@ -82,15 +82,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.status(200).json({
       data: result.rows,
-      error: null
+      error: null,
     });
-
   } catch (error: any) {
     console.error(`[DB INSERT] Error for user ${userId}:`, error);
     return res.status(500).json({
       error: 'Database insert failed',
       message: error.message,
-      data: null
+      data: null,
     });
   }
 }

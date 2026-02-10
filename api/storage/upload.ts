@@ -4,7 +4,8 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import formidable from 'formidable';
 import fs from 'fs';
 
-const BUCKET_NAME = process.env.AWS_S3_BUCKET_NAME || process.env.VITE_AWS_S3_BUCKET_NAME || 'mindmeasure-user-content-459338929203';
+const BUCKET_NAME =
+  process.env.AWS_S3_BUCKET_NAME || process.env.VITE_AWS_S3_BUCKET_NAME || 'mindmeasure-user-content-459338929203';
 
 export const config = {
   api: {
@@ -20,7 +21,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // Use AWS SDK default credential resolution (should work with Vercel's AWS environment)
   // Ensure we use the correct region where buckets were created
   const s3Client = new S3Client({
-    region: 'eu-west-2' // Fixed region where all university buckets are created
+    region: 'eu-west-2', // Fixed region where all university buckets are created
   });
 
   try {
@@ -32,17 +33,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       minFileSize: 1, // Require at least 1 byte
     });
 
-    const [fields, files] = await form.parse(req) as [any, any];
-    
+    const [fields, files] = (await form.parse(req)) as [any, any];
+
     const file = Array.isArray(files.file) ? files.file[0] : files.file;
     const filePath = Array.isArray(fields.filePath) ? fields.filePath[0] : fields.filePath;
     const bucket = Array.isArray(fields.bucket) ? fields.bucket[0] : fields.bucket;
-    
+
     if (!file || !filePath) {
       console.error('❌ Missing file or filePath:', { hasFile: !!file, filePath });
       return res.status(400).json({ error: 'File and file path are required' });
     }
-    
+
     if (!file.size || file.size === 0) {
       console.error('❌ File is empty:', { size: file.size, name: file.originalFilename });
       return res.status(400).json({ error: 'File is empty or invalid' });
@@ -50,7 +51,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Read the file content
     const fileContent = fs.readFileSync(file.filepath);
-    
+
     // Upload to S3
     const uploadCommand = new PutObjectCommand({
       Bucket: bucket || BUCKET_NAME,
@@ -78,15 +79,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       data: {
         path: filePath,
         url: signedUrl,
-        bucket: bucket || BUCKET_NAME
-      }
+        bucket: bucket || BUCKET_NAME,
+      },
     });
-
   } catch (error: any) {
     console.error('❌ File upload error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'File upload failed',
-      details: error.message 
+      details: error.message,
     });
   }
 }

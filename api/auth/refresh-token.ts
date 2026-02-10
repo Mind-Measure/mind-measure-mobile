@@ -2,7 +2,7 @@ import { VercelRequest, VercelResponse } from '@vercel/node';
 import {
   CognitoIdentityProviderClient,
   InitiateAuthCommand,
-  AuthFlowType
+  AuthFlowType,
 } from '@aws-sdk/client-cognito-identity-provider';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -28,7 +28,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const client = new CognitoIdentityProviderClient({
     region,
-    credentials: { accessKeyId, secretAccessKey }
+    credentials: { accessKeyId, secretAccessKey },
   });
 
   try {
@@ -36,8 +36,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       AuthFlow: AuthFlowType.REFRESH_TOKEN_AUTH,
       ClientId: clientId,
       AuthParameters: {
-        REFRESH_TOKEN: refreshToken
-      }
+        REFRESH_TOKEN: refreshToken,
+      },
     });
 
     const response = await client.send(command);
@@ -54,14 +54,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         idToken: IdToken,
         refreshToken: refreshToken, // Refresh token stays the same
         expiresIn: ExpiresIn || 3600,
-        tokenType: 'Bearer'
+        tokenType: 'Bearer',
       },
-      error: null
+      error: null,
     });
-
   } catch (error: any) {
     console.error('Cognito refresh token error:', error);
     res.status(400).json({ error: error.message || 'Token refresh failed' });
   }
 }
-

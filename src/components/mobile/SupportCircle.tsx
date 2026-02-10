@@ -61,9 +61,11 @@ export function SupportCircle() {
       const inviteCreatedEmailFailed = msg.includes('Invite created but email could not be sent');
       setIsModalOpen(false);
       await load();
-      alert(inviteCreatedEmailFailed
-        ? `${msg}\n\nThe invite was saved. You can use "Resend invite" on the Buddies screen to try again.`
-        : msg);
+      alert(
+        inviteCreatedEmailFailed
+          ? `${msg}\n\nThe invite was saved. You can use "Resend invite" on the Buddies screen to try again.`
+          : msg
+      );
     }
   };
 
@@ -121,9 +123,27 @@ export function SupportCircle() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', backgroundColor: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div
+        style={{
+          minHeight: '100vh',
+          backgroundColor: '#f5f5f5',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
         <div style={{ textAlign: 'center' }}>
-          <div style={{ width: 40, height: 40, border: '4px solid #e2e8f0', borderTopColor: '#5b8fed', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 16px' }} />
+          <div
+            style={{
+              width: 40,
+              height: 40,
+              border: '4px solid #e2e8f0',
+              borderTopColor: '#5b8fed',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+              margin: '0 auto 16px',
+            }}
+          />
           <p style={{ color: '#64748b', fontSize: 14 }}>Loading…</p>
         </div>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -239,18 +259,25 @@ export function SupportCircle() {
                 </h3>
                 <div style={{ fontSize: 14, lineHeight: 1.6, color: '#4B5563' }}>
                   <p style={{ marginTop: 0, marginBottom: 16 }}>
-                    A Buddy is someone you trust who agrees to be gently reminded to check in with you if things feel harder than usual.
+                    A Buddy is someone you trust who agrees to be gently reminded to check in with you if things feel
+                    harder than usual.
                   </p>
                   <div style={{ marginBottom: 16 }}>
-                    <h4 style={{ fontSize: 14, fontWeight: 700, color: '#1F2937', marginTop: 0, marginBottom: 8 }}>What happens</h4>
+                    <h4 style={{ fontSize: 14, fontWeight: 700, color: '#1F2937', marginTop: 0, marginBottom: 8 }}>
+                      What happens
+                    </h4>
                     <ul style={{ margin: 0, paddingLeft: 20 }}>
                       <li style={{ marginBottom: 4 }}>You choose someone and send them an invite</li>
                       <li style={{ marginBottom: 4 }}>They can accept or decline, with no explanation needed</li>
-                      <li style={{ marginBottom: 0 }}>If they accept, they may occasionally get a nudge to check in with you</li>
+                      <li style={{ marginBottom: 0 }}>
+                        If they accept, they may occasionally get a nudge to check in with you
+                      </li>
                     </ul>
                   </div>
                   <div style={{ marginBottom: 16 }}>
-                    <h4 style={{ fontSize: 14, fontWeight: 700, color: '#1F2937', marginTop: 0, marginBottom: 8 }}>What Buddies see</h4>
+                    <h4 style={{ fontSize: 14, fontWeight: 700, color: '#1F2937', marginTop: 0, marginBottom: 8 }}>
+                      What Buddies see
+                    </h4>
                     <ul style={{ margin: 0, paddingLeft: 20 }}>
                       <li style={{ marginBottom: 4 }}>They do not see your scores, check-ins, or activity</li>
                       <li style={{ marginBottom: 4 }}>They are not alerted in emergencies</li>
@@ -258,7 +285,9 @@ export function SupportCircle() {
                     </ul>
                   </div>
                   <div style={{ marginBottom: 16 }}>
-                    <h4 style={{ fontSize: 14, fontWeight: 700, color: '#1F2937', marginTop: 0, marginBottom: 8 }}>Your control</h4>
+                    <h4 style={{ fontSize: 14, fontWeight: 700, color: '#1F2937', marginTop: 0, marginBottom: 8 }}>
+                      Your control
+                    </h4>
                     <ul style={{ margin: 0, paddingLeft: 20 }}>
                       <li style={{ marginBottom: 4 }}>Buddies are always optional</li>
                       <li style={{ marginBottom: 4 }}>You can add or remove them at any time</li>
@@ -273,96 +302,116 @@ export function SupportCircle() {
             )}
 
             {error && (
-              <div style={{ background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: 12, padding: 16, marginBottom: 16, color: '#dc2626', fontSize: 14 }}>
+              <div
+                style={{
+                  background: '#fee2e2',
+                  border: '1px solid #fca5a5',
+                  borderRadius: 12,
+                  padding: 16,
+                  marginBottom: 16,
+                  color: '#dc2626',
+                  fontSize: 14,
+                }}
+              >
                 {error}
               </div>
             )}
-          {isEmpty ? (
-            <div>
-              <div style={{ ...cardStyle, textAlign: 'center' }}>
-                <p style={{ fontSize: 15, lineHeight: 1.6, color: '#4b5563', margin: '0 0 16px' }}>
-                  Buddies are trusted people you invite to be gently reminded to check in with you if things feel harder than usual.
-                </p>
-                <p style={{ fontSize: 15, lineHeight: 1.6, color: '#4b5563', margin: '0 0 24px' }}>
-                  They only take part with consent, never see your scores, and you and they can opt out at any time.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(true)}
-                  style={{
-                    width: '100%',
-                    padding: 16,
-                    background: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)',
-                    border: 'none',
-                    borderRadius: 12,
-                    fontSize: 16,
-                    fontWeight: 700,
-                    color: '#fff',
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)',
-                  }}
-                >
-                  Invite Your First Buddy
-                </button>
+            {isEmpty ? (
+              <div>
+                <div style={{ ...cardStyle, textAlign: 'center' }}>
+                  <p style={{ fontSize: 15, lineHeight: 1.6, color: '#4b5563', margin: '0 0 16px' }}>
+                    Buddies are trusted people you invite to be gently reminded to check in with you if things feel
+                    harder than usual.
+                  </p>
+                  <p style={{ fontSize: 15, lineHeight: 1.6, color: '#4b5563', margin: '0 0 24px' }}>
+                    They only take part with consent, never see your scores, and you and they can opt out at any time.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(true)}
+                    style={{
+                      width: '100%',
+                      padding: 16,
+                      background: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)',
+                      border: 'none',
+                      borderRadius: 12,
+                      fontSize: 16,
+                      fontWeight: 700,
+                      color: '#fff',
+                      cursor: 'pointer',
+                      boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)',
+                    }}
+                  >
+                    Invite Your First Buddy
+                  </button>
+                </div>
               </div>
-            </div>
-          ) : (
-            <>
-              {pendingInvites.length > 0 && (
-                <div style={{ marginBottom: 24 }}>
-                  <h2 style={{ fontSize: 18, fontWeight: 600, color: '#0f172a', margin: '0 0 12px 0' }}>Pending invites</h2>
-                  {pendingInvites.map((inv) => (
-                    <PendingInviteCard
-                      key={inv.id}
-                      invite={{ id: inv.id, name: inv.inviteeName, email: inv.contactValueMasked, sentDate: new Date(inv.sentAt) }}
-                      onResend={() => handleResend(inv.id)}
-                      onCancel={() => handleRevoke(inv.id)}
-                    />
-                  ))}
-                </div>
-              )}
+            ) : (
+              <>
+                {pendingInvites.length > 0 && (
+                  <div style={{ marginBottom: 24 }}>
+                    <h2 style={{ fontSize: 18, fontWeight: 600, color: '#0f172a', margin: '0 0 12px 0' }}>
+                      Pending invites
+                    </h2>
+                    {pendingInvites.map((inv) => (
+                      <PendingInviteCard
+                        key={inv.id}
+                        invite={{
+                          id: inv.id,
+                          name: inv.inviteeName,
+                          email: inv.contactValueMasked,
+                          sentDate: new Date(inv.sentAt),
+                        }}
+                        onResend={() => handleResend(inv.id)}
+                        onCancel={() => handleRevoke(inv.id)}
+                      />
+                    ))}
+                  </div>
+                )}
 
-              {activeBuddies.length > 0 && (
-                <div style={{ marginBottom: 24 }}>
-                  <h2 style={{ fontSize: 18, fontWeight: 600, color: '#0f172a', margin: '0 0 12px 0' }}>Active Buddies</h2>
-                  {activeBuddies.map((b, idx) => (
-                    <BuddyCard
-                      key={b.id}
-                      buddy={{ id: b.id, name: b.name, phone: '', email: b.email, rank: b.preferenceOrder }}
-                      index={idx}
-                      onDelete={handleRemoveBuddy}
-                      onMove={moveCard}
-                      onAskCheckIn={handleNudge}
-                    />
-                  ))}
-                </div>
-              )}
+                {activeBuddies.length > 0 && (
+                  <div style={{ marginBottom: 24 }}>
+                    <h2 style={{ fontSize: 18, fontWeight: 600, color: '#0f172a', margin: '0 0 12px 0' }}>
+                      Active Buddies
+                    </h2>
+                    {activeBuddies.map((b, idx) => (
+                      <BuddyCard
+                        key={b.id}
+                        buddy={{ id: b.id, name: b.name, phone: '', email: b.email, rank: b.preferenceOrder }}
+                        index={idx}
+                        onDelete={handleRemoveBuddy}
+                        onMove={moveCard}
+                        onAskCheckIn={handleNudge}
+                      />
+                    ))}
+                  </div>
+                )}
 
-              {canInvite && (
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(true)}
-                  style={{
-                    width: '100%',
-                    maxWidth: 320,
-                    padding: '16px 24px',
-                    background: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)',
-                    border: 'none',
-                    borderRadius: 12,
-                    fontSize: 15,
-                    fontWeight: 600,
-                    color: '#fff',
-                    cursor: 'pointer',
-                    display: 'block',
-                    margin: '0 auto 16px auto',
-                    boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)',
-                  }}
-                >
-                  Invite Buddy
-                </button>
-              )}
-            </>
-          )}
+                {canInvite && (
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(true)}
+                    style={{
+                      width: '100%',
+                      maxWidth: 320,
+                      padding: '16px 24px',
+                      background: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)',
+                      border: 'none',
+                      borderRadius: 12,
+                      fontSize: 15,
+                      fontWeight: 600,
+                      color: '#fff',
+                      cursor: 'pointer',
+                      display: 'block',
+                      margin: '0 auto 16px auto',
+                      boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)',
+                    }}
+                  >
+                    Invite Buddy
+                  </button>
+                )}
+              </>
+            )}
           </div>
         </div>
 

@@ -1,15 +1,15 @@
-import { Button } from '@/components/ui/button'
-import { Clock, X } from 'lucide-react'
-import { Nudge } from '@/hooks/useNudges'
+import { Button } from '@/components/ui/button';
+import { Clock, X } from 'lucide-react';
+import { Nudge } from '@/hooks/useNudges';
 interface NudgeCardProps {
-  nudge: Nudge | null
-  onDo: () => void
-  onSnooze: (days: number) => void
-  onDismiss: () => void
-  loading?: boolean
+  nudge: Nudge | null;
+  onDo: () => void;
+  onSnooze: (days: number) => void;
+  onDismiss: () => void;
+  loading?: boolean;
 }
 export function NudgeCard({ nudge, onDo, onSnooze, onDismiss, loading }: NudgeCardProps) {
-  if (!nudge) return null
+  if (!nudge) return null;
   return (
     <div className="glass-surface rounded-2xl border border-primary/20 bg-primary/5 p-4 mt-4">
       <div className="flex items-start gap-3">
@@ -17,12 +17,7 @@ export function NudgeCard({ nudge, onDo, onSnooze, onDismiss, loading }: NudgeCa
         <div className="flex-1 min-w-0">
           <p className="text-sm text-foreground leading-relaxed">{nudge.text}</p>
           <div className="flex flex-wrap gap-2 mt-3">
-            <Button
-              onClick={onDo}
-              size="sm"
-              className="h-8 px-3 text-xs font-medium rounded-lg"
-              disabled={loading}
-            >
+            <Button onClick={onDo} size="sm" className="h-8 px-3 text-xs font-medium rounded-lg" disabled={loading}>
               Do this
             </Button>
             <Button
@@ -49,5 +44,5 @@ export function NudgeCard({ nudge, onDo, onSnooze, onDismiss, loading }: NudgeCa
         </div>
       </div>
     </div>
-  )
+  );
 }

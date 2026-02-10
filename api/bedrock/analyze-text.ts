@@ -1,19 +1,19 @@
 /**
  * Bedrock Text Analysis API
- * 
+ *
  * Server-side endpoint that uses AWS Bedrock (Claude) to analyze
  * check-in conversation transcripts for wellbeing assessment.
- * 
+ *
  * Endpoint: POST /api/bedrock/analyze-text
  * Auth: Required (via Cognito token)
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
+import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedrock-runtime';
 
 // Types
-export type RiskLevel = "none" | "mild" | "moderate" | "high";
-export type DirectionOfChange = "better" | "worse" | "same" | "unclear";
+export type RiskLevel = 'none' | 'mild' | 'moderate' | 'high';
+export type DirectionOfChange = 'better' | 'worse' | 'same' | 'unclear';
 
 export interface TextAnalysisResult {
   version: string; // "v1.0"
@@ -21,19 +21,19 @@ export interface TextAnalysisResult {
   keywords: string[]; // shorter, more concrete phrases
   risk_level: RiskLevel;
   direction_of_change: DirectionOfChange;
-  
+
   // Explicit mood rating from conversation (1-10 scale, as stated by user)
   mood_score: number;
-  
+
   // 0–100 score for text modality only
   text_score: number;
-  
+
   // 0–1, higher means "less sure"
   uncertainty: number;
-  
+
   drivers_positive: string[];
   drivers_negative: string[];
-  
+
   conversation_summary: string;
   notable_quotes: string[];
 }
@@ -43,8 +43,8 @@ const bedrockClient = new BedrockRuntimeClient({
   region: process.env.AWS_REGION || 'eu-west-2',
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || ''
-  }
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+  },
 });
 
 const SYSTEM_PROMPT = `You are the Mind Measure Text Assessment model.
@@ -111,16 +111,16 @@ Guidance:
 
 Do not mention Mind Measure, scoring systems, models, or analysis in the summary. Just describe what the student talked about.`;
 
-const MODEL_ID = "anthropic.claude-3-haiku-20240307-v1:0";
+const MODEL_ID = 'anthropic.claude-3-haiku-20240307-v1:0';
 
 function getEmptyResult(summary: string): TextAnalysisResult {
   return {
-    version: "v1.0",
+    version: 'v1.0',
     themes: [],
     keywords: [],
-    risk_level: "none",
-    direction_of_change: "unclear",
-    mood_score: 5,  // Neutral default
+    risk_level: 'none',
+    direction_of_change: 'unclear',
+    mood_score: 5, // Neutral default
     text_score: 50,
     uncertainty: 0.9,
     drivers_positive: [],
@@ -133,7 +133,7 @@ function getEmptyResult(summary: string): TextAnalysisResult {
 function validateAndSanitize(parsed: any): TextAnalysisResult {
   // Validate mood_score (1-10 scale from user's explicit answer)
   if (
-    typeof parsed.mood_score !== "number" ||
+    typeof parsed.mood_score !== 'number' ||
     Number.isNaN(parsed.mood_score) ||
     parsed.mood_score < 1 ||
     parsed.mood_score > 10
@@ -143,10 +143,10 @@ function validateAndSanitize(parsed: any): TextAnalysisResult {
   } else {
     parsed.mood_score = Math.round(parsed.mood_score);
   }
-  
+
   // Validate text_score
   if (
-    typeof parsed.text_score !== "number" ||
+    typeof parsed.text_score !== 'number' ||
     Number.isNaN(parsed.text_score) ||
     parsed.text_score < 0 ||
     parsed.text_score > 100
@@ -155,30 +155,26 @@ function validateAndSanitize(parsed: any): TextAnalysisResult {
     parsed.text_score = 50;
     parsed.uncertainty = Math.max(parsed.uncertainty ?? 0.5, 0.6);
   }
-  
+
   // Validate uncertainty
-  if (
-    typeof parsed.uncertainty !== "number" ||
-    parsed.uncertainty < 0 ||
-    parsed.uncertainty > 1
-  ) {
+  if (typeof parsed.uncertainty !== 'number' || parsed.uncertainty < 0 || parsed.uncertainty > 1) {
     console.warn('[Bedrock API] Invalid uncertainty, defaulting to 0.5');
     parsed.uncertainty = 0.5;
   }
-  
+
   // Ensure required arrays exist
   parsed.themes = Array.isArray(parsed.themes) ? parsed.themes : [];
   parsed.keywords = Array.isArray(parsed.keywords) ? parsed.keywords : [];
   parsed.drivers_positive = Array.isArray(parsed.drivers_positive) ? parsed.drivers_positive : [];
   parsed.drivers_negative = Array.isArray(parsed.drivers_negative) ? parsed.drivers_negative : [];
   parsed.notable_quotes = Array.isArray(parsed.notable_quotes) ? parsed.notable_quotes : [];
-  
+
   // Ensure required strings exist
-  parsed.version = parsed.version || "v1.0";
-  parsed.conversation_summary = parsed.conversation_summary || "Check-in completed.";
-  parsed.risk_level = parsed.risk_level || "none";
-  parsed.direction_of_change = parsed.direction_of_change || "unclear";
-  
+  parsed.version = parsed.version || 'v1.0';
+  parsed.conversation_summary = parsed.conversation_summary || 'Check-in completed.';
+  parsed.risk_level = parsed.risk_level || 'none';
+  parsed.direction_of_change = parsed.direction_of_change || 'unclear';
+
   return parsed as TextAnalysisResult;
 }
 
@@ -201,7 +197,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.warn('[Bedrock API] Transcript too short, returning high uncertainty result');
       return res.status(200).json({
         success: true,
-        data: getEmptyResult("There was not enough information in this check in to understand how the student is feeling.")
+        data: getEmptyResult(
+          'There was not enough information in this check in to understand how the student is feeling.'
+        ),
       });
     }
 
@@ -233,27 +231,27 @@ Now produce a single valid JSON object that matches the TextAnalysisResult schem
 
     // Prepare Bedrock request
     const requestBody = {
-      anthropic_version: "bedrock-2023-05-31",
+      anthropic_version: 'bedrock-2023-05-31',
       max_tokens: 800,
       temperature: 0.2,
       system: SYSTEM_PROMPT,
       messages: [
         {
-          role: "user",
+          role: 'user',
           content: [
             {
-              type: "text",
-              text: userPrompt
-            }
-          ]
-        }
-      ]
+              type: 'text',
+              text: userPrompt,
+            },
+          ],
+        },
+      ],
     };
 
     const command = new InvokeModelCommand({
       modelId: MODEL_ID,
-      contentType: "application/json",
-      accept: "application/json",
+      contentType: 'application/json',
+      accept: 'application/json',
       body: JSON.stringify(requestBody),
     });
 
@@ -267,8 +265,8 @@ Now produce a single valid JSON object that matches the TextAnalysisResult schem
       console.error('[Bedrock API] ❌ No text content in Bedrock response', JSON.stringify(responseBody, null, 2));
       return res.status(200).json({
         success: true,
-        data: getEmptyResult("Text analysis did not return usable content for this check in."),
-        warning: "Analysis returned no content, using fallback"
+        data: getEmptyResult('Text analysis did not return usable content for this check in.'),
+        warning: 'Analysis returned no content, using fallback',
       });
     }
 
@@ -281,8 +279,8 @@ Now produce a single valid JSON object that matches the TextAnalysisResult schem
       console.error('[Bedrock API] Response text that failed to parse:', responseText.substring(0, 500));
       return res.status(200).json({
         success: true,
-        data: getEmptyResult("Text analysis output was not valid JSON for this check in."),
-        warning: "Analysis JSON parse failed, using fallback"
+        data: getEmptyResult('Text analysis output was not valid JSON for this check in.'),
+        warning: 'Analysis JSON parse failed, using fallback',
       });
     }
 
@@ -291,16 +289,15 @@ Now produce a single valid JSON object that matches the TextAnalysisResult schem
 
     return res.status(200).json({
       success: true,
-      data: result
+      data: result,
     });
-
   } catch (error: any) {
     console.error('[Bedrock API] ❌ Error:', error);
     console.error('[Bedrock API] Error message:', error?.message);
     console.error('[Bedrock API] Error stack:', error?.stack);
     console.error('[Bedrock API] Error name:', error?.name);
     console.error('[Bedrock API] Error code:', error?.code);
-    
+
     // Check if it's an AWS credentials error
     if (error?.message?.includes('credentials') || error?.code === 'CredentialsError') {
       console.error('[Bedrock API] ⚠️ AWS credentials issue detected!');
@@ -309,9 +306,8 @@ Now produce a single valid JSON object that matches the TextAnalysisResult schem
     // Return graceful fallback even on error
     return res.status(200).json({
       success: true,
-      data: getEmptyResult("Text analysis was not available for this check in."),
-      warning: "Analysis failed, using fallback"
+      data: getEmptyResult('Text analysis was not available for this check in.'),
+      warning: 'Analysis failed, using fallback',
     });
   }
 }
-

@@ -1,5 +1,12 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { S3Client, CreateBucketCommand, PutBucketCorsCommand, PutBucketVersioningCommand, PutBucketEncryptionCommand, PutPublicAccessBlockCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  CreateBucketCommand,
+  PutBucketCorsCommand,
+  PutBucketVersioningCommand,
+  PutBucketEncryptionCommand,
+  PutPublicAccessBlockCommand,
+} from '@aws-sdk/client-s3';
 
 const REGION = 'eu-west-2';
 
@@ -20,15 +27,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Configure S3 client
     const s3Client = new S3Client({
-      region: REGION
+      region: REGION,
     });
 
     // 1. Create the bucket
     const createCommand = new CreateBucketCommand({
       Bucket: bucketName,
       CreateBucketConfiguration: {
-        LocationConstraint: REGION
-      }
+        LocationConstraint: REGION,
+      },
     });
 
     await s3Client.send(createCommand);
@@ -45,13 +52,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               'https://admin.mindmeasure.co.uk',
               'https://mobile.mindmeasure.app',
               'http://localhost:3000',
-              'http://localhost:5173'
+              'http://localhost:5173',
             ],
             ExposeHeaders: ['ETag'],
-            MaxAgeSeconds: 3000
-          }
-        ]
-      }
+            MaxAgeSeconds: 3000,
+          },
+        ],
+      },
     });
 
     await s3Client.send(corsCommand);
@@ -60,8 +67,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const versioningCommand = new PutBucketVersioningCommand({
       Bucket: bucketName,
       VersioningConfiguration: {
-        Status: 'Enabled'
-      }
+        Status: 'Enabled',
+      },
     });
 
     await s3Client.send(versioningCommand);
@@ -73,12 +80,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         Rules: [
           {
             ApplyServerSideEncryptionByDefault: {
-              SSEAlgorithm: 'AES256'
+              SSEAlgorithm: 'AES256',
             },
-            BucketKeyEnabled: true
-          }
-        ]
-      }
+            BucketKeyEnabled: true,
+          },
+        ],
+      },
     });
 
     await s3Client.send(encryptionCommand);
@@ -90,8 +97,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         BlockPublicAcls: true,
         IgnorePublicAcls: true,
         BlockPublicPolicy: true,
-        RestrictPublicBuckets: true
-      }
+        RestrictPublicBuckets: true,
+      },
     });
 
     await s3Client.send(publicAccessCommand);
@@ -102,28 +109,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       bucketName,
       region: REGION,
       message: `S3 bucket created successfully for ${universityName || universitySlug}`,
-      bucketUrl: `https://${bucketName}.s3.${REGION}.amazonaws.com/`
+      bucketUrl: `https://${bucketName}.s3.${REGION}.amazonaws.com/`,
     });
-
   } catch (error: any) {
     console.error('❌ Error creating university bucket:', error);
 
     // Handle specific AWS errors
     if (error.name === 'BucketAlreadyExists') {
-      return res.status(409).json({ 
-        error: 'Bucket already exists', 
-        details: 'This bucket name is already taken by another AWS account'
+      return res.status(409).json({
+        error: 'Bucket already exists',
+        details: 'This bucket name is already taken by another AWS account',
       });
     } else if (error.name === 'BucketAlreadyOwnedByYou') {
       return res.status(200).json({
         success: true,
         message: 'Bucket already exists and is owned by you',
-        bucketName: req.body.universitySlug ? `mindmeasure-${req.body.universitySlug.toLowerCase()}` : null
+        bucketName: req.body.universitySlug ? `mindmeasure-${req.body.universitySlug.toLowerCase()}` : null,
       });
     } else {
-      return res.status(500).json({ 
-        error: 'Failed to create university bucket', 
-        details: error.message 
+      return res.status(500).json({
+        error: 'Failed to create university bucket',
+        details: error.message,
       });
     }
   }

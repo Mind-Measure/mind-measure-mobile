@@ -31,31 +31,27 @@ export function PendingInviteCard({ invite, onResend, onCancel }: PendingInviteC
         border: '1px solid #F0F0F0',
         display: 'flex',
         flexDirection: 'column',
-        gap: '16px'
+        gap: '16px',
       }}
     >
       <div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-          <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#0F172A', margin: 0 }}>
-            {invite.name}
-          </h3>
-          <span style={{
-            fontSize: '12px',
-            fontWeight: '600',
-            color: '#F59E0B',
-            backgroundColor: '#FEF3C7',
-            padding: '4px 10px',
-            borderRadius: '12px'
-          }}>
+          <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#0F172A', margin: 0 }}>{invite.name}</h3>
+          <span
+            style={{
+              fontSize: '12px',
+              fontWeight: '600',
+              color: '#F59E0B',
+              backgroundColor: '#FEF3C7',
+              padding: '4px 10px',
+              borderRadius: '12px',
+            }}
+          >
             Pending
           </span>
         </div>
-        <div style={{ fontSize: '14px', color: '#64748B', marginBottom: '4px' }}>
-          Email: {invite.email}
-        </div>
-        <div style={{ fontSize: '13px', color: '#94A3AF' }}>
-          Sent {formatDate(invite.sentDate)}
-        </div>
+        <div style={{ fontSize: '14px', color: '#64748B', marginBottom: '4px' }}>Email: {invite.email}</div>
+        <div style={{ fontSize: '13px', color: '#94A3AF' }}>Sent {formatDate(invite.sentDate)}</div>
       </div>
 
       <div style={{ display: 'flex', gap: '12px' }}>
@@ -71,10 +67,14 @@ export function PendingInviteCard({ invite, onResend, onCancel }: PendingInviteC
             fontWeight: '600',
             color: '#475569',
             cursor: 'pointer',
-            transition: 'background-color 0.2s'
+            transition: 'background-color 0.2s',
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#E2E8F0'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#F1F5F9'; }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = '#E2E8F0';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = '#F1F5F9';
+          }}
         >
           Resend invite
         </button>
@@ -90,10 +90,14 @@ export function PendingInviteCard({ invite, onResend, onCancel }: PendingInviteC
             fontWeight: '600',
             color: '#DC2626',
             cursor: 'pointer',
-            transition: 'background-color 0.2s'
+            transition: 'background-color 0.2s',
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#FECACA'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FEE2E2'; }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = '#FECACA';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = '#FEE2E2';
+          }}
         >
           Cancel invite
         </button>

@@ -18,23 +18,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       database: process.env.AWS_AURORA_DATABASE,
       user: process.env.AWS_AURORA_USERNAME,
       password: process.env.AWS_AURORA_PASSWORD,
-      ssl: { rejectUnauthorized: false }
+      ssl: { rejectUnauthorized: false },
     });
-    
+
     await auroraClient.connect();
 
     // Fetch university nudges
-    const result = await auroraClient.query(
-      `SELECT nudges FROM universities WHERE id = $1`,
-      [universityId]
-    );
+    const result = await auroraClient.query(`SELECT nudges FROM universities WHERE id = $1`, [universityId]);
 
     if (result.rows.length === 0) {
       return res.status(200).json({ nudges: [] });
     }
 
     const allNudges = result.rows[0].nudges || [];
-    
+
     // Filter active, non-expired nudges
     const now = new Date();
     const activeNudges = allNudges.filter((nudge: any) => {
@@ -54,9 +51,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
     // Randomly select one from rotation
-    const rotated = weightedRotation.length > 0
-      ? weightedRotation[Math.floor(Math.random() * weightedRotation.length)]
-      : null;
+    const rotated =
+      weightedRotation.length > 0 ? weightedRotation[Math.floor(Math.random() * weightedRotation.length)] : null;
 
     return res.status(200).json({
       success: true,

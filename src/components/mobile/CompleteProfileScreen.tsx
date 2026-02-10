@@ -30,16 +30,14 @@ export function CompleteProfileScreen({ onComplete }: CompleteProfileScreenProps
     setError(null);
     setIsLoading(true);
     try {
-      const backendService = BackendServiceFactory.createService(
-        BackendServiceFactory.getEnvironmentConfig()
-      );
+      const backendService = BackendServiceFactory.createService(BackendServiceFactory.getEnvironmentConfig());
       await backendService.database.update(
         'profiles',
         {
           year_of_study: yearOfStudy.trim(),
           course: course.trim(),
           profile_completed: true,
-          profile_completed_at: new Date().toISOString()
+          profile_completed_at: new Date().toISOString(),
         },
         { user_id: user.id }
       );
@@ -54,10 +52,7 @@ export function CompleteProfileScreen({ onComplete }: CompleteProfileScreenProps
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 overflow-y-auto">
-      <div
-        className="bg-white border-b border-gray-100"
-        style={{ paddingTop: 'max(3rem, env(safe-area-inset-top))' }}
-      >
+      <div className="bg-white border-b border-gray-100" style={{ paddingTop: 'max(3rem, env(safe-area-inset-top))' }}>
         <div className="flex items-center justify-center px-6 py-4">
           <h1 className="text-lg font-semibold text-gray-900">Complete your profile</h1>
         </div>
@@ -71,15 +66,9 @@ export function CompleteProfileScreen({ onComplete }: CompleteProfileScreenProps
       >
         <div className="max-w-md mx-auto">
           <div className="flex justify-center mb-6">
-            <img
-              src={mindMeasureLogo}
-              alt="Mind Measure"
-              className="w-20 h-20 object-contain"
-            />
+            <img src={mindMeasureLogo} alt="Mind Measure" className="w-20 h-20 object-contain" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">
-            Almost there
-          </h2>
+          <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">Almost there</h2>
           <p className="text-gray-600 text-center mb-8">
             Add a couple of details so we can personalise your experience.
           </p>
@@ -119,9 +108,7 @@ export function CompleteProfileScreen({ onComplete }: CompleteProfileScreenProps
               />
             </div>
             {error && (
-              <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-                {error}
-              </p>
+              <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
             )}
             <button
               type="submit"

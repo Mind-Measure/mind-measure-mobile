@@ -22,28 +22,18 @@ export const MobileLandingPage: React.FC = () => {
         <div className="flex items-center justify-between pt-6">
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8">
-              <img
-                src={BRAND.logoUrl}
-                alt={BRAND.logoAlt}
-                className="w-full h-full object-contain"
-              />
+              <img src={BRAND.logoUrl} alt={BRAND.logoAlt} className="w-full h-full object-contain" />
             </div>
             <span className="text-lg font-semibold text-gray-800">Mind Measure</span>
           </div>
-          <button className="text-gray-700 font-medium hover:text-purple-600 transition-colors">
-            Sign In
-          </button>
+          <button className="text-gray-700 font-medium hover:text-purple-600 transition-colors">Sign In</button>
         </div>
         {/* Hero Section */}
         <div className="text-center space-y-4 pt-8">
           {/* Main Title */}
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-800 leading-tight">
-            Mind Measure
-          </h1>
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-800 leading-tight">Mind Measure</h1>
           {/* Tagline */}
-          <p className="text-base md:text-lg text-purple-600 font-medium tracking-wide">
-            MEASURE, MONITOR, MANAGE
-          </p>
+          <p className="text-base md:text-lg text-purple-600 font-medium tracking-wide">MEASURE, MONITOR, MANAGE</p>
           {/* Hero Image - Woman in light blue sweatshirt */}
           <div className="relative mx-auto w-64 h-64 rounded-3xl overflow-hidden shadow-2xl border border-white/50">
             <img
@@ -66,7 +56,8 @@ export const MobileLandingPage: React.FC = () => {
             Empowering your <span className="text-purple-600">mental wellness</span>
           </h2>
           <p className="text-gray-600 text-sm leading-relaxed">
-            Mind Measure makes it simple with just a few minutes each day to understand and measure your mood and stress levels.
+            Mind Measure makes it simple with just a few minutes each day to understand and measure your mood and stress
+            levels.
           </p>
         </div>
         {/* Call to Action */}

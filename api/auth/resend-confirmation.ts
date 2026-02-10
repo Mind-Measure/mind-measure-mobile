@@ -4,7 +4,7 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import {
   CognitoIdentityProviderClient,
-  ResendConfirmationCodeCommand
+  ResendConfirmationCodeCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 
 // AWS Cognito configuration
@@ -12,8 +12,8 @@ const cognitoConfig = {
   region: process.env.AWS_REGION || 'eu-west-2',
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || ''
-  }
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+  },
 };
 
 const client = new CognitoIdentityProviderClient(cognitoConfig);
@@ -34,19 +34,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const command = new ResendConfirmationCodeCommand({
       ClientId: clientId,
-      Username: email
+      Username: email,
     });
 
     const result = await client.send(command);
 
     res.status(200).json({
       codeDeliveryDetails: result.CodeDeliveryDetails,
-      error: null
+      error: null,
     });
-
   } catch (error: any) {
     console.error('Cognito resend confirmation error:', error);
-    
+
     let errorMessage = 'Failed to resend confirmation code';
     if (error.name === 'InvalidParameterException') {
       errorMessage = 'User is already confirmed';
@@ -57,8 +56,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     } else if (error.message) {
       errorMessage = error.message;
     }
-    
+
     res.status(500).json({ error: errorMessage });
   }
 }
-

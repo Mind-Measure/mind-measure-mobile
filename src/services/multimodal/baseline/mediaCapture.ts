@@ -1,6 +1,6 @@
 /**
  * Media Capture Module
- * 
+ *
  * Handles audio and video recording during baseline assessment
  */
 
@@ -22,7 +22,7 @@ export class MediaCapture {
     this.config = {
       videoFrameRate: 0.5, // 0.5 fps (1 frame every 2 seconds) to stay under Vercel's 4.5MB limit
       audioSampleRate: 48000,
-      ...config
+      ...config,
     };
   }
 
@@ -30,53 +30,47 @@ export class MediaCapture {
    * Request permissions and start capturing media
    */
   async start(): Promise<void> {
-    
     try {
       // Request permissions
       const constraints: MediaStreamConstraints = {
-        audio: this.config.captureAudio ? {
-          echoCancellation: true,
-          noiseSuppression: true,
-          sampleRate: this.config.audioSampleRate
-        } : false,
-        video: this.config.captureVideo ? {
-          width: { ideal: 640 },
-          height: { ideal: 480 },
-          facingMode: 'user'
-        } : false
+        audio: this.config.captureAudio
+          ? {
+              echoCancellation: true,
+              noiseSuppression: true,
+              sampleRate: this.config.audioSampleRate,
+            }
+          : false,
+        video: this.config.captureVideo
+          ? {
+              width: { ideal: 640 },
+              height: { ideal: 480 },
+              facingMode: 'user',
+            }
+          : false,
       };
 
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      
+
       // Split into audio and video streams
       if (this.config.captureAudio && stream.getAudioTracks().length > 0) {
         this.audioStream = new MediaStream(stream.getAudioTracks());
         this.startAudioRecording();
       }
-      
+
       if (this.config.captureVideo && stream.getVideoTracks().length > 0) {
         this.videoStream = new MediaStream(stream.getVideoTracks());
         this.startVideoCapture();
       }
 
       this.startTime = Date.now();
-      
     } catch (error) {
       console.error('[MediaCapture] ❌ Failed to start capture:', error);
-      
+
       if (error instanceof Error && error.name === 'NotAllowedError') {
-        throw new MultimodalError(
-          'Camera/microphone permission denied',
-          MultimodalErrorCode.PERMISSION_DENIED,
-          false
-        );
+        throw new MultimodalError('Camera/microphone permission denied', MultimodalErrorCode.PERMISSION_DENIED, false);
       }
-      
-      throw new MultimodalError(
-        'Failed to start media capture',
-        MultimodalErrorCode.MEDIA_CAPTURE_FAILED,
-        true
-      );
+
+      throw new MultimodalError('Failed to start media capture', MultimodalErrorCode.MEDIA_CAPTURE_FAILED, true);
     }
   }
 
@@ -88,7 +82,7 @@ export class MediaCapture {
 
     try {
       this.mediaRecorder = new MediaRecorder(this.audioStream, {
-        mimeType: 'audio/webm'
+        mimeType: 'audio/webm',
       });
 
       this.mediaRecorder.ondataavailable = (event) => {
@@ -98,7 +92,6 @@ export class MediaCapture {
       };
 
       this.mediaRecorder.start(1000); // Collect data every second
-      
     } catch (error) {
       console.error('[MediaCapture] ❌ Audio recording failed:', error);
     }
@@ -134,9 +127,7 @@ export class MediaCapture {
         this.frameIntervalId = setInterval(() => {
           this.captureFrame(video, ctx);
         }, intervalMs);
-
       };
-
     } catch (error) {
       console.error('[MediaCapture] ❌ Video capture failed:', error);
     }
@@ -148,11 +139,15 @@ export class MediaCapture {
   private captureFrame(video: HTMLVideoElement, ctx: CanvasRenderingContext2D): void {
     try {
       ctx.drawImage(video, 0, 0);
-      this.canvas!.toBlob((blob) => {
-        if (blob) {
-          this.videoFrames.push(blob);
-        }
-      }, 'image/jpeg', 0.6); // Reduced quality to 0.6 to minimize payload size
+      this.canvas!.toBlob(
+        (blob) => {
+          if (blob) {
+            this.videoFrames.push(blob);
+          }
+        },
+        'image/jpeg',
+        0.6
+      ); // Reduced quality to 0.6 to minimize payload size
     } catch (error) {
       console.error('[MediaCapture] Failed to capture frame:', error);
     }
@@ -185,7 +180,7 @@ export class MediaCapture {
     const capturedMedia: CapturedMedia = {
       duration: (endTime - this.startTime) / 1000,
       startTime: this.startTime,
-      endTime: endTime
+      endTime: endTime,
     };
 
     if (this.audioChunks.length > 0) {
@@ -207,12 +202,12 @@ export class MediaCapture {
    */
   private stopStreams(): void {
     if (this.audioStream) {
-      this.audioStream.getTracks().forEach(track => track.stop());
+      this.audioStream.getTracks().forEach((track) => track.stop());
       this.audioStream = null;
     }
 
     if (this.videoStream) {
-      this.videoStream.getTracks().forEach(track => track.stop());
+      this.videoStream.getTracks().forEach((track) => track.stop());
       this.videoStream = null;
     }
   }
@@ -232,17 +227,15 @@ export class MediaCapture {
    * Cancel capture and cleanup
    */
   cancel(): void {
-    
     if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
       this.mediaRecorder.stop();
     }
-    
+
     if (this.frameIntervalId) {
       clearInterval(this.frameIntervalId);
     }
-    
+
     this.stopStreams();
     this.cleanup();
   }
 }
-

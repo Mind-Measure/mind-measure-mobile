@@ -12,29 +12,29 @@ export const EmergencyHelp: React.FC<EmergencyHelpProps> = ({ onBack }) => {
       number: '988',
       description: '24/7 Suicide & Crisis Lifeline',
       priority: 'high',
-      icon: AlertTriangle
+      icon: AlertTriangle,
     },
     {
       name: 'Crisis Text Line',
       number: '741741',
       description: 'Text HOME to connect with a counselor',
       priority: 'high',
-      icon: MessageCircle
+      icon: MessageCircle,
     },
     {
       name: 'University Counseling',
       number: '+1-555-0123',
       description: 'Worcester University Mental Health Services',
       priority: 'medium',
-      icon: Heart
+      icon: Heart,
     },
     {
       name: 'Campus Security',
       number: '+1-555-0124',
       description: '24/7 Campus Safety & Emergency Response',
       priority: 'medium',
-      icon: Shield
-    }
+      icon: Shield,
+    },
   ];
   const handleCall = (number: string) => {
     window.open(`tel:${number}`, '_self');
@@ -53,12 +53,7 @@ export const EmergencyHelp: React.FC<EmergencyHelpProps> = ({ onBack }) => {
       <div className="relative z-10 p-4 space-y-6">
         {/* Header */}
         <div className="flex items-center space-x-4 pt-6">
-          <Button
-            onClick={onBack}
-            variant="ghost"
-            size="sm"
-            className="p-2 hover:bg-white/50 rounded-xl"
-          >
+          <Button onClick={onBack} variant="ghost" size="sm" className="p-2 hover:bg-white/50 rounded-xl">
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
@@ -72,7 +67,8 @@ export const EmergencyHelp: React.FC<EmergencyHelpProps> = ({ onBack }) => {
             <AlertTriangle className="w-12 h-12 mx-auto" />
             <h2 className="text-xl font-bold">Need Immediate Help?</h2>
             <p className="text-red-100">
-              If you're in crisis or having thoughts of self-harm, please call or text one of the numbers below immediately.
+              If you're in crisis or having thoughts of self-harm, please call or text one of the numbers below
+              immediately.
             </p>
           </div>
         </Card>
@@ -86,19 +82,19 @@ export const EmergencyHelp: React.FC<EmergencyHelpProps> = ({ onBack }) => {
               <Card
                 key={index}
                 className={`border-0 shadow-lg backdrop-blur-xl ${
-                  isHighPriority
-                    ? 'bg-gradient-to-r from-red-50 to-orange-50 border-l-4 border-red-500'
-                    : 'bg-white/90'
+                  isHighPriority ? 'bg-gradient-to-r from-red-50 to-orange-50 border-l-4 border-red-500' : 'bg-white/90'
                 }`}
               >
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                        isHighPriority
-                          ? 'bg-gradient-to-r from-red-500 to-orange-500'
-                          : 'bg-gradient-to-r from-blue-500 to-indigo-500'
-                      }`}>
+                      <div
+                        className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                          isHighPriority
+                            ? 'bg-gradient-to-r from-red-500 to-orange-500'
+                            : 'bg-gradient-to-r from-blue-500 to-indigo-500'
+                        }`}
+                      >
                         <Icon className="w-6 h-6 text-white" />
                       </div>
                       <div>
@@ -111,9 +107,7 @@ export const EmergencyHelp: React.FC<EmergencyHelpProps> = ({ onBack }) => {
                         onClick={() => handleCall(contact.number)}
                         size="sm"
                         className={`${
-                          isHighPriority
-                            ? 'bg-red-500 hover:bg-red-600'
-                            : 'bg-blue-500 hover:bg-blue-600'
+                          isHighPriority ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'
                         } text-white`}
                       >
                         <Phone className="w-4 h-4 mr-1" />
@@ -142,10 +136,7 @@ export const EmergencyHelp: React.FC<EmergencyHelpProps> = ({ onBack }) => {
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-gray-900">Additional Resources</h3>
             <div className="grid grid-cols-1 gap-3">
-              <Button
-                variant="outline"
-                className="justify-start h-auto p-4 border-gray-200 hover:bg-gray-50"
-              >
+              <Button variant="outline" className="justify-start h-auto p-4 border-gray-200 hover:bg-gray-50">
                 <div className="flex items-center space-x-3">
                   <Heart className="w-5 h-5 text-pink-500" />
                   <div className="text-left">
@@ -154,10 +145,7 @@ export const EmergencyHelp: React.FC<EmergencyHelpProps> = ({ onBack }) => {
                   </div>
                 </div>
               </Button>
-              <Button
-                variant="outline"
-                className="justify-start h-auto p-4 border-gray-200 hover:bg-gray-50"
-              >
+              <Button variant="outline" className="justify-start h-auto p-4 border-gray-200 hover:bg-gray-50">
                 <div className="flex items-center space-x-3">
                   <Shield className="w-5 h-5 text-blue-500" />
                   <div className="text-left">
@@ -175,9 +163,7 @@ export const EmergencyHelp: React.FC<EmergencyHelpProps> = ({ onBack }) => {
             <p className="text-sm text-blue-800">
               <strong>Remember:</strong> Your mental health matters. Don't hesitate to reach out for help.
             </p>
-            <p className="text-xs text-blue-700">
-              All conversations are confidential and protected by privacy laws.
-            </p>
+            <p className="text-xs text-blue-700">All conversations are confidential and protected by privacy laws.</p>
           </div>
         </Card>
         {/* Bottom spacing */}

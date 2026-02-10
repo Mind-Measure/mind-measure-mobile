@@ -12,20 +12,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Validate required fields
     if (!email || !password) {
-      return res.status(400).json({ 
-        error: 'Missing required fields: email, password' 
+      return res.status(400).json({
+        error: 'Missing required fields: email, password',
       });
     }
 
     // Initialize AWS backend service
-    const backendService = BackendServiceFactory.createService(
-      BackendServiceFactory.getEnvironmentConfig()
-    );
+    const backendService = BackendServiceFactory.createService(BackendServiceFactory.getEnvironmentConfig());
 
     // Authenticate user with AWS Cognito
     const { user, error } = await backendService.auth.signIn({
       email,
-      password
+      password,
     });
 
     if (error) {
@@ -42,7 +40,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
       const { data: profiles, error: profileError } = await backendService.database.select('profiles', {
         filters: { user_id: { operator: 'eq', value: user.id } },
-        columns: '*'
+        columns: '*',
       });
 
       if (!profileError && profiles && profiles.length > 0) {
@@ -56,13 +54,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let hasCompletedBaseline = false;
     try {
       const { data: sessions, error: sessionError } = await backendService.database.select('assessment_sessions', {
-        filters: { 
+        filters: {
           user_id: { operator: 'eq', value: user.id },
           assessment_type: { operator: 'eq', value: 'baseline' },
-          status: { operator: 'eq', value: 'completed' }
+          status: { operator: 'eq', value: 'completed' },
         },
         columns: 'id',
-        limit: 1
+        limit: 1,
       });
 
       if (!sessionError && sessions && sessions.length > 0) {
@@ -82,17 +80,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         profile,
         hasCompletedBaseline,
         accessToken: user.accessToken,
-        refreshToken: user.refreshToken
+        refreshToken: user.refreshToken,
       },
-      message: 'Login successful'
+      message: 'Login successful',
     });
-
   } catch (error: any) {
     console.error('Login API error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Internal server error during login',
-      details: error.message 
+      details: error.message,
     });
   }
 }
-

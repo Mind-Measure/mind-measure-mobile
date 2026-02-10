@@ -92,8 +92,12 @@ export function BuddyReminderModal({ isOpen, onChooseBuddy, onSkip }: BuddyRemin
               cursor: 'pointer',
               transition: 'background 200ms ease',
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'; }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+            }}
           >
             <X size={18} color="#FFFFFF" />
           </button>
@@ -119,8 +123,12 @@ export function BuddyReminderModal({ isOpen, onChooseBuddy, onSkip }: BuddyRemin
               transition: 'background 200ms ease',
               zIndex: 10,
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)'; }}
-            onMouseLeave={(e) => { if (!showInfo) e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'; }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
+            }}
+            onMouseLeave={(e) => {
+              if (!showInfo) e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+            }}
           >
             <Info size={18} color="#FFFFFF" />
           </button>
@@ -188,23 +196,29 @@ export function BuddyReminderModal({ isOpen, onChooseBuddy, onSkip }: BuddyRemin
 
               <div style={{ fontSize: '14px', lineHeight: '1.6', color: '#4B5563' }}>
                 <p style={{ marginTop: 0, marginBottom: '16px' }}>
-                  A Buddy is someone you trust who agrees to be gently reminded to check in with
-                  you if things feel harder than usual.
+                  A Buddy is someone you trust who agrees to be gently reminded to check in with you if things feel
+                  harder than usual.
                 </p>
 
                 <div style={{ marginBottom: '16px' }}>
-                  <h4 style={{ fontSize: '14px', fontWeight: 700, color: '#1F2937', marginTop: 0, marginBottom: '8px' }}>
+                  <h4
+                    style={{ fontSize: '14px', fontWeight: 700, color: '#1F2937', marginTop: 0, marginBottom: '8px' }}
+                  >
                     What happens
                   </h4>
                   <ul style={{ margin: 0, paddingLeft: '20px' }}>
                     <li style={{ marginBottom: '4px' }}>You choose someone and send them an invite</li>
                     <li style={{ marginBottom: '4px' }}>They can accept or decline, with no explanation needed</li>
-                    <li style={{ marginBottom: 0 }}>If they accept, they may occasionally get a nudge to check in with you</li>
+                    <li style={{ marginBottom: 0 }}>
+                      If they accept, they may occasionally get a nudge to check in with you
+                    </li>
                   </ul>
                 </div>
 
                 <div style={{ marginBottom: '16px' }}>
-                  <h4 style={{ fontSize: '14px', fontWeight: 700, color: '#1F2937', marginTop: 0, marginBottom: '8px' }}>
+                  <h4
+                    style={{ fontSize: '14px', fontWeight: 700, color: '#1F2937', marginTop: 0, marginBottom: '8px' }}
+                  >
                     What Buddies see
                   </h4>
                   <ul style={{ margin: 0, paddingLeft: '20px' }}>
@@ -215,7 +229,9 @@ export function BuddyReminderModal({ isOpen, onChooseBuddy, onSkip }: BuddyRemin
                 </div>
 
                 <div style={{ marginBottom: '16px' }}>
-                  <h4 style={{ fontSize: '14px', fontWeight: 700, color: '#1F2937', marginTop: 0, marginBottom: '8px' }}>
+                  <h4
+                    style={{ fontSize: '14px', fontWeight: 700, color: '#1F2937', marginTop: 0, marginBottom: '8px' }}
+                  >
                     Your control
                   </h4>
                   <ul style={{ margin: 0, paddingLeft: '20px' }}>
@@ -245,25 +261,51 @@ export function BuddyReminderModal({ isOpen, onChooseBuddy, onSkip }: BuddyRemin
                   cursor: 'pointer',
                   transition: 'background 200ms ease',
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = '#E5E7EB'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = '#F3F4F6'; }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#E5E7EB';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#F3F4F6';
+                }}
               >
                 Back
               </button>
             </div>
           ) : (
             <>
-              <p style={{ fontSize: '15px', lineHeight: '1.6', color: '#4B5563', textAlign: 'center', margin: '0 0 24px' }}>
-                A Buddy is someone you trust who can be gently notified if you're finding things
-                harder than usual.
+              <p
+                style={{
+                  fontSize: '15px',
+                  lineHeight: '1.6',
+                  color: '#4B5563',
+                  textAlign: 'center',
+                  margin: '0 0 24px',
+                }}
+              >
+                A Buddy is someone you trust who can be gently notified if you're finding things harder than usual.
               </p>
 
-              <p style={{ fontSize: '15px', lineHeight: '1.6', color: '#4B5563', textAlign: 'center', margin: '0 0 24px' }}>
-                We'll always ask them first. They can say yes or no, and nothing happens without
-                their consent.
+              <p
+                style={{
+                  fontSize: '15px',
+                  lineHeight: '1.6',
+                  color: '#4B5563',
+                  textAlign: 'center',
+                  margin: '0 0 24px',
+                }}
+              >
+                We'll always ask them first. They can say yes or no, and nothing happens without their consent.
               </p>
 
-              <p style={{ fontSize: '15px', lineHeight: '1.6', color: '#4B5563', textAlign: 'center', margin: '0 0 32px' }}>
+              <p
+                style={{
+                  fontSize: '15px',
+                  lineHeight: '1.6',
+                  color: '#4B5563',
+                  textAlign: 'center',
+                  margin: '0 0 32px',
+                }}
+              >
                 They won't see your check-ins or scores, just that you've asked them to be a Buddy.
               </p>
 

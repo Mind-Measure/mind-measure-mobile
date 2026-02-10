@@ -1,6 +1,6 @@
 /**
  * Dashboard Assembler
- * 
+ *
  * Packages fusion results and text analysis into dashboard-ready format.
  * Combines all multimodal insights into a single cohesive data structure
  * for UI display and database storage.
@@ -11,11 +11,10 @@ import type {
   CheckinVisualFeatures,
   CheckinTextAnalysis,
   CheckinFusionResult,
-  CheckinDashboardData
+  CheckinDashboardData,
 } from '../types';
 
 export class DashboardAssembler {
-  
   /**
    * Assemble all components into dashboard-ready data
    */
@@ -27,45 +26,44 @@ export class DashboardAssembler {
     checkInId: string,
     userId: string
   ): CheckinDashboardData {
-    
     return {
       // Core identifiers
       checkInId,
       userId,
       timestamp: new Date(),
-      
+
       // Primary score
       mindMeasureScore: fusionResult.mindMeasureScore,
       directionOfChange: fusionResult.directionOfChange,
-      
+
       // User-facing text (from text analysis)
       summary: textAnalysis.summary,
       keywords: textAnalysis.keywords,
       positiveDrivers: textAnalysis.positiveDrivers,
       negativeDrivers: textAnalysis.negativeDrivers,
-      
+
       // Risk assessment
       riskLevel: textAnalysis.riskLevel,
       riskReasons: textAnalysis.riskReasons,
-      
+
       // Insights (from fusion)
       contributingFactors: fusionResult.contributingFactors,
       improvementAreas: fusionResult.improvementAreas,
-      
+
       // Confidence & uncertainty
       uncertainty: fusionResult.uncertainty,
       confidence: fusionResult.overallConfidence,
-      
+
       // Full analysis (for database storage)
       fullAnalysis: {
         audioFeatures: audioFeatures || this.createPlaceholderAudioFeatures(),
         visualFeatures: visualFeatures || this.createPlaceholderVisualFeatures(),
         textAnalysis,
-        fusionResult
-      }
+        fusionResult,
+      },
     };
   }
-  
+
   /**
    * Create placeholder audio features when not available
    */
@@ -95,10 +93,10 @@ export class DashboardAssembler {
       spectralFlux: 0,
       voicedRatio: 0,
       quality: 0,
-      duration: 0
+      duration: 0,
     };
   }
-  
+
   /**
    * Create placeholder visual features when not available
    */
@@ -119,8 +117,7 @@ export class DashboardAssembler {
       emotionalStability: 0,
       facePresenceQuality: 0,
       overallQuality: 0,
-      framesAnalyzed: 0
+      framesAnalyzed: 0,
     };
   }
 }
-

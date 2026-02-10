@@ -7,17 +7,14 @@ import { ClientConfig } from 'pg';
 
 export function getSecureDbConfig(): ClientConfig {
   // CRITICAL: Fail fast if any required env var is missing
-  const requiredEnvVars = [
-    'AWS_AURORA_HOST',
-    'AWS_AURORA_PASSWORD',
-  ];
+  const requiredEnvVars = ['AWS_AURORA_HOST', 'AWS_AURORA_PASSWORD'];
 
-  const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
-  
+  const missingVars = requiredEnvVars.filter((varName) => !process.env[varName]);
+
   if (missingVars.length > 0) {
     throw new Error(
       `CRITICAL SECURITY ERROR: Missing required database environment variables: ${missingVars.join(', ')}. ` +
-      `Database connections require explicit credentials - no fallbacks are provided for security.`
+        `Database connections require explicit credentials - no fallbacks are provided for security.`
     );
   }
 
@@ -33,8 +30,8 @@ export function getSecureDbConfig(): ClientConfig {
     user: process.env.AWS_AURORA_USERNAME || 'mindmeasure_admin',
     password: process.env.AWS_AURORA_PASSWORD,
     // SECURITY: Proper TLS verification enabled
-    ssl: { 
-      rejectUnauthorized: true 
+    ssl: {
+      rejectUnauthorized: true,
     },
     // Connection timeouts
     connectionTimeoutMillis: 5000,
@@ -44,7 +41,7 @@ export function getSecureDbConfig(): ClientConfig {
 
 export function getDbConnectionString(): string {
   const config = getSecureDbConfig();
-  
+
   // Build connection string without logging password
   return `postgresql://${config.user}@${config.host}:${config.port}/${config.database}`;
 }

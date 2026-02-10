@@ -1,9 +1,9 @@
 /**
  * Rekognition API - Analyze Video Frames
- * 
+ *
  * Server-side endpoint that uses AWS Rekognition to analyze facial features
  * from video frames captured during baseline or check-in assessments.
- * 
+ *
  * Endpoint: POST /api/rekognition/analyze-frames
  * Auth: Required (via Cognito token)
  */
@@ -16,8 +16,8 @@ const rekognitionClient = new RekognitionClient({
   region: process.env.AWS_REGION || 'eu-west-2',
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || ''
-  }
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+  },
 });
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -44,9 +44,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           // Call Rekognition DetectFaces with attributes
           const command = new DetectFacesCommand({
             Image: {
-              Bytes: imageBuffer
+              Bytes: imageBuffer,
             },
-            Attributes: ['ALL'] // Get all facial attributes
+            Attributes: ['ALL'], // Get all facial attributes
           });
 
           const response = await rekognitionClient.send(command);
@@ -61,13 +61,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           return {
             frameIndex: index,
             confidence: face.Confidence,
-            
+
             // Emotions
-            emotions: face.Emotions?.map(e => ({
+            emotions: face.Emotions?.map((e) => ({
               type: e.Type,
-              confidence: e.Confidence
+              confidence: e.Confidence,
             })),
-            
+
             // Facial features
             smile: face.Smile,
             eyesOpen: face.EyesOpen,
@@ -76,26 +76,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             sunglasses: face.Sunglasses,
             beard: face.Beard,
             mustache: face.Mustache,
-            
+
             // Quality metrics
             brightness: face.Quality?.Brightness,
             sharpness: face.Quality?.Sharpness,
-            
+
             // Pose (head orientation)
             pose: {
               roll: face.Pose?.Roll,
               yaw: face.Pose?.Yaw,
-              pitch: face.Pose?.Pitch
+              pitch: face.Pose?.Pitch,
             },
-            
+
             // Landmarks (for advanced features)
-            landmarks: face.Landmarks?.map(l => ({
+            landmarks: face.Landmarks?.map((l) => ({
               type: l.Type,
               x: l.X,
-              y: l.Y
-            }))
+              y: l.Y,
+            })),
           };
-
         } catch (error) {
           console.error(`[Rekognition API] Error analyzing frame ${index}:`, error);
           return null;
@@ -104,29 +103,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     );
 
     // Filter out failed analyses
-    const validAnalyses = analyses.filter(a => a !== null);
+    const validAnalyses = analyses.filter((a) => a !== null);
 
     return res.status(200).json({
       success: true,
       totalFrames: frames.length,
       analyzedFrames: validAnalyses.length,
-      analyses: validAnalyses
+      analyses: validAnalyses,
     });
-
   } catch (error) {
     console.error('[Rekognition API] ❌ Error:', error);
-    return res.status(500).json({ 
+    return res.status(500).json({
       error: 'Failed to analyze frames',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 }
-
-
-
-
-
-
-
-
-

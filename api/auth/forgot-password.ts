@@ -2,18 +2,15 @@
 // Vercel serverless function
 
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import {
-  CognitoIdentityProviderClient,
-  ForgotPasswordCommand
-} from '@aws-sdk/client-cognito-identity-provider';
+import { CognitoIdentityProviderClient, ForgotPasswordCommand } from '@aws-sdk/client-cognito-identity-provider';
 
 // AWS Cognito configuration
 const cognitoConfig = {
   region: process.env.AWS_REGION || 'eu-west-2',
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || ''
-  }
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+  },
 };
 
 const client = new CognitoIdentityProviderClient(cognitoConfig);
@@ -35,7 +32,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const command = new ForgotPasswordCommand({
       ClientId: clientId,
-      Username: email
+      Username: email,
     });
 
     const result = await client.send(command);
@@ -51,19 +48,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     res.status(200).json({
       codeDeliveryDetails,
-      error: null
+      error: null,
     });
-
   } catch (error: any) {
     console.error('Cognito forgot password error:', error);
-    
+
     let errorMessage = 'Failed to initiate password reset';
     let needsVerification = false;
-    
+
     if (error.name === 'UserNotFoundException') {
       errorMessage = 'User not found';
-    } else if (error.name === 'InvalidParameterException' && 
-               error.message?.includes('no registered/verified email')) {
+    } else if (error.name === 'InvalidParameterException' && error.message?.includes('no registered/verified email')) {
       errorMessage = 'Email not verified';
       needsVerification = true;
     } else if (error.name === 'LimitExceededException') {
@@ -71,11 +66,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     } else if (error.message) {
       errorMessage = error.message;
     }
-    
-    res.status(500).json({ 
+
+    res.status(500).json({
       error: errorMessage,
-      needsVerification
+      needsVerification,
     });
   }
 }
-

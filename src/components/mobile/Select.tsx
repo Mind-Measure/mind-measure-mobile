@@ -60,18 +60,18 @@ export function Select({ value, onChange, options, disabled = false, placeholder
           justifyContent: 'space-between',
           outline: 'none',
           transition: 'border-color 0.2s',
-          pointerEvents: disabled ? 'none' : 'auto'
+          pointerEvents: disabled ? 'none' : 'auto',
         }}
       >
         <span>{value || placeholder}</span>
-        <ChevronDown 
-          size={18} 
-          style={{ 
+        <ChevronDown
+          size={18}
+          style={{
             color: '#999999',
             transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
             transition: 'transform 0.2s',
-            flexShrink: 0
-          }} 
+            flexShrink: 0,
+          }}
         />
       </button>
 
@@ -90,7 +90,7 @@ export function Select({ value, onChange, options, disabled = false, placeholder
             maxHeight: '240px',
             overflowY: 'auto',
             zIndex: 1000,
-            animation: 'slideDown 0.2s ease-out'
+            animation: 'slideDown 0.2s ease-out',
           }}
         >
           {options.map((option, index) => (
@@ -111,7 +111,7 @@ export function Select({ value, onChange, options, disabled = false, placeholder
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 borderBottom: index < options.length - 1 ? '1px solid #F5F5F5' : 'none',
-                transition: 'background-color 0.15s'
+                transition: 'background-color 0.15s',
               }}
               onMouseEnter={(e) => {
                 if (value !== option) {
@@ -125,9 +125,7 @@ export function Select({ value, onChange, options, disabled = false, placeholder
               }}
             >
               <span>{option}</span>
-              {value === option && (
-                <Check size={16} style={{ color: '#5B8FED' }} />
-              )}
+              {value === option && <Check size={16} style={{ color: '#5B8FED' }} />}
             </button>
           ))}
         </div>
@@ -149,4 +147,3 @@ export function Select({ value, onChange, options, disabled = false, placeholder
     </div>
   );
 }
-

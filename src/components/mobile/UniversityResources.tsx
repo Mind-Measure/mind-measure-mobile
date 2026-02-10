@@ -10,7 +10,7 @@ export const UniversityResources: React.FC<UniversityResourcesProps> = ({ onBack
     name: 'University of Worcester',
     logo: 'https://api.mindmeasure.co.uk/storage/marketing/MM%20logo%20square.png',
     location: 'Worcester, UK',
-    website: 'https://worcester.ac.uk'
+    website: 'https://worcester.ac.uk',
   };
   const resourceCategories = [
     {
@@ -18,41 +18,101 @@ export const UniversityResources: React.FC<UniversityResourcesProps> = ({ onBack
       icon: Heart,
       color: 'from-pink-500 to-rose-500',
       resources: [
-        { name: 'Student Counseling Center', description: 'Free confidential counseling services', contact: '+44 1905 855000', type: 'phone' },
-        { name: 'Crisis Support Line', description: '24/7 mental health crisis support', contact: '+44 1905 855111', type: 'phone' },
-        { name: 'Wellness Workshops', description: 'Mindfulness, stress management, and resilience training', contact: 'wellness@worcester.ac.uk', type: 'email' }
-      ]
+        {
+          name: 'Student Counseling Center',
+          description: 'Free confidential counseling services',
+          contact: '+44 1905 855000',
+          type: 'phone',
+        },
+        {
+          name: 'Crisis Support Line',
+          description: '24/7 mental health crisis support',
+          contact: '+44 1905 855111',
+          type: 'phone',
+        },
+        {
+          name: 'Wellness Workshops',
+          description: 'Mindfulness, stress management, and resilience training',
+          contact: 'wellness@worcester.ac.uk',
+          type: 'email',
+        },
+      ],
     },
     {
       title: 'Academic Support',
       icon: BookOpen,
       color: 'from-blue-500 to-indigo-500',
       resources: [
-        { name: 'Learning Support Services', description: 'Academic accommodations and study skills', contact: '+44 1905 855222', type: 'phone' },
-        { name: 'Writing Center', description: 'Essay and assignment writing support', contact: 'writing@worcester.ac.uk', type: 'email' },
-        { name: 'Math & Science Tutoring', description: 'Subject-specific academic assistance', contact: 'tutoring@worcester.ac.uk', type: 'email' }
-      ]
+        {
+          name: 'Learning Support Services',
+          description: 'Academic accommodations and study skills',
+          contact: '+44 1905 855222',
+          type: 'phone',
+        },
+        {
+          name: 'Writing Center',
+          description: 'Essay and assignment writing support',
+          contact: 'writing@worcester.ac.uk',
+          type: 'email',
+        },
+        {
+          name: 'Math & Science Tutoring',
+          description: 'Subject-specific academic assistance',
+          contact: 'tutoring@worcester.ac.uk',
+          type: 'email',
+        },
+      ],
     },
     {
       title: 'Student Life & Community',
       icon: Users,
       color: 'from-green-500 to-emerald-500',
       resources: [
-        { name: 'Student Union', description: 'Student representation and social activities', contact: 'union@worcester.ac.uk', type: 'email' },
-        { name: 'International Student Office', description: 'Support for international students', contact: '+44 1905 855333', type: 'phone' },
-        { name: 'Disability Services', description: 'Accessibility and accommodation support', contact: 'disability@worcester.ac.uk', type: 'email' }
-      ]
+        {
+          name: 'Student Union',
+          description: 'Student representation and social activities',
+          contact: 'union@worcester.ac.uk',
+          type: 'email',
+        },
+        {
+          name: 'International Student Office',
+          description: 'Support for international students',
+          contact: '+44 1905 855333',
+          type: 'phone',
+        },
+        {
+          name: 'Disability Services',
+          description: 'Accessibility and accommodation support',
+          contact: 'disability@worcester.ac.uk',
+          type: 'email',
+        },
+      ],
     },
     {
       title: 'Health & Safety',
       icon: Shield,
       color: 'from-purple-500 to-violet-500',
       resources: [
-        { name: 'Student Health Center', description: 'Primary healthcare and medical services', contact: '+44 1905 855444', type: 'phone' },
-        { name: 'Campus Security', description: '24/7 safety and emergency response', contact: '+44 1905 855555', type: 'phone' },
-        { name: 'Title IX Office', description: 'Gender-based discrimination and harassment support', contact: 'titleix@worcester.ac.uk', type: 'email' }
-      ]
-    }
+        {
+          name: 'Student Health Center',
+          description: 'Primary healthcare and medical services',
+          contact: '+44 1905 855444',
+          type: 'phone',
+        },
+        {
+          name: 'Campus Security',
+          description: '24/7 safety and emergency response',
+          contact: '+44 1905 855555',
+          type: 'phone',
+        },
+        {
+          name: 'Title IX Office',
+          description: 'Gender-based discrimination and harassment support',
+          contact: 'titleix@worcester.ac.uk',
+          type: 'email',
+        },
+      ],
+    },
   ];
   const handleContact = (contact: string, type: string) => {
     if (type === 'phone') {
@@ -75,12 +135,7 @@ export const UniversityResources: React.FC<UniversityResourcesProps> = ({ onBack
       <div className="relative z-10 p-4 space-y-6">
         {/* Header */}
         <div className="flex items-center space-x-4 pt-6">
-          <Button
-            onClick={onBack}
-            variant="ghost"
-            size="sm"
-            className="p-2 hover:bg-white/50 rounded-xl"
-          >
+          <Button onClick={onBack} variant="ghost" size="sm" className="p-2 hover:bg-white/50 rounded-xl">
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
@@ -92,11 +147,7 @@ export const UniversityResources: React.FC<UniversityResourcesProps> = ({ onBack
         <Card className="border-0 shadow-lg backdrop-blur-xl bg-white/90 p-6">
           <div className="flex items-center space-x-4">
             <div className="w-16 h-16 rounded-2xl overflow-hidden">
-              <img
-                src={universityInfo.logo}
-                alt={universityInfo.name}
-                className="w-full h-full object-cover"
-              />
+              <img src={universityInfo.logo} alt={universityInfo.name} className="w-full h-full object-cover" />
             </div>
             <div className="flex-1">
               <h2 className="text-xl font-bold text-gray-900">{universityInfo.name}</h2>
@@ -105,12 +156,7 @@ export const UniversityResources: React.FC<UniversityResourcesProps> = ({ onBack
                 <span>{universityInfo.location}</span>
               </div>
             </div>
-            <Button
-              onClick={handleWebsite}
-              variant="outline"
-              size="sm"
-              className="border-gray-300"
-            >
+            <Button onClick={handleWebsite} variant="outline" size="sm" className="border-gray-300">
               <Globe className="w-4 h-4 mr-1" />
               Visit
             </Button>
@@ -123,7 +169,9 @@ export const UniversityResources: React.FC<UniversityResourcesProps> = ({ onBack
             return (
               <div key={index} className="space-y-3">
                 <div className="flex items-center space-x-2">
-                  <div className={`w-8 h-8 bg-gradient-to-r ${category.color} rounded-full flex items-center justify-center`}>
+                  <div
+                    className={`w-8 h-8 bg-gradient-to-r ${category.color} rounded-full flex items-center justify-center`}
+                  >
                     <Icon className="w-4 h-4 text-white" />
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900">{category.title}</h3>

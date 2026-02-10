@@ -9,8 +9,8 @@ Amplify.configure({
       userPoolId: process.env.VITE_AWS_COGNITO_USER_POOL_ID?.trim() || '',
       userPoolClientId: process.env.VITE_AWS_COGNITO_CLIENT_ID?.trim() || '',
       region: process.env.VITE_AWS_REGION?.trim() || 'eu-west-2',
-    }
-  }
+    },
+  },
 });
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -20,7 +20,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const { email, code, redirect } = req.query;
-  
+
   if (!email || !code) {
     return res.status(400).send(`
       <!DOCTYPE html>
@@ -51,21 +51,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       </html>
     `);
   }
-  
+
   try {
     // Confirm with Cognito
     const { isSignUpComplete } = await confirmSignUp({
       username: email as string,
-      confirmationCode: code as string
+      confirmationCode: code as string,
     });
-    
+
     if (!isSignUpComplete) {
       throw new Error('Email confirmation incomplete');
     }
-    
+
     // Success - redirect to app or show success page
     const redirectUrl = redirect as string;
-    
+
     if (redirectUrl && redirectUrl.startsWith('mindmeasure://')) {
       // Mobile app redirect
       return res.redirect(302, redirectUrl);
@@ -112,10 +112,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         </html>
       `);
     }
-    
   } catch (error: any) {
     console.error('❌ Email confirmation failed:', error);
-    
+
     let errorMessage = 'Email confirmation failed';
     if (error.name === 'CodeMismatchException') {
       errorMessage = 'Invalid confirmation code. The code may have expired or been used already.';
@@ -124,7 +123,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     } else if (error.name === 'UserNotFoundException') {
       errorMessage = 'User not found. Please check the email address.';
     }
-    
+
     return res.status(400).send(`
       <!DOCTYPE html>
       <html>

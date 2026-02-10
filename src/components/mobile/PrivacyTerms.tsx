@@ -16,8 +16,8 @@ export const PrivacyTerms: React.FC<PrivacyTermsProps> = ({ onBack }) => {
         'We collect only the information necessary to provide our mental health assessment services.',
         'Your conversations with Jodie are encrypted and stored securely.',
         'Data is anonymized for research purposes to help improve university mental health services.',
-        'You have the right to access, modify, or delete your personal data at any time.'
-      ]
+        'You have the right to access, modify, or delete your personal data at any time.',
+      ],
     },
     {
       title: 'Data Security',
@@ -28,8 +28,8 @@ export const PrivacyTerms: React.FC<PrivacyTermsProps> = ({ onBack }) => {
         'Your information is stored on secure servers with multiple layers of protection.',
         'Access to your data is strictly limited to authorized personnel only.',
         'Regular security audits and penetration testing are conducted.',
-        'We maintain compliance with ISO 27001 security standards.'
-      ]
+        'We maintain compliance with ISO 27001 security standards.',
+      ],
     },
     {
       title: 'Terms of Service',
@@ -40,8 +40,8 @@ export const PrivacyTerms: React.FC<PrivacyTermsProps> = ({ onBack }) => {
         'Our AI assessments are not a substitute for professional medical advice.',
         'You must be 18+ or have parental consent to use this service.',
         'University email addresses are required for registration and access.',
-        'Misuse of the platform may result in account suspension.'
-      ]
+        'Misuse of the platform may result in account suspension.',
+      ],
     },
     {
       title: 'University Partnership',
@@ -52,9 +52,9 @@ export const PrivacyTerms: React.FC<PrivacyTermsProps> = ({ onBack }) => {
         'Anonymized data helps universities understand student mental health trends.',
         'University counselors may access your data with your explicit consent.',
         'Your institution receives aggregate reports, never individual data.',
-        'University-specific resources are tailored to your campus services.'
-      ]
-    }
+        'University-specific resources are tailored to your campus services.',
+      ],
+    },
   ];
   const handleContactPrivacy = () => {
     window.open('mailto:privacy@mindmeasure.app', '_blank');
@@ -73,12 +73,7 @@ export const PrivacyTerms: React.FC<PrivacyTermsProps> = ({ onBack }) => {
       <div className="relative z-10 p-4 space-y-6">
         {/* Header */}
         <div className="flex items-center space-x-4 pt-6">
-          <Button
-            onClick={onBack}
-            variant="ghost"
-            size="sm"
-            className="p-2 hover:bg-white/50 rounded-xl"
-          >
+          <Button onClick={onBack} variant="ghost" size="sm" className="p-2 hover:bg-white/50 rounded-xl">
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
@@ -92,7 +87,8 @@ export const PrivacyTerms: React.FC<PrivacyTermsProps> = ({ onBack }) => {
             <Shield className="w-12 h-12 mx-auto" />
             <h2 className="text-xl font-bold">Your Privacy Matters</h2>
             <p className="text-blue-100">
-              We're committed to protecting your personal information and ensuring transparency about how we use your data.
+              We're committed to protecting your personal information and ensuring transparency about how we use your
+              data.
             </p>
           </div>
         </Card>
@@ -108,7 +104,9 @@ export const PrivacyTerms: React.FC<PrivacyTermsProps> = ({ onBack }) => {
                 <CardContent className="p-6">
                   <div className="space-y-4">
                     <div className="flex items-center space-x-3">
-                      <div className={`w-10 h-10 bg-gradient-to-r ${section.color} rounded-full flex items-center justify-center`}>
+                      <div
+                        className={`w-10 h-10 bg-gradient-to-r ${section.color} rounded-full flex items-center justify-center`}
+                      >
                         <Icon className="w-5 h-5 text-white" />
                       </div>
                       <h3 className="text-lg font-semibold text-gray-900">{section.title}</h3>
@@ -116,7 +114,9 @@ export const PrivacyTerms: React.FC<PrivacyTermsProps> = ({ onBack }) => {
                     <div className="space-y-3">
                       {section.content.map((item, itemIndex) => (
                         <div key={itemIndex} className="flex items-start space-x-3">
-                          <div className={`w-2 h-2 bg-gradient-to-r ${section.color} rounded-full mt-2 flex-shrink-0`}></div>
+                          <div
+                            className={`w-2 h-2 bg-gradient-to-r ${section.color} rounded-full mt-2 flex-shrink-0`}
+                          ></div>
                           <p className="text-sm text-gray-700 leading-relaxed">{item}</p>
                         </div>
                       ))}
@@ -132,7 +132,8 @@ export const PrivacyTerms: React.FC<PrivacyTermsProps> = ({ onBack }) => {
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-gray-900">Questions or Concerns?</h3>
             <p className="text-gray-600 text-sm">
-              If you have any questions about our privacy practices or terms of service, please don't hesitate to contact us.
+              If you have any questions about our privacy practices or terms of service, please don't hesitate to
+              contact us.
             </p>
             <div className="grid grid-cols-1 gap-3">
               <Button
@@ -169,9 +170,7 @@ export const PrivacyTerms: React.FC<PrivacyTermsProps> = ({ onBack }) => {
           <div className="text-center space-y-4">
             <Globe className="w-12 h-12 mx-auto" />
             <h3 className="text-xl font-bold">Complete Policies</h3>
-            <p className="text-purple-100">
-              Read our full privacy policy and terms of service on our website.
-            </p>
+            <p className="text-purple-100">Read our full privacy policy and terms of service on our website.</p>
             <Button
               onClick={() => window.open('https://mindmeasure.app/privacy', '_blank')}
               variant="secondary"

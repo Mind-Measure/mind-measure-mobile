@@ -2,10 +2,7 @@
 // Vercel serverless function
 
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import {
-  CognitoIdentityProviderClient,
-  SignUpCommand
-} from '@aws-sdk/client-cognito-identity-provider';
+import { CognitoIdentityProviderClient, SignUpCommand } from '@aws-sdk/client-cognito-identity-provider';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Only allow POST requests
@@ -36,21 +33,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       region: region,
       credentials: {
         accessKeyId: accessKeyId,
-        secretAccessKey: secretAccessKey
-      }
+        secretAccessKey: secretAccessKey,
+      },
     });
 
     const userAttributes: Array<{ Name: string; Value: string }> = [
       {
         Name: 'email',
-        Value: email
-      }
+        Value: email,
+      },
     ];
-    
+
     if (firstName) {
       userAttributes.push({ Name: 'given_name', Value: firstName });
     }
-    
+
     if (lastName) {
       userAttributes.push({ Name: 'family_name', Value: lastName });
     }
@@ -59,7 +56,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ClientId: clientId,
       Username: email,
       Password: password,
-      UserAttributes: userAttributes
+      UserAttributes: userAttributes,
     });
 
     const result = await client.send(command);
@@ -68,14 +65,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       userSub: result.UserSub,
       userConfirmed: result.UserConfirmed,
       codeDeliveryDetails: result.CodeDeliveryDetails,
-      error: null
+      error: null,
     });
-
   } catch (error: any) {
     console.error('❌ Cognito sign up error:', error);
     console.error('❌ Error name:', error.name);
     console.error('❌ Error message:', error.message);
-    
+
     let errorMessage = 'Sign up failed';
     if (error.name === 'InvalidPasswordException') {
       errorMessage = 'Password must be at least 8 characters long and contain uppercase, lowercase, and numbers';
@@ -86,7 +82,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     } else if (error.message) {
       errorMessage = error.message;
     }
-    
+
     res.status(400).json({ error: errorMessage });
   }
 }

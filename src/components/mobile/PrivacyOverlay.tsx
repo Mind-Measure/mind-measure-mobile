@@ -80,15 +80,41 @@ export function PrivacyOverlay({ isOpen, onClose }: PrivacyOverlayProps) {
               cursor: 'pointer',
               transition: 'background 200ms ease',
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'; }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+            }}
           >
             <X size={18} color="#FFFFFF" />
           </button>
 
           {/* Decorative circles */}
-          <div style={{ position: 'absolute', top: '-40px', right: '-40px', width: '120px', height: '120px', borderRadius: '50%', background: 'rgba(255, 255, 255, 0.1)', pointerEvents: 'none' }} />
-          <div style={{ position: 'absolute', bottom: '-20px', left: '-20px', width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(255, 255, 255, 0.1)', pointerEvents: 'none' }} />
+          <div
+            style={{
+              position: 'absolute',
+              top: '-40px',
+              right: '-40px',
+              width: '120px',
+              height: '120px',
+              borderRadius: '50%',
+              background: 'rgba(255, 255, 255, 0.1)',
+              pointerEvents: 'none',
+            }}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              bottom: '-20px',
+              left: '-20px',
+              width: '80px',
+              height: '80px',
+              borderRadius: '50%',
+              background: 'rgba(255, 255, 255, 0.1)',
+              pointerEvents: 'none',
+            }}
+          />
 
           <div
             style={{
@@ -104,8 +130,17 @@ export function PrivacyOverlay({ isOpen, onClose }: PrivacyOverlayProps) {
               boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
             }}
           >
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#8B5CF6"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
             </svg>
           </div>
 
@@ -144,20 +179,24 @@ export function PrivacyOverlay({ isOpen, onClose }: PrivacyOverlayProps) {
         >
           {/* What we collect */}
           <Section title="What we collect">
-            <BulletList items={[
-              'Voluntary check-ins you choose to complete',
-              'This may include text, audio, or video, depending on the check-in',
-              'These inputs are used only for automated analysis within the app',
-            ]} />
+            <BulletList
+              items={[
+                'Voluntary check-ins you choose to complete',
+                'This may include text, audio, or video, depending on the check-in',
+                'These inputs are used only for automated analysis within the app',
+              ]}
+            />
           </Section>
 
           {/* What your university can see */}
           <Section title="What your university can see">
-            <BulletList items={[
-              'Aggregated trends only, across groups of students',
-              'No individual data',
-              'No recordings, responses, or scores',
-            ]} />
+            <BulletList
+              items={[
+                'Aggregated trends only, across groups of students',
+                'No individual data',
+                'No recordings, responses, or scores',
+              ]}
+            />
             <p style={{ fontSize: '14px', color: '#4B5563', lineHeight: 1.6, margin: '12px 0 0 0', fontWeight: 600 }}>
               There is no way for your university to see your personal check-ins.
             </p>
@@ -165,38 +204,42 @@ export function PrivacyOverlay({ isOpen, onClose }: PrivacyOverlayProps) {
 
           {/* What we don't do */}
           <Section title="What we don't do">
-            <BulletList items={[
-              "We don't diagnose or provide medical advice",
-              "We don't monitor individuals",
-              "We don't sell or share your data for advertising",
-            ]} />
-            <p style={{ fontSize: '13px', color: '#6B7280', lineHeight: 1.6, margin: '12px 0 0 0', fontStyle: 'italic' }}>
+            <BulletList
+              items={[
+                "We don't diagnose or provide medical advice",
+                "We don't monitor individuals",
+                "We don't sell or share your data for advertising",
+              ]}
+            />
+            <p
+              style={{ fontSize: '13px', color: '#6B7280', lineHeight: 1.6, margin: '12px 0 0 0', fontStyle: 'italic' }}
+            >
               Mind Measure is not a clinical or surveillance tool.
             </p>
           </Section>
 
           {/* Your control */}
           <Section title="Your control" last>
-            <BulletList items={[
-              'Participation is voluntary',
-              'You can stop using the app at any time',
-              'You can request deletion of your data',
-            ]} />
+            <BulletList
+              items={[
+                'Participation is voluntary',
+                'You can stop using the app at any time',
+                'You can request deletion of your data',
+              ]}
+            />
           </Section>
 
           {/* Learn more links */}
-          <div style={{
-            background: '#F9FAFB',
-            borderRadius: '12px',
-            padding: '16px',
-            marginTop: '20px',
-          }}>
-            <p style={{ fontSize: '13px', fontWeight: 600, color: '#374151', margin: '0 0 8px 0' }}>
-              Learn more
-            </p>
-            <p style={{ fontSize: '13px', color: '#6B7280', margin: '0 0 12px 0' }}>
-              Read our full:
-            </p>
+          <div
+            style={{
+              background: '#F9FAFB',
+              borderRadius: '12px',
+              padding: '16px',
+              marginTop: '20px',
+            }}
+          >
+            <p style={{ fontSize: '13px', fontWeight: 600, color: '#374151', margin: '0 0 8px 0' }}>Learn more</p>
+            <p style={{ fontSize: '13px', color: '#6B7280', margin: '0 0 12px 0' }}>Read our full:</p>
             <div style={{ display: 'flex', gap: '12px' }}>
               <a
                 href="https://mindmeasure.co.uk/privacy"
@@ -213,7 +256,16 @@ export function PrivacyOverlay({ isOpen, onClose }: PrivacyOverlayProps) {
                 }}
               >
                 Privacy Policy
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
                   <polyline points="15 3 21 3 21 9" />
                   <line x1="10" y1="14" x2="21" y2="3" />
@@ -235,7 +287,16 @@ export function PrivacyOverlay({ isOpen, onClose }: PrivacyOverlayProps) {
                 }}
               >
                 Terms of Service
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
                   <polyline points="15 3 21 3 21 9" />
                   <line x1="10" y1="14" x2="21" y2="3" />
@@ -290,12 +351,14 @@ export function PrivacyOverlay({ isOpen, onClose }: PrivacyOverlayProps) {
 function Section({ title, children, last }: { title: string; children: React.ReactNode; last?: boolean }) {
   return (
     <div style={{ marginBottom: last ? 0 : '24px' }}>
-      <h3 style={{
-        fontSize: '16px',
-        fontWeight: 700,
-        color: '#1F2937',
-        margin: '0 0 8px 0',
-      }}>
+      <h3
+        style={{
+          fontSize: '16px',
+          fontWeight: 700,
+          color: '#1F2937',
+          margin: '0 0 8px 0',
+        }}
+      >
         {title}
       </h3>
       {children}

@@ -5,7 +5,7 @@ const { Client } = pkg;
 /**
  * Track Article View API
  * Records a view event for analytics and popularity ranking
- * 
+ *
  * POST /api/content/track-view
  * Body: { articleId, userId?, universityId }
  */
@@ -30,8 +30,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     user: process.env.AWS_AURORA_USERNAME,
     password: process.env.AWS_AURORA_PASSWORD,
     ssl: {
-      rejectUnauthorized: false
-    }
+      rejectUnauthorized: false,
+    },
   });
 
   try {
@@ -52,16 +52,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       [articleId]
     );
 
-    return res.status(200).json({ 
+    return res.status(200).json({
       success: true,
-      message: 'View tracked successfully'
+      message: 'View tracked successfully',
     });
-
   } catch (error) {
     console.error('[Track View Error]', error);
-    return res.status(500).json({ 
+    return res.status(500).json({
       error: 'Failed to track view',
-      details: error instanceof Error ? error.message : String(error)
+      details: error instanceof Error ? error.message : String(error),
     });
   } finally {
     await client.end();

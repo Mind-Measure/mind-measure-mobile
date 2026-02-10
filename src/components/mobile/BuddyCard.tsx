@@ -55,7 +55,7 @@ export function BuddyCard({ buddy, onDelete, onMove, onAskCheckIn, index }: Budd
         cursor: 'move',
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'center'
+        alignItems: 'center',
       }}
     >
       <button
@@ -75,7 +75,7 @@ export function BuddyCard({ buddy, onDelete, onMove, onAskCheckIn, index }: Budd
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          transition: 'all 0.2s'
+          transition: 'all 0.2s',
         }}
         aria-label="Delete buddy"
         onMouseEnter={(e) => {
@@ -92,32 +92,34 @@ export function BuddyCard({ buddy, onDelete, onMove, onAskCheckIn, index }: Budd
 
       <div style={{ width: '100%', marginBottom: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-          <div style={{
-            backgroundColor: '#5B8FED',
-            color: 'white',
-            width: '28px',
-            height: '28px',
-            borderRadius: '8px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '16px',
-            fontWeight: '600',
-            flexShrink: 0
-          }}>
+          <div
+            style={{
+              backgroundColor: '#5B8FED',
+              color: 'white',
+              width: '28px',
+              height: '28px',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '16px',
+              fontWeight: '600',
+              flexShrink: 0,
+            }}
+          >
             {buddy.rank}
           </div>
-          <h3 style={{ fontSize: '20px', fontWeight: '600', color: '#0F172A', margin: 0, flex: 1 }}>
-            {buddy.name}
-          </h3>
-          <span style={{
-            fontSize: '12px',
-            fontWeight: '600',
-            color: '#10B981',
-            backgroundColor: '#D1FAE5',
-            padding: '4px 10px',
-            borderRadius: '12px'
-          }}>
+          <h3 style={{ fontSize: '20px', fontWeight: '600', color: '#0F172A', margin: 0, flex: 1 }}>{buddy.name}</h3>
+          <span
+            style={{
+              fontSize: '12px',
+              fontWeight: '600',
+              color: '#10B981',
+              backgroundColor: '#D1FAE5',
+              padding: '4px 10px',
+              borderRadius: '12px',
+            }}
+          >
             Active
           </span>
         </div>
@@ -135,10 +137,14 @@ export function BuddyCard({ buddy, onDelete, onMove, onAskCheckIn, index }: Budd
           fontWeight: '600',
           color: 'white',
           cursor: 'pointer',
-          transition: 'all 0.2s'
+          transition: 'all 0.2s',
         }}
-        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#4A7FDC'; }}
-        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#5B8FED'; }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = '#4A7FDC';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = '#5B8FED';
+        }}
       >
         Send a nudge
       </button>

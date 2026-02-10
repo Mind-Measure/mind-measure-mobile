@@ -7,7 +7,7 @@ import { VercelRequest, VercelResponse } from '@vercel/node';
 import {
   CognitoIdentityProviderClient,
   ConfirmSignUpCommand,
-  AdminGetUserCommand
+  AdminGetUserCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { Client } from 'pg';
 
@@ -15,8 +15,8 @@ const cognitoConfig = {
   region: (process.env.AWS_REGION || 'eu-west-2').trim(),
   credentials: {
     accessKeyId: (process.env.AWS_ACCESS_KEY_ID || '').trim(),
-    secretAccessKey: (process.env.AWS_SECRET_ACCESS_KEY || '').trim()
-  }
+    secretAccessKey: (process.env.AWS_SECRET_ACCESS_KEY || '').trim(),
+  },
 };
 
 const client = new CognitoIdentityProviderClient(cognitoConfig);
@@ -30,7 +30,7 @@ function getDbConfig() {
     database: process.env.AWS_AURORA_DATABASE || 'mindmeasure',
     user: process.env.AWS_AURORA_USERNAME || 'mindmeasure_admin',
     password: process.env.AWS_AURORA_PASSWORD || '',
-    ssl: { rejectUnauthorized: false }
+    ssl: { rejectUnauthorized: false },
   };
 }
 
@@ -55,7 +55,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const confirmCmd = new ConfirmSignUpCommand({
       ClientId: clientId,
       Username: trimmedEmail,
-      ConfirmationCode: code
+      ConfirmationCode: code,
     });
     await client.send(confirmCmd);
 
@@ -66,7 +66,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       } else {
         const getUserCmd = new AdminGetUserCommand({
           UserPoolId: userPoolId,
-          Username: trimmedEmail
+          Username: trimmedEmail,
         });
         const getUserRes = await client.send(getUserCmd);
         const attrs = getUserRes.UserAttributes || [];
@@ -112,4 +112,3 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.status(500).json({ error: errorMessage });
   }
 }
-

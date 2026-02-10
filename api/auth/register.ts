@@ -12,22 +12,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Validate required fields
     if (!email || !password || !firstName || !lastName) {
-      return res.status(400).json({ 
-        error: 'Missing required fields: email, password, firstName, lastName' 
+      return res.status(400).json({
+        error: 'Missing required fields: email, password, firstName, lastName',
       });
     }
 
     // Initialize AWS backend service
-    const backendService = BackendServiceFactory.createService(
-      BackendServiceFactory.getEnvironmentConfig()
-    );
+    const backendService = BackendServiceFactory.createService(BackendServiceFactory.getEnvironmentConfig());
 
     // Register user with AWS Cognito
     const { user, error } = await backendService.auth.signUp({
       email,
       password,
       firstName,
-      lastName
+      lastName,
     });
 
     if (error) {
@@ -48,7 +46,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         last_name: lastName,
         display_name: `${firstName} ${lastName}`,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       });
 
       if (profileError) {
@@ -65,17 +63,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       user: {
         id: user.id,
         email: user.email,
-        emailVerified: user.emailVerified || false
+        emailVerified: user.emailVerified || false,
       },
-      message: 'Registration successful. Please check your email for verification.'
+      message: 'Registration successful. Please check your email for verification.',
     });
-
   } catch (error: any) {
     console.error('Registration API error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Internal server error during registration',
-      details: error.message 
+      details: error.message,
     });
   }
 }
-

@@ -49,7 +49,7 @@ export function ProfileReminderModal({ isOpen, onComplete, onSkip }: ProfileRemi
         justifyContent: 'center',
         zIndex: 1000,
         padding: '20px',
-        animation: isClosing ? 'fadeOut 0.3s ease-out' : 'fadeIn 0.3s ease-out'
+        animation: isClosing ? 'fadeOut 0.3s ease-out' : 'fadeIn 0.3s ease-out',
       }}
       onClick={handleSkip}
     >
@@ -83,7 +83,7 @@ export function ProfileReminderModal({ isOpen, onComplete, onSkip }: ProfileRemi
           width: '100%',
           boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
           overflow: 'hidden',
-          animation: isClosing ? 'slideDown 0.3s ease-out' : 'slideUp 0.3s ease-out'
+          animation: isClosing ? 'slideDown 0.3s ease-out' : 'slideUp 0.3s ease-out',
         }}
       >
         {/* Header with gradient */}
@@ -92,7 +92,7 @@ export function ProfileReminderModal({ isOpen, onComplete, onSkip }: ProfileRemi
             background: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)',
             padding: '32px 24px',
             textAlign: 'center',
-            position: 'relative'
+            position: 'relative',
           }}
         >
           <button
@@ -111,14 +111,27 @@ export function ProfileReminderModal({ isOpen, onComplete, onSkip }: ProfileRemi
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
-              transition: 'all 0.2s'
+              transition: 'all 0.2s',
             }}
-            onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)'; }}
-            onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'; }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+            }}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18"/>
-              <line x1="6" y1="6" x2="18" y2="18"/>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="white"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
           </button>
 
@@ -132,14 +145,10 @@ export function ProfileReminderModal({ isOpen, onComplete, onSkip }: ProfileRemi
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
             }}
           >
-            <img
-              src={mindMeasureLogo}
-              alt="Mind Measure"
-              style={{ width: '56px', height: '56px' }}
-            />
+            <img src={mindMeasureLogo} alt="Mind Measure" style={{ width: '56px', height: '56px' }} />
           </div>
 
           <h2
@@ -148,7 +157,7 @@ export function ProfileReminderModal({ isOpen, onComplete, onSkip }: ProfileRemi
               fontWeight: '700',
               color: 'white',
               margin: '0 0 8px 0',
-              lineHeight: '1.2'
+              lineHeight: '1.2',
             }}
           >
             Complete Your Profile
@@ -159,7 +168,7 @@ export function ProfileReminderModal({ isOpen, onComplete, onSkip }: ProfileRemi
               fontSize: '15px',
               color: 'rgba(255, 255, 255, 0.9)',
               margin: 0,
-              lineHeight: '1.5'
+              lineHeight: '1.5',
             }}
           >
             Baseline assessment complete!
@@ -174,7 +183,7 @@ export function ProfileReminderModal({ isOpen, onComplete, onSkip }: ProfileRemi
               borderRadius: '16px',
               padding: '20px',
               marginBottom: '24px',
-              textAlign: 'center'
+              textAlign: 'center',
             }}
           >
             <p
@@ -183,7 +192,7 @@ export function ProfileReminderModal({ isOpen, onComplete, onSkip }: ProfileRemi
                 color: '#1a1a1a',
                 margin: '0 0 12px 0',
                 lineHeight: '1.6',
-                fontWeight: '500'
+                fontWeight: '500',
               }}
             >
               Help us to help you with two quick steps:
@@ -195,11 +204,15 @@ export function ProfileReminderModal({ isOpen, onComplete, onSkip }: ProfileRemi
                 margin: 0,
                 paddingLeft: '20px',
                 textAlign: 'left',
-                lineHeight: '1.6'
+                lineHeight: '1.6',
               }}
             >
-              <li style={{ marginBottom: '8px' }}><strong>Profile</strong> (bottom menu) – fill in your details</li>
-              <li><strong>Buddies</strong> (bottom menu) – add buddies to your buddy list</li>
+              <li style={{ marginBottom: '8px' }}>
+                <strong>Profile</strong> (bottom menu) – fill in your details
+              </li>
+              <li>
+                <strong>Buddies</strong> (bottom menu) – add buddies to your buddy list
+              </li>
             </ul>
             <div
               style={{
@@ -207,16 +220,23 @@ export function ProfileReminderModal({ isOpen, onComplete, onSkip }: ProfileRemi
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '8px',
-                marginTop: '12px'
+                marginTop: '12px',
               }}
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"/>
-                <polyline points="12 6 12 12 16 14"/>
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#8B5CF6"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
               </svg>
-              <span style={{ fontSize: '14px', color: '#666666', fontWeight: '600' }}>
-                Only takes a minute
-              </span>
+              <span style={{ fontSize: '14px', color: '#666666', fontWeight: '600' }}>Only takes a minute</span>
             </div>
           </div>
 
@@ -226,7 +246,7 @@ export function ProfileReminderModal({ isOpen, onComplete, onSkip }: ProfileRemi
                 fontSize: '14px',
                 color: '#666666',
                 margin: '0 0 16px 0',
-                fontWeight: '600'
+                fontWeight: '600',
               }}
             >
               Why complete your profile?
@@ -235,12 +255,9 @@ export function ProfileReminderModal({ isOpen, onComplete, onSkip }: ProfileRemi
               {[
                 { icon: '🎯', text: 'Personalised wellbeing insights' },
                 { icon: '📊', text: 'More accurate tracking' },
-                { icon: '🤝', text: 'Better support recommendations' }
+                { icon: '🤝', text: 'Better support recommendations' },
               ].map((item, index) => (
-                <div
-                  key={index}
-                  style={{ display: 'flex', alignItems: 'center', gap: '12px' }}
-                >
+                <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <div
                     style={{
                       fontSize: '20px',
@@ -251,14 +268,12 @@ export function ProfileReminderModal({ isOpen, onComplete, onSkip }: ProfileRemi
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      flexShrink: 0
+                      flexShrink: 0,
                     }}
                   >
                     {item.icon}
                   </div>
-                  <span style={{ fontSize: '14px', color: '#1a1a1a', lineHeight: '1.5' }}>
-                    {item.text}
-                  </span>
+                  <span style={{ fontSize: '14px', color: '#1a1a1a', lineHeight: '1.5' }}>{item.text}</span>
                 </div>
               ))}
             </div>
@@ -279,7 +294,7 @@ export function ProfileReminderModal({ isOpen, onComplete, onSkip }: ProfileRemi
               cursor: 'pointer',
               transition: 'all 0.2s',
               boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)',
-              marginBottom: '12px'
+              marginBottom: '12px',
             }}
             onMouseOver={(e) => {
               e.currentTarget.style.transform = 'translateY(-2px)';
@@ -306,7 +321,7 @@ export function ProfileReminderModal({ isOpen, onComplete, onSkip }: ProfileRemi
               fontSize: '14px',
               fontWeight: '600',
               cursor: 'pointer',
-              transition: 'all 0.2s'
+              transition: 'all 0.2s',
             }}
             onMouseOver={(e) => {
               e.currentTarget.style.background = '#F3F4F6';

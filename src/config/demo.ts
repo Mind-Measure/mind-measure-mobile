@@ -1,6 +1,6 @@
 /**
  * Demo Configuration for University of Worcester
- * 
+ *
  * This configuration ensures that the Mind Measure demo
  * is properly set up for the University of Worcester.
  */
@@ -21,7 +21,7 @@ export const DEMO_CONFIG = {
     address: 'Henwick Grove',
     postcode: 'WR2 6AJ',
     established: 2005,
-    totalStudents: 10500
+    totalStudents: 10500,
   },
 
   // Demo User Configuration
@@ -30,14 +30,14 @@ export const DEMO_CONFIG = {
       email: 'keith@dicestudio.com',
       firstName: 'Keith',
       lastName: 'Duddy',
-      role: 'demo_admin'
+      role: 'demo_admin',
     },
     {
       email: 'demo.student@worcester.ac.uk',
       firstName: 'Demo',
       lastName: 'Student',
-      role: 'student'
-    }
+      role: 'student',
+    },
   ],
 
   // App Configuration
@@ -45,7 +45,7 @@ export const DEMO_CONFIG = {
     autoAssignUniversity: true, // Automatically assign Worcester to all new users
     skipUniversitySelection: true, // Skip university selection in onboarding
     enableDemoMode: true, // Enable demo-specific features
-    showDemoIndicator: false // Don't show demo indicator in production demo
+    showDemoIndicator: false, // Don't show demo indicator in production demo
   },
 
   // Feature Flags for Demo
@@ -54,7 +54,7 @@ export const DEMO_CONFIG = {
     enableRealTimeAnalysis: true, // Enable real-time Rekognition analysis
     enableLambdaFunctions: true, // Use AWS Lambda for scoring
     enableMockData: false, // Use real data, not mock data
-    enableDebugLogging: true // Enable detailed logging for demo
+    enableDebugLogging: true, // Enable detailed logging for demo
   },
 
   // Emergency Contacts for Worcester
@@ -63,19 +63,19 @@ export const DEMO_CONFIG = {
       name: 'University Counselling Service',
       phone: '+44 1905 855000',
       email: 'counselling@worcester.ac.uk',
-      available: '9am-5pm, Monday-Friday'
+      available: '9am-5pm, Monday-Friday',
     },
     {
       name: 'Samaritans',
       phone: '116 123',
       email: 'jo@samaritans.org',
-      available: '24/7'
+      available: '24/7',
     },
     {
       name: 'NHS Crisis Team',
       phone: '111',
-      available: '24/7'
-    }
+      available: '24/7',
+    },
   ],
 
   // Mental Health Services for Worcester
@@ -86,15 +86,15 @@ export const DEMO_CONFIG = {
       contact: 'wellbeing@worcester.ac.uk',
       phone: '+44 1905 855001',
       location: 'Student Services Building',
-      bookingUrl: 'https://worcester.ac.uk/wellbeing'
+      bookingUrl: 'https://worcester.ac.uk/wellbeing',
     },
     {
       name: 'Peer Support Network',
       description: 'Student-led support groups and peer mentoring',
       contact: 'peersupport@worcester.ac.uk',
-      location: 'Various campus locations'
-    }
-  ]
+      location: 'Various campus locations',
+    },
+  ],
 };
 
 /**
@@ -124,8 +124,3 @@ export function getDemoUniversity() {
 export function shouldAutoAssignUniversity(): boolean {
   return DEMO_CONFIG.app.autoAssignUniversity;
 }
-
-
-
-
-

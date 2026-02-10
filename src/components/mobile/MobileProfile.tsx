@@ -146,7 +146,6 @@ export function MobileProfile({
         saveRef.current = null;
       }
     };
-     
   }, [saveRef, handleSaveProfile]);
 
   // ----- Navigation with unsaved changes guard -----

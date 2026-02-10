@@ -16,9 +16,7 @@ export async function sendInviteEmail(p: {
 }): Promise<void> {
   const { to, inviteeName, inviterName, personalMessage, consentUrl } = p;
   const subject = `${inviterName} has invited you to be a Buddy`;
-  const extra = personalMessage
-    ? `\n\nThey added a personal message:\n\n"${personalMessage}"\n\n`
-    : '\n\n';
+  const extra = personalMessage ? `\n\nThey added a personal message:\n\n"${personalMessage}"\n\n` : '\n\n';
   const textBody = `Hi ${inviteeName},
 
 ${inviterName} uses Mind Measure to keep track of their wellbeing and has asked if you'd be willing to be a Buddy.
@@ -64,10 +62,14 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 
 <p style="font-size: 16px; color: #1F2937; line-height: 1.6; margin: 0 0 32px 0;">This isn't an emergency service, and you're not expected to provide support beyond what feels comfortable.</p>
 
-${personalMessage ? `<div class="personal-message">
+${
+  personalMessage
+    ? `<div class="personal-message">
 <div class="message-label">Personal message from ${escapeHtml(inviterName)}</div>
 <p style="font-size: 15px; color: #1F2937; line-height: 1.6; margin: 0; font-style: italic;">"${escapeHtml(personalMessage)}"</p>
-</div>` : ''}
+</div>`
+    : ''
+}
 
 <div style="text-align: center; margin: 32px 0;">
 <a href="${consentUrl}" class="cta-button">Review and respond</a>

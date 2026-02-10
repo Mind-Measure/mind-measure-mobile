@@ -19,11 +19,26 @@ export interface AuditLogEntry {
   complianceFlags?: string[];
 }
 export type AuditAction =
-  | 'LOGIN_SUCCESS' | 'LOGIN_FAILURE' | 'LOGOUT' | 'MFA_SUCCESS' | 'MFA_FAILURE'
-  | 'PHI_VIEW' | 'PHI_EXPORT' | 'PHI_CREATE' | 'PHI_UPDATE' | 'PHI_DELETE'
-  | 'USER_CREATE' | 'USER_UPDATE' | 'USER_DELETE' | 'ROLE_ASSIGN'
-  | 'SECURITY_BREACH' | 'UNAUTHORIZED_ACCESS' | 'SUSPICIOUS_ACTIVITY'
-  | 'FILE_UPLOAD' | 'FILE_DOWNLOAD' | 'FILE_DELETE';
+  | 'LOGIN_SUCCESS'
+  | 'LOGIN_FAILURE'
+  | 'LOGOUT'
+  | 'MFA_SUCCESS'
+  | 'MFA_FAILURE'
+  | 'PHI_VIEW'
+  | 'PHI_EXPORT'
+  | 'PHI_CREATE'
+  | 'PHI_UPDATE'
+  | 'PHI_DELETE'
+  | 'USER_CREATE'
+  | 'USER_UPDATE'
+  | 'USER_DELETE'
+  | 'ROLE_ASSIGN'
+  | 'SECURITY_BREACH'
+  | 'UNAUTHORIZED_ACCESS'
+  | 'SUSPICIOUS_ACTIVITY'
+  | 'FILE_UPLOAD'
+  | 'FILE_DOWNLOAD'
+  | 'FILE_DELETE';
 export class AuditLogger {
   private databaseService: DatabaseService;
   private tableName = 'audit_logs';
@@ -64,9 +79,9 @@ export class AuditLogger {
         error_message: auditEntry.errorMessage,
         risk_level: auditEntry.riskLevel,
         timestamp: auditEntry.timestamp,
-        compliance_flags: JSON.stringify(auditEntry.complianceFlags)
+        compliance_flags: JSON.stringify(auditEntry.complianceFlags),
       };
-      
+
       await this.databaseService.insert(this.tableName, dbEntry);
       if (auditEntry.riskLevel === 'CRITICAL') {
         console.warn('CRITICAL SECURITY EVENT:', auditEntry);

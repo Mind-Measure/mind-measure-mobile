@@ -16,34 +16,36 @@ export function WordCloud({ words, colors = ['#5B8FED', '#6BA3FF', '#7FB8FF', '#
     const sorted = [...words].sort((a, b) => b.value - a.value);
     const maxValue = sorted[0]?.value || 1;
     const minValue = sorted[sorted.length - 1]?.value || 1;
-    
+
     return sorted.map((word, index) => {
       // Calculate font size based on value (16px to 48px range)
       const normalized = (word.value - minValue) / (maxValue - minValue || 1);
-      const fontSize = 16 + (normalized * 32);
-      
+      const fontSize = 16 + normalized * 32;
+
       // Assign color based on index
       const color = colors[index % colors.length];
-      
+
       return {
         ...word,
         fontSize,
-        color
+        color,
       };
     });
   }, [words, colors]);
 
   return (
-    <div style={{
-      display: 'flex',
-      flexWrap: 'wrap',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: '12px',
-      padding: '20px',
-      height: '100%',
-      width: '100%'
-    }}>
+    <div
+      style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '12px',
+        padding: '20px',
+        height: '100%',
+        width: '100%',
+      }}
+    >
       {processedWords.map((word, index) => (
         <span
           key={`${word.text}-${index}`}
@@ -54,7 +56,7 @@ export function WordCloud({ words, colors = ['#5B8FED', '#6BA3FF', '#7FB8FF', '#
             lineHeight: '1.2',
             transition: 'transform 0.2s',
             cursor: 'default',
-            userSelect: 'none'
+            userSelect: 'none',
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = 'scale(1.1)';
@@ -69,4 +71,3 @@ export function WordCloud({ words, colors = ['#5B8FED', '#6BA3FF', '#7FB8FF', '#
     </div>
   );
 }
-

@@ -23,12 +23,12 @@ export function ForgotPasswordScreen({ onBack, onComplete, prefilledEmail = '' }
   useEffect(() => {
     if (prefilledEmail.trim()) setEmail(prefilledEmail.trim());
   }, [prefilledEmail]);
-  
+
   const { forgotPassword, confirmForgotPassword } = useAuth();
 
   const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email) {
       setError('Please enter your email address');
       return;
@@ -53,7 +53,7 @@ export function ForgotPasswordScreen({ onBack, onComplete, prefilledEmail = '' }
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!code || !newPassword || !confirmPassword) {
       setError('Please fill in all fields');
       return;
@@ -83,7 +83,7 @@ export function ForgotPasswordScreen({ onBack, onComplete, prefilledEmail = '' }
       console.log('✅ Password reset successful');
       setStep('success');
       setIsLoading(false);
-      
+
       // Auto-navigate back after 2 seconds
       setTimeout(() => {
         if (onComplete) {
@@ -102,9 +102,9 @@ export function ForgotPasswordScreen({ onBack, onComplete, prefilledEmail = '' }
       y: 0,
       transition: {
         duration: 0.5,
-        staggerChildren: 0.1
-      }
-    }
+        staggerChildren: 0.1,
+      },
+    },
   };
 
   const itemVariants = {
@@ -112,8 +112,8 @@ export function ForgotPasswordScreen({ onBack, onComplete, prefilledEmail = '' }
     visible: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.4 }
-    }
+      transition: { duration: 0.4 },
+    },
   };
 
   return (
@@ -148,11 +148,7 @@ export function ForgotPasswordScreen({ onBack, onComplete, prefilledEmail = '' }
           {/* Logo */}
           <motion.div variants={itemVariants} className="flex justify-center mb-6">
             <div className="w-20 h-20 flex items-center justify-center">
-              <img
-                src={mindMeasureLogo}
-                alt="Mind Measure"
-                className="w-full h-full object-contain"
-              />
+              <img src={mindMeasureLogo} alt="Mind Measure" className="w-full h-full object-contain" />
             </div>
           </motion.div>
 
@@ -320,19 +316,14 @@ export function ForgotPasswordScreen({ onBack, onComplete, prefilledEmail = '' }
           )}
 
           {step === 'success' && (
-            <motion.div
-              variants={itemVariants}
-              className="text-center space-y-6"
-            >
+            <motion.div variants={itemVariants} className="text-center space-y-6">
               <div className="flex justify-center">
                 <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center">
                   <CheckCircle className="w-12 h-12 text-green-600" />
                 </div>
               </div>
               <h2 className="text-2xl font-bold text-gray-900">Password Reset Successful!</h2>
-              <p className="text-gray-600">
-                Your password has been reset. You can now sign in with your new password.
-              </p>
+              <p className="text-gray-600">Your password has been reset. You can now sign in with your new password.</p>
             </motion.div>
           )}
         </div>

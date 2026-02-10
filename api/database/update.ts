@@ -1,6 +1,6 @@
 /**
  * SECURED Generic Database UPDATE Endpoint
- * 
+ *
  * Security measures:
  * - JWT authentication required
  * - Table allowlist
@@ -16,7 +16,7 @@ const ALLOWED_TABLES = new Set([
   'profiles',
   'assessment_sessions',
   'weekly_summary',
-  'buddy_contacts'  // User's emergency support contacts
+  'buddy_contacts', // User's emergency support contacts
 ]);
 
 interface UpdateRequest {
@@ -46,7 +46,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(403).json({
         error: 'Forbidden',
         message: `Cannot update table '${table}'`,
-        code: 'TABLE_NOT_ALLOWED'
+        code: 'TABLE_NOT_ALLOWED',
       });
     }
 
@@ -59,7 +59,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       database: process.env.AWS_AURORA_DATABASE,
       user: process.env.AWS_AURORA_USERNAME,
       password: process.env.AWS_AURORA_PASSWORD,
-      ssl: { rejectUnauthorized: false }
+      ssl: { rejectUnauthorized: false },
     });
 
     await client.connect();
@@ -86,15 +86,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.status(200).json({
       data: result.rows,
-      error: null
+      error: null,
     });
-
   } catch (error: any) {
     console.error(`[DB UPDATE] Error for user ${userId}:`, error);
     return res.status(500).json({
       error: 'Database update failed',
       message: error.message,
-      data: null
+      data: null,
     });
   }
 }

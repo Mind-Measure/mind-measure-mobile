@@ -1,12 +1,12 @@
 /**
  * SECURED Generic Database SELECT Endpoint
- * 
+ *
  * Security measures:
  * - JWT authentication required
  * - Table allowlist (only safe tables)
  * - Automatic user scoping (users can only see their own data)
  * - Read-only (SELECT only)
- * 
+ *
  * This is a TEMPORARY bridge to keep the app working while we migrate
  * to task-specific endpoints. DO NOT add new features using this endpoint.
  */
@@ -28,9 +28,9 @@ const ALLOWED_TABLES = new Set([
   'help_resources',
   'content_blocks',
   'wellbeing_reports',
-  'buddy_contacts',  // User's emergency support contacts
-  'content_articles',  // Published content for students
-  'content_categories'  // Content categories
+  'buddy_contacts', // User's emergency support contacts
+  'content_articles', // Published content for students
+  'content_categories', // Content categories
 ]);
 
 // Tables that require user_id scoping (everything except public data)
@@ -39,7 +39,7 @@ const PUBLIC_TABLES = new Set([
   'help_resources',
   'content_blocks',
   'content_articles',
-  'content_categories'
+  'content_categories',
 ]);
 
 interface SelectRequest {
@@ -73,7 +73,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(403).json({
         error: 'Forbidden',
         message: `Table '${table}' is not accessible through this endpoint`,
-        code: 'TABLE_NOT_ALLOWED'
+        code: 'TABLE_NOT_ALLOWED',
       });
     }
 
@@ -90,7 +90,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       database: process.env.AWS_AURORA_DATABASE,
       user: process.env.AWS_AURORA_USERNAME,
       password: process.env.AWS_AURORA_PASSWORD,
-      ssl: { rejectUnauthorized: false }
+      ssl: { rejectUnauthorized: false },
     });
 
     await client.connect();
@@ -102,7 +102,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Add WHERE clause
     if (filters && Object.keys(filters).length > 0) {
       const whereConditions: string[] = [];
-      
+
       Object.entries(filters).forEach(([key, value]) => {
         if (value && typeof value === 'object' && 'in' in value) {
           const placeholders = value.in.map((_: any) => `$${paramIndex++}`).join(',');
@@ -122,9 +122,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Add ORDER BY
     if (orderBy && orderBy.length > 0) {
-      const orderClauses = orderBy.map(order => 
-        `${order.column} ${order.ascending ? 'ASC' : 'DESC'}`
-      );
+      const orderClauses = orderBy.map((order) => `${order.column} ${order.ascending ? 'ASC' : 'DESC'}`);
       sql += ` ORDER BY ${orderClauses.join(', ')}`;
     }
 
@@ -139,15 +137,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.status(200).json({
       data: result.rows,
-      error: null
+      error: null,
     });
-
   } catch (error: any) {
     console.error(`[DB SELECT] Error for user ${userId}:`, error);
     return res.status(500).json({
       error: 'Database query failed',
       message: error.message,
-      data: null
+      data: null,
     });
   }
 }

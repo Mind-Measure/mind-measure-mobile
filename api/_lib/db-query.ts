@@ -8,7 +8,7 @@ import { getSecureDbConfig } from './db-config';
 
 export async function queryDatabase(sql: string, params: any[] = []): Promise<any[]> {
   const client = new Client(getSecureDbConfig());
-  
+
   try {
     await client.connect();
     const result = await client.query(sql, params);
@@ -18,12 +18,17 @@ export async function queryDatabase(sql: string, params: any[] = []): Promise<an
   }
 }
 
-export async function selectFromTable(table: string, filters?: Record<string, any>, select?: string, limit?: number): Promise<any[]> {
+export async function selectFromTable(
+  table: string,
+  filters?: Record<string, any>,
+  select?: string,
+  limit?: number
+): Promise<any[]> {
   const client = new Client(getSecureDbConfig());
-  
+
   try {
     await client.connect();
-    
+
     const columns = select || '*';
     let sql = `SELECT ${columns} FROM ${table}`;
     const params: any[] = [];
@@ -31,7 +36,7 @@ export async function selectFromTable(table: string, filters?: Record<string, an
 
     if (filters && Object.keys(filters).length > 0) {
       const whereConditions: string[] = [];
-      
+
       Object.entries(filters).forEach(([key, value]) => {
         if (value && typeof value === 'object' && 'in' in value) {
           const placeholders = value.in.map((_: any) => `$${paramIndex++}`).join(',');
