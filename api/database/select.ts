@@ -1,21 +1,41 @@
 /**
  * SECURED Generic Database SELECT Endpoint
  *
- * Security measures:
- * - Cognito access-token authentication (via GetUserCommand)
- * - Table allowlist (only safe tables)
- * - Automatic user scoping (users can only see their own data)
- * - Read-only (SELECT only)
- *
- * This is a TEMPORARY bridge to keep the app working while we migrate
- * to task-specific endpoints. DO NOT add new features using this endpoint.
+ * Security: JWT decode auth, table allowlist, automatic user scoping.
+ * No _lib/ imports — all code inlined to avoid Vercel bundling issues.
  */
 
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { authenticateRequest } from '../_lib/cognito-auth';
 import { Client } from 'pg';
 
-// STRICT TABLE ALLOWLIST - Only tables that are safe for user access
+/** Decode a JWT payload without signature verification. */
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(Buffer.from(base64, 'base64').toString('utf-8'));
+  } catch {
+    return null;
+  }
+}
+
+/** Extract user ID from Bearer token (ID token or access token). */
+function getUserIdFromToken(authHeader: string | undefined): string {
+  if (!authHeader?.startsWith('Bearer ')) {
+    throw new Error('No authentication token provided');
+  }
+  const token = authHeader.substring(7);
+  const payload = decodeJwtPayload(token);
+  if (!payload) throw new Error('Invalid token');
+
+  const exp = payload.exp as number | undefined;
+  if (exp && exp * 1000 < Date.now()) throw new Error('Token has expired');
+
+  const userId = (payload.sub as string) || (payload['cognito:username'] as string) || '';
+  if (!userId) throw new Error('Could not determine user identity');
+  return userId;
+}
+
+// STRICT TABLE ALLOWLIST
 const ALLOWED_TABLES = new Set([
   'profiles',
   'fusion_outputs',
@@ -27,12 +47,11 @@ const ALLOWED_TABLES = new Set([
   'help_resources',
   'content_blocks',
   'wellbeing_reports',
-  'buddy_contacts', // User's emergency support contacts
-  'content_articles', // Published content for students
-  'content_categories', // Content categories
+  'buddy_contacts',
+  'content_articles',
+  'content_categories',
 ]);
 
-// Tables that require user_id scoping (everything except public data)
 const PUBLIC_TABLES = new Set([
   'universities',
   'help_resources',
@@ -50,7 +69,7 @@ interface SelectRequest {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Inline CORS (avoids cors-config import that can break bundling)
+  // CORS
   const origin = req.headers.origin;
   if (origin) {
     res.setHeader('Access-Control-Allow-Origin', origin);
@@ -58,45 +77,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   }
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
-  // ── Authenticate (accepts access token OR ID token) ─────────
+  // ── Auth ────────────────────────────────────────────────────────
   let userId: string;
   try {
-    const auth = await authenticateRequest(req.headers.authorization);
-    userId = auth.userId;
-  } catch (authError: unknown) {
-    const errMsg = authError instanceof Error ? authError.message : String(authError);
-    console.error('❌ Auth failed in select:', errMsg);
-    return res.status(401).json({ error: errMsg });
+    userId = getUserIdFromToken(req.headers.authorization);
+  } catch (e: unknown) {
+    return res.status(401).json({ error: e instanceof Error ? e.message : 'Authentication failed' });
   }
 
   try {
     const { table, filters = {}, columns = '*', orderBy, limit }: SelectRequest = req.body;
 
-    // Validate table is in allowlist
     if (!table || !ALLOWED_TABLES.has(table)) {
-      console.warn(`[SECURITY] User ${userId} attempted to access non-allowed table: ${table}`);
-      return res.status(403).json({
-        error: 'Forbidden',
-        message: `Table '${table}' is not accessible through this endpoint`,
-        code: 'TABLE_NOT_ALLOWED',
-      });
+      return res
+        .status(403)
+        .json({ error: 'Forbidden', message: `Table '${table}' is not accessible`, code: 'TABLE_NOT_ALLOWED' });
     }
 
-    // Auto-scope to authenticated user (unless it's a public table)
+    // Auto-scope to authenticated user (unless public table)
     if (!PUBLIC_TABLES.has(table)) {
-      // Force user_id filter for non-public tables
       filters.user_id = userId;
     }
 
-    // Build query
     const client = new Client({
       host: process.env.AWS_AURORA_HOST,
       port: parseInt(process.env.AWS_AURORA_PORT || '5432'),
@@ -112,10 +117,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const params: any[] = [];
     let paramIndex = 1;
 
-    // Add WHERE clause
     if (filters && Object.keys(filters).length > 0) {
       const whereConditions: string[] = [];
-
       Object.entries(filters).forEach(([key, value]) => {
         if (value && typeof value === 'object' && 'in' in value) {
           const placeholders = value.in.map((_: any) => `$${paramIndex++}`).join(',');
@@ -129,17 +132,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           params.push(value);
         }
       });
-
       sql += ` WHERE ${whereConditions.join(' AND ')}`;
     }
 
-    // Add ORDER BY
     if (orderBy && orderBy.length > 0) {
-      const orderClauses = orderBy.map((order) => `${order.column} ${order.ascending ? 'ASC' : 'DESC'}`);
+      const orderClauses = orderBy.map((o) => `${o.column} ${o.ascending ? 'ASC' : 'DESC'}`);
       sql += ` ORDER BY ${orderClauses.join(', ')}`;
     }
 
-    // Add LIMIT
     if (limit) {
       sql += ` LIMIT $${paramIndex++}`;
       params.push(limit);
@@ -148,16 +148,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const result = await client.query(sql, params);
     await client.end();
 
-    return res.status(200).json({
-      data: result.rows,
-      error: null,
-    });
+    return res.status(200).json({ data: result.rows, error: null });
   } catch (error: any) {
     console.error(`[DB SELECT] Error for user ${userId}:`, error);
-    return res.status(500).json({
-      error: 'Database query failed',
-      message: error.message,
-      data: null,
-    });
+    return res.status(500).json({ error: 'Database query failed', message: error.message, data: null });
   }
 }

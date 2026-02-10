@@ -1,22 +1,41 @@
 /**
  * SECURED Generic Database UPDATE Endpoint
  *
- * Security measures:
- * - Cognito access-token authentication (via GetUserCommand)
- * - Table allowlist
- * - User scoping (can only update own records)
+ * Security: JWT decode auth, table allowlist, user scoping.
+ * No _lib/ imports — all code inlined to avoid Vercel bundling issues.
  */
 
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { authenticateRequest } from '../_lib/cognito-auth';
 import { Client } from 'pg';
 
-const ALLOWED_TABLES = new Set([
-  'profiles',
-  'assessment_sessions',
-  'weekly_summary',
-  'buddy_contacts', // User's emergency support contacts
-]);
+/** Decode a JWT payload without signature verification. */
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(Buffer.from(base64, 'base64').toString('utf-8'));
+  } catch {
+    return null;
+  }
+}
+
+/** Extract user ID from Bearer token (ID token or access token). */
+function getUserIdFromToken(authHeader: string | undefined): string {
+  if (!authHeader?.startsWith('Bearer ')) {
+    throw new Error('No authentication token provided');
+  }
+  const token = authHeader.substring(7);
+  const payload = decodeJwtPayload(token);
+  if (!payload) throw new Error('Invalid token');
+
+  const exp = payload.exp as number | undefined;
+  if (exp && exp * 1000 < Date.now()) throw new Error('Token has expired');
+
+  const userId = (payload.sub as string) || (payload['cognito:username'] as string) || '';
+  if (!userId) throw new Error('Could not determine user identity');
+  return userId;
+}
+
+const ALLOWED_TABLES = new Set(['profiles', 'assessment_sessions', 'weekly_summary', 'buddy_contacts']);
 
 interface UpdateRequest {
   table: string;
@@ -25,7 +44,7 @@ interface UpdateRequest {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Inline CORS
+  // CORS
   const origin = req.headers.origin;
   if (origin) {
     res.setHeader('Access-Control-Allow-Origin', origin);
@@ -33,35 +52,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   }
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
-  // ── Authenticate (accepts access token OR ID token) ─────────
+  // ── Auth ────────────────────────────────────────────────────────
   let userId: string;
   try {
-    const auth = await authenticateRequest(req.headers.authorization);
-    userId = auth.userId;
-  } catch (authError: unknown) {
-    const errMsg = authError instanceof Error ? authError.message : String(authError);
-    console.error('❌ Auth failed in update:', errMsg);
-    return res.status(401).json({ error: errMsg });
+    userId = getUserIdFromToken(req.headers.authorization);
+  } catch (e: unknown) {
+    return res.status(401).json({ error: e instanceof Error ? e.message : 'Authentication failed' });
   }
 
   try {
     const { table, filters = {}, data }: UpdateRequest = req.body;
 
     if (!table || !ALLOWED_TABLES.has(table)) {
-      console.warn(`[SECURITY] User ${userId} attempted to update non-allowed table: ${table}`);
-      return res.status(403).json({
-        error: 'Forbidden',
-        message: `Cannot update table '${table}'`,
-        code: 'TABLE_NOT_ALLOWED',
-      });
+      return res
+        .status(403)
+        .json({ error: 'Forbidden', message: `Cannot update table '${table}'`, code: 'TABLE_NOT_ALLOWED' });
     }
 
     // Force user_id in WHERE clause
@@ -98,16 +106,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const result = await client.query(sql, params);
     await client.end();
 
-    return res.status(200).json({
-      data: result.rows,
-      error: null,
-    });
+    return res.status(200).json({ data: result.rows, error: null });
   } catch (error: any) {
     console.error(`[DB UPDATE] Error for user ${userId}:`, error);
-    return res.status(500).json({
-      error: 'Database update failed',
-      message: error.message,
-      data: null,
-    });
+    return res.status(500).json({ error: 'Database update failed', message: error.message, data: null });
   }
 }

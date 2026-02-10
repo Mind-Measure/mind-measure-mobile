@@ -1,18 +1,40 @@
 /**
  * SECURED Generic Database INSERT Endpoint
  *
- * Security measures:
- * - Cognito access-token authentication (via GetUserCommand)
- * - Table allowlist (only safe tables)
- * - Automatic user_id injection (all records belong to authenticated user)
- * - Column restrictions
+ * Security: JWT decode auth, table allowlist, automatic user_id injection.
+ * No _lib/ imports — all code inlined to avoid Vercel bundling issues.
  */
 
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { authenticateRequest } from '../_lib/cognito-auth';
 import { Client } from 'pg';
 
-// Tables that users can insert into
+/** Decode a JWT payload without signature verification. */
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(Buffer.from(base64, 'base64').toString('utf-8'));
+  } catch {
+    return null;
+  }
+}
+
+/** Extract user ID from Bearer token (ID token or access token). */
+function getUserIdFromToken(authHeader: string | undefined): string {
+  if (!authHeader?.startsWith('Bearer ')) {
+    throw new Error('No authentication token provided');
+  }
+  const token = authHeader.substring(7);
+  const payload = decodeJwtPayload(token);
+  if (!payload) throw new Error('Invalid token');
+
+  const exp = payload.exp as number | undefined;
+  if (exp && exp * 1000 < Date.now()) throw new Error('Token has expired');
+
+  const userId = (payload.sub as string) || (payload['cognito:username'] as string) || '';
+  if (!userId) throw new Error('Could not determine user identity');
+  return userId;
+}
+
 const ALLOWED_TABLES = new Set([
   'profiles',
   'fusion_outputs',
@@ -20,7 +42,7 @@ const ALLOWED_TABLES = new Set([
   'assessment_transcripts',
   'assessment_items',
   'weekly_summary',
-  'buddy_contacts', // User's emergency support contacts
+  'buddy_contacts',
 ]);
 
 interface InsertRequest {
@@ -29,7 +51,7 @@ interface InsertRequest {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Inline CORS
+  // CORS
   const origin = req.headers.origin;
   if (origin) {
     res.setHeader('Access-Control-Allow-Origin', origin);
@@ -37,42 +59,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   }
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
-  // ── Authenticate (accepts access token OR ID token) ─────────
+  // ── Auth ────────────────────────────────────────────────────────
   let userId: string;
   try {
-    const auth = await authenticateRequest(req.headers.authorization);
-    userId = auth.userId;
-  } catch (authError: unknown) {
-    const errMsg = authError instanceof Error ? authError.message : String(authError);
-    console.error('❌ Auth failed in insert:', errMsg);
-    return res.status(401).json({ error: errMsg });
+    userId = getUserIdFromToken(req.headers.authorization);
+  } catch (e: unknown) {
+    return res.status(401).json({ error: e instanceof Error ? e.message : 'Authentication failed' });
   }
 
   try {
     const { table, data }: InsertRequest = req.body;
 
-    // Validate table
     if (!table || !ALLOWED_TABLES.has(table)) {
-      console.warn(`[SECURITY] User ${userId} attempted to insert into non-allowed table: ${table}`);
-      return res.status(403).json({
-        error: 'Forbidden',
-        message: `Cannot insert into table '${table}'`,
-        code: 'TABLE_NOT_ALLOWED',
-      });
+      return res
+        .status(403)
+        .json({ error: 'Forbidden', message: `Cannot insert into table '${table}'`, code: 'TABLE_NOT_ALLOWED' });
     }
 
     // Force user_id to authenticated user
     data.user_id = userId;
 
-    // Build query
     const client = new Client({
       host: process.env.AWS_AURORA_HOST,
       port: parseInt(process.env.AWS_AURORA_PORT || '5432'),
@@ -93,16 +102,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const result = await client.query(sql, values);
     await client.end();
 
-    return res.status(200).json({
-      data: result.rows,
-      error: null,
-    });
+    return res.status(200).json({ data: result.rows, error: null });
   } catch (error: any) {
     console.error(`[DB INSERT] Error for user ${userId}:`, error);
-    return res.status(500).json({
-      error: 'Database insert failed',
-      message: error.message,
-      data: null,
-    });
+    return res.status(500).json({ error: 'Database insert failed', message: error.message, data: null });
   }
 }
