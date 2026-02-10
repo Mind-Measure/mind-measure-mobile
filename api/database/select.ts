@@ -13,7 +13,6 @@
 
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { CognitoIdentityProviderClient, GetUserCommand } from '@aws-sdk/client-cognito-identity-provider';
-import { setCorsHeaders, handleCorsPreflightIfNeeded } from '../_lib/cors-config';
 import { Client } from 'pg';
 
 // STRICT TABLE ALLOWLIST - Only tables that are safe for user access
@@ -51,8 +50,17 @@ interface SelectRequest {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  setCorsHeaders(req, res);
-  if (handleCorsPreflightIfNeeded(req, res)) return;
+  // Inline CORS (avoids cors-config import that can break bundling)
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  }
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });

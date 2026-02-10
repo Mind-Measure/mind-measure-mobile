@@ -1,31 +1,67 @@
 /**
  * Secure User Profile API
  * Returns profile data for authenticated user ONLY
+ * Uses Cognito GetUser for authentication (no jsonwebtoken/jwks-rsa dependency)
  */
 
 import { VercelRequest, VercelResponse } from '@vercel/node';
+import { CognitoIdentityProviderClient, GetUserCommand } from '@aws-sdk/client-cognito-identity-provider';
 import { Client } from 'pg';
-import { requireAuth } from '../_lib/auth-middleware';
-import { setCorsHeaders, handleCorsPreflightIfNeeded } from '../_lib/cors-config';
-import { getSecureDbConfig } from '../_lib/db-config';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // CORS
-  setCorsHeaders(req, res);
-  if (handleCorsPreflightIfNeeded(req, res)) return;
+  // Inline CORS
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  }
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
 
   // Only GET requests
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // Authenticate - extract userId from JWT (ONLY source of identity)
-  const auth = await requireAuth(req, res);
-  if (!auth) return; // 401 already sent
+  // ── Authenticate via Cognito access token ──────────────────────
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'No authentication token provided' });
+  }
+  const accessToken = authHeader.substring(7);
 
-  const { userId } = auth;
+  let userId: string;
+  try {
+    const cognito = new CognitoIdentityProviderClient({
+      region: (process.env.AWS_REGION || 'eu-west-2').trim(),
+      credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID?.trim() || '',
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY?.trim() || '',
+      },
+    });
+    const userResult = await cognito.send(new GetUserCommand({ AccessToken: accessToken }));
+    const subAttr = userResult.UserAttributes?.find((a) => a.Name === 'sub');
+    userId = subAttr?.Value || userResult.Username || '';
+    if (!userId) {
+      return res.status(401).json({ error: 'Could not determine user identity' });
+    }
+  } catch (authError: unknown) {
+    const errMsg = authError instanceof Error ? authError.message : String(authError);
+    console.error('❌ Cognito auth failed in profile:', errMsg);
+    return res.status(401).json({ error: 'Authentication failed', message: errMsg });
+  }
 
-  const client = new Client(getSecureDbConfig());
+  const client = new Client({
+    host: process.env.AWS_AURORA_HOST,
+    port: parseInt(process.env.AWS_AURORA_PORT || '5432'),
+    database: process.env.AWS_AURORA_DATABASE,
+    user: process.env.AWS_AURORA_USERNAME,
+    password: process.env.AWS_AURORA_PASSWORD,
+    ssl: { rejectUnauthorized: false },
+  });
 
   try {
     await client.connect();
