@@ -241,9 +241,10 @@ export const cognitoApiClient = {
       }
 
       if (result.challengeName) {
+        console.warn('⚠️ Cognito challenge received:', result.challengeName);
         return {
           data: { user: null as AuthUser | null },
-          error: result.error || `Additional verification required (${result.challengeName}). Please contact support.`,
+          error: `Cognito challenge: ${result.challengeName}`,
         };
       }
 

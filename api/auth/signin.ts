@@ -71,10 +71,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
       }
 
+      console.error('Cognito returned unexpected challenge:', result.ChallengeName);
       return res.status(200).json({
         challengeName: result.ChallengeName,
         session: result.Session,
-        error: 'Additional verification required',
+        error: `Cognito challenge: ${result.ChallengeName}`,
       });
     }
 
