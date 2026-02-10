@@ -2,7 +2,7 @@
  * SECURED Generic Database SELECT Endpoint
  *
  * Security measures:
- * - JWT authentication required
+ * - Cognito access-token authentication (via GetUserCommand)
  * - Table allowlist (only safe tables)
  * - Automatic user scoping (users can only see their own data)
  * - Read-only (SELECT only)
@@ -12,7 +12,7 @@
  */
 
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { requireAuth } from '../_lib/auth-middleware';
+import { CognitoIdentityProviderClient, GetUserCommand } from '@aws-sdk/client-cognito-identity-provider';
 import { setCorsHeaders, handleCorsPreflightIfNeeded } from '../_lib/cors-config';
 import { Client } from 'pg';
 
@@ -58,11 +58,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // Authenticate user
-  const auth = await requireAuth(req, res);
-  if (!auth) return; // 401 already sent
+  // ── Authenticate via Cognito access token ──────────────────────
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'No authentication token provided' });
+  }
+  const accessToken = authHeader.substring(7);
 
-  const { userId } = auth;
+  let userId: string;
+  try {
+    const cognito = new CognitoIdentityProviderClient({
+      region: (process.env.AWS_REGION || 'eu-west-2').trim(),
+      credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID?.trim() || '',
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY?.trim() || '',
+      },
+    });
+    const userResult = await cognito.send(new GetUserCommand({ AccessToken: accessToken }));
+    const subAttr = userResult.UserAttributes?.find((a) => a.Name === 'sub');
+    userId = subAttr?.Value || userResult.Username || '';
+    if (!userId) {
+      return res.status(401).json({ error: 'Could not determine user identity' });
+    }
+  } catch (authError: unknown) {
+    const errMsg = authError instanceof Error ? authError.message : String(authError);
+    console.error('❌ Cognito auth failed in select:', errMsg);
+    return res.status(401).json({ error: 'Authentication failed', message: errMsg });
+  }
 
   try {
     const { table, filters = {}, columns = '*', orderBy, limit }: SelectRequest = req.body;
