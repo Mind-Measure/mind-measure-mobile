@@ -6,8 +6,136 @@
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getDbClient } from '../_lib/db';
-import { sendNudgeEmail, optOutUrl } from '../_lib/emails';
+// @ts-expect-error - pg types not available in Vercel environment
+import { Client } from 'pg';
+import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
+
+// ── Inlined from _lib/db.ts ─────────────────────────────────────────
+function getDbClient(): Client {
+  return new Client({
+    host: process.env.AWS_AURORA_HOST || process.env.AWS_RDS_HOST,
+    port: parseInt(process.env.AWS_AURORA_PORT || process.env.AWS_RDS_PORT || '5432'),
+    database: process.env.AWS_AURORA_DATABASE || process.env.AWS_RDS_DATABASE || 'mindmeasure',
+    user: process.env.AWS_AURORA_USERNAME || process.env.AWS_RDS_USERNAME,
+    password: process.env.AWS_AURORA_PASSWORD || process.env.AWS_RDS_PASSWORD,
+    ssl: { rejectUnauthorized: false },
+  });
+}
+
+// ── Inlined from _lib/emails.ts ─────────────────────────────────────
+const FROM = 'Mind Measure <noreply@mindmeasure.co.uk>';
+const REPLY_TO = 'info@mindmeasure.co.uk';
+const sesClient = new SESClient({
+  region: process.env.AWS_REGION || 'eu-west-2',
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+  },
+});
+
+interface SendEmailOptions {
+  to: string;
+  subject: string;
+  textBody: string;
+  htmlBody?: string;
+}
+
+async function sendEmail({ to, subject, textBody, htmlBody }: SendEmailOptions): Promise<void> {
+  const command = new SendEmailCommand({
+    Source: FROM,
+    Destination: { ToAddresses: [to] },
+    ReplyToAddresses: [REPLY_TO],
+    Message: {
+      Subject: { Data: subject, Charset: 'UTF-8' },
+      Body: {
+        Text: { Data: textBody, Charset: 'UTF-8' },
+        ...(htmlBody ? { Html: { Data: htmlBody, Charset: 'UTF-8' } } : {}),
+      },
+    },
+  });
+  await sesClient.send(command);
+}
+
+const BASE_URL = process.env.BUDDY_BASE_URL || 'https://buddy.mindmeasure.app';
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function optOutUrl(optOutSlug: string): string {
+  return `${BASE_URL}/optout?token=${encodeURIComponent(optOutSlug)}`;
+}
+
+async function sendNudgeEmail(p: {
+  to: string;
+  buddyName: string;
+  inviterName: string;
+  optOutUrl: string;
+}): Promise<void> {
+  const { to, buddyName, inviterName, optOutUrl } = p;
+  const subject = `A gentle check-in reminder for ${inviterName}`;
+  const optOutBlock = optOutUrl
+    ? `\n\nIf you'd prefer not to receive these reminders, you can opt out here: ${optOutUrl}\n`
+    : '';
+  const textBody = `Hi ${buddyName},
+
+${inviterName} uses Mind Measure and might be finding things a bit harder than usual.
+
+A quick message or check-in could help.
+
+You don't need to be a therapist or fix anything—just being there matters.
+
+Remember: This isn't an emergency alert. If you think ${inviterName} is in immediate danger, please contact emergency services or their university support team.${optOutBlock}
+Thanks for being a Buddy,
+Mind Measure
+https://mobile.mindmeasure.app`;
+
+  const optOutHtml = optOutUrl
+    ? `<p style="font-size: 13px; color: #9CA3AF; margin: 0; text-align: center;"><a href="${optOutUrl}" style="color: #8B5CF6; text-decoration: none;">Opt out of Buddy emails</a></p>`
+    : '';
+  const htmlBody = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background: #F9FAFB; }
+.container { max-width: 600px; margin: 0 auto; padding: 20px; }
+.email-body { background: #ffffff; padding: 40px 32px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.warning-box { background: #FEF3C7; border: 1px solid #FDE68A; border-radius: 8px; padding: 16px; margin: 0 0 32px 0; }
+.footer { padding: 24px 0; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+<div class="email-body">
+<p style="font-size: 16px; color: #1F2937; line-height: 1.6; margin: 0 0 16px 0;">Hi ${escapeHtml(buddyName)},</p>
+
+<p style="font-size: 16px; color: #1F2937; line-height: 1.6; margin: 0 0 16px 0;"><strong>${escapeHtml(inviterName)}</strong> uses Mind Measure and might be finding things a bit harder than usual.</p>
+
+<p style="font-size: 16px; color: #1F2937; line-height: 1.6; margin: 0 0 16px 0;">A quick message or check-in could help.</p>
+
+<p style="font-size: 16px; color: #1F2937; line-height: 1.6; margin: 0 0 32px 0;">You don't need to be a therapist or fix anything—just being there matters.</p>
+
+<div class="warning-box">
+<p style="font-size: 14px; color: #92400E; line-height: 1.5; margin: 0;"><strong>Remember:</strong> This isn't an emergency alert. If you think ${escapeHtml(inviterName)} is in immediate danger, please contact emergency services or their university support team.</p>
+</div>
+
+<p style="font-size: 16px; color: #1F2937; margin: 32px 0 0 0;">Thanks for being a Buddy,<br>Mind Measure</p>
+</div>
+
+${optOutHtml ? `<div class="footer">${optOutHtml}</div>` : ''}
+</div>
+</body>
+</html>`;
+
+  await sendEmail({ to, subject, textBody, htmlBody });
+}
 
 /** Decode a JWT payload without signature verification. */
 function decodeJwtPayload(token: string): Record<string, unknown> | null {

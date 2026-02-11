@@ -6,7 +6,20 @@
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getDbClient } from '../../_lib/db';
+// @ts-expect-error - pg types not available in Vercel environment
+import { Client } from 'pg';
+
+// ── Inlined from _lib/db.ts (Vercel bundling fix) ──────────────────
+function getDbClient(): Client {
+  return new Client({
+    host: process.env.AWS_AURORA_HOST || process.env.AWS_RDS_HOST,
+    port: parseInt(process.env.AWS_AURORA_PORT || process.env.AWS_RDS_PORT || '5432'),
+    database: process.env.AWS_AURORA_DATABASE || process.env.AWS_RDS_DATABASE || 'mindmeasure',
+    user: process.env.AWS_AURORA_USERNAME || process.env.AWS_RDS_USERNAME,
+    password: process.env.AWS_AURORA_PASSWORD || process.env.AWS_RDS_PASSWORD,
+    ssl: { rejectUnauthorized: false },
+  });
+}
 
 /** Decode a JWT payload without signature verification. */
 function decodeJwtPayload(token: string): Record<string, unknown> | null {

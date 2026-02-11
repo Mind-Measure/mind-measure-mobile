@@ -8,9 +8,29 @@
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { randomBytes } from 'crypto';
-import { getDbClient } from '../_lib/db';
-import { hashToken, isExpired } from '../_lib/tokens';
+import { createHash, randomBytes } from 'crypto';
+// @ts-expect-error - pg types not available in Vercel environment
+import { Client } from 'pg';
+
+// ── Inlined from _lib/db.ts (Vercel bundling fix) ──────────────────
+function getDbClient(): Client {
+  return new Client({
+    host: process.env.AWS_AURORA_HOST || process.env.AWS_RDS_HOST,
+    port: parseInt(process.env.AWS_AURORA_PORT || process.env.AWS_RDS_PORT || '5432'),
+    database: process.env.AWS_AURORA_DATABASE || process.env.AWS_RDS_DATABASE || 'mindmeasure',
+    user: process.env.AWS_AURORA_USERNAME || process.env.AWS_RDS_USERNAME,
+    password: process.env.AWS_AURORA_PASSWORD || process.env.AWS_RDS_PASSWORD,
+    ssl: { rejectUnauthorized: false },
+  });
+}
+
+// ── Inlined from _lib/tokens.ts (Vercel bundling fix) ───────────────
+function hashToken(token: string): string {
+  return createHash('sha256').update(token, 'utf8').digest('hex');
+}
+function isExpired(expiresAt: Date | string): boolean {
+  return new Date() > new Date(expiresAt);
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // ── Inline CORS ─────────────────────────────────────────────────
