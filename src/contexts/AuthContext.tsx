@@ -32,7 +32,7 @@ interface AuthContextType {
     password: string;
   }) => Promise<{ error: string | null }>;
   signOut: () => Promise<{ error: string | null }>;
-  updateProfile: (updates: any) => Promise<{ error: string | null }>;
+  updateProfile: (updates: Record<string, unknown>) => Promise<{ error: string | null }>;
   completeOnboarding: () => Promise<{ error: string | null }>;
   completeBaseline: (sessionId: string) => Promise<{ error: string | null }>;
   confirmEmail: (email: string, code: string) => Promise<{ error: string | null }>;
@@ -75,7 +75,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         unsubscribe = cognitoApiClient.onAuthStateChange((_event, user) => {
           setUser(user);
         });
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('❌ Auth initialization error:', error);
         setUser(null);
       } finally {
@@ -114,7 +114,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
 
       return { error: null, user: signedInUser ?? undefined };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Sign in error:', error);
       return { error: 'Sign in failed' };
     } finally {
@@ -141,7 +141,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       setUser(authData.user);
       return { error: null };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Sign up error:', error);
       return { error: 'Registration failed' };
     } finally {
@@ -155,7 +155,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       await cognitoApiClient.signOut();
       setUser(null);
       return { error: null };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Sign out error:', error);
       return { error: 'Sign out failed' };
     } finally {
@@ -163,7 +163,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  const updateProfile = async (_updates: any) => {
+  const updateProfile = async (_updates: Record<string, unknown>) => {
     // TODO: Implement profile updates
     return { error: null as string | null };
   };
@@ -185,7 +185,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       const { error } = await cognitoApiClient.confirmSignUp(email, code);
       return { error };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Email confirmation error:', error);
       return { error: 'Email confirmation failed' };
     }
@@ -195,7 +195,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       const { error } = await cognitoApiClient.resendConfirmationCode(email);
       return { error };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Resend confirmation error:', error);
       return { error: 'Failed to resend confirmation' };
     }
@@ -205,7 +205,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       const { error, codeDeliveryDetails } = await cognitoApiClient.resetPassword(email);
       return { error, codeDeliveryDetails };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Forgot password error:', error);
       return { error: 'Password reset failed' };
     }
@@ -215,7 +215,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       const { error } = await cognitoApiClient.confirmResetPassword(email, code, newPassword);
       return { error };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Confirm forgot password error:', error);
       return { error: 'Password confirmation failed' };
     }
@@ -227,7 +227,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (data?.user) {
         setUser(data.user);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Refetch user error:', error);
     }
   };

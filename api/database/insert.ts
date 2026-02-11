@@ -47,7 +47,7 @@ const ALLOWED_TABLES = new Set([
 
 interface InsertRequest {
   table: string;
-  data: Record<string, any>;
+  data: Record<string, unknown>;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -103,8 +103,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     await client.end();
 
     return res.status(200).json({ data: result.rows, error: null });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`[DB INSERT] Error for user ${userId}:`, error);
-    return res.status(500).json({ error: 'Database insert failed', message: error.message, data: null });
+    return res
+      .status(500)
+      .json({
+        error: 'Database insert failed',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        data: null,
+      });
   }
 }

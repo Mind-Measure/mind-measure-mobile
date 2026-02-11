@@ -84,11 +84,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       },
       message: 'Login successful',
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Login API error:', error);
     res.status(500).json({
       error: 'Internal server error during login',
-      details: error.message,
+      details: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 }

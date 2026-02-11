@@ -114,9 +114,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       await pgClient.end();
 
       console.log(`✅ Profile lookup for ${email}: profile=${!!profile}, baseline=${hasCompletedBaseline}`);
-    } catch (dbError: any) {
+    } catch (dbError: unknown) {
       // Non-fatal: auth still succeeded, app can work without profile
-      console.warn('⚠️ Database lookup failed (non-fatal):', dbError.message);
+      console.warn('⚠️ Database lookup failed (non-fatal):', dbError instanceof Error ? dbError.message : dbError);
     }
 
     // ── 4. Return tokens + profile data ────────────────────────────
@@ -130,23 +130,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       hasCompletedBaseline,
       error: null,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Cognito sign in error:', error);
 
     let errorMessage = 'Sign in failed';
     let needsVerification = false;
 
-    if (error.name === 'NotAuthorizedException') {
+    const errName = error instanceof Error ? error.name : undefined;
+    const errMessage = error instanceof Error ? error.message : undefined;
+
+    if (errName === 'NotAuthorizedException') {
       errorMessage = 'Incorrect email or password';
-    } else if (error.name === 'UserNotConfirmedException') {
+    } else if (errName === 'UserNotConfirmedException') {
       errorMessage = 'Email not verified';
       needsVerification = true;
-    } else if (error.name === 'UserNotFoundException') {
+    } else if (errName === 'UserNotFoundException') {
       errorMessage = 'User not found';
-    } else if (error.name === 'TooManyRequestsException') {
+    } else if (errName === 'TooManyRequestsException') {
       errorMessage = 'Too many failed attempts. Please wait a few minutes.';
-    } else if (error.message) {
-      errorMessage = error.message;
+    } else if (errMessage) {
+      errorMessage = errMessage;
     }
 
     res.status(401).json({ error: errorMessage, needsVerification });

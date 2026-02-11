@@ -37,9 +37,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       success: true,
       message: `Article "${result.rows[0].title}" deleted successfully`,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error deleting article:', error);
-    return res.status(500).json({ error: error.message || 'Failed to delete article' });
+    return res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to delete article' });
   } finally {
     await client.end();
   }

@@ -50,21 +50,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       codeDeliveryDetails,
       error: null,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Cognito forgot password error:', error);
 
     let errorMessage = 'Failed to initiate password reset';
     let needsVerification = false;
+    const errName = error instanceof Error ? error.name : undefined;
+    const errMessage = error instanceof Error ? error.message : undefined;
 
-    if (error.name === 'UserNotFoundException') {
+    if (errName === 'UserNotFoundException') {
       errorMessage = 'User not found';
-    } else if (error.name === 'InvalidParameterException' && error.message?.includes('no registered/verified email')) {
+    } else if (errName === 'InvalidParameterException' && errMessage?.includes('no registered/verified email')) {
       errorMessage = 'Email not verified';
       needsVerification = true;
-    } else if (error.name === 'LimitExceededException') {
+    } else if (errName === 'LimitExceededException') {
       errorMessage = 'Too many requests. Please try again later.';
-    } else if (error.message) {
-      errorMessage = error.message;
+    } else if (errMessage) {
+      errorMessage = errMessage;
     }
 
     res.status(500).json({

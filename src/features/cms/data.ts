@@ -74,7 +74,7 @@ export async function getAllUniversities(): Promise<University[]> {
     });
     if (error) throw error;
     return data || [];
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error fetching universities:', error);
     return [];
   }
@@ -94,7 +94,7 @@ export async function getUniversityById(id: string): Promise<University | null> 
     }
 
     return result.data && result.data.length > 0 ? result.data[0] : null;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error fetching university:', error);
     return null;
   }
@@ -115,7 +115,7 @@ export async function getUniversityBySlug(slug: string): Promise<University | nu
     }
 
     return result.data && result.data.length > 0 ? result.data[0] : null;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error fetching university by slug:', error);
     return null;
   }
@@ -185,14 +185,14 @@ export async function createUniversity(universityData: Partial<University>): Pro
           console.warn(`⚠️ S3 bucket creation failed: ${bucketResult.error}`);
           // Don't fail university creation if bucket creation fails
         }
-      } catch (bucketError) {
+      } catch (bucketError: unknown) {
         console.error('⚠️ Error creating S3 bucket:', bucketError);
         // Don't fail university creation if bucket creation fails
       }
     }
 
     return (Array.isArray(data) ? (data[0] ?? null) : data) as University | null;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error creating university:', error);
     return null;
   }
@@ -214,7 +214,7 @@ export async function updateUniversity(id: string, updates: Partial<University>)
     );
     if (error) throw error;
     return (Array.isArray(data) ? (data[0] ?? null) : data) as University | null;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error updating university:', error);
     return null;
   }
@@ -229,7 +229,7 @@ export async function deleteUniversity(id: string): Promise<boolean> {
     });
     if (error) throw error;
     return true;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error deleting university:', error);
     return false;
   }
@@ -252,7 +252,7 @@ export async function updateEmergencyContacts(universityId: string, contacts: Em
     );
     if (error) throw error;
     return true;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error updating emergency contacts:', error);
     return false;
   }
@@ -278,7 +278,7 @@ export async function updateMentalHealthServices(
     );
     if (error) throw error;
     return true;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error updating mental health services:', error);
     return false;
   }
@@ -301,7 +301,7 @@ export async function updateLocalResources(universityId: string, resources: Loca
     );
     if (error) throw error;
     return true;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error updating local resources:', error);
     return false;
   }
@@ -355,7 +355,7 @@ export async function getContentCategories(): Promise<ContentCategory[]> {
     });
     if (error) throw error;
     return data || [];
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error fetching content categories:', error);
     return [];
   }
@@ -366,7 +366,7 @@ export async function getContentArticles(universityId?: string, status?: string)
     // Initialize backend service
     const backendService = BackendServiceFactory.createService(BackendServiceFactory.getEnvironmentConfig());
 
-    const filters: any = {};
+    const filters: Record<string, string> = {};
     if (universityId) {
       filters.university_id = universityId;
     }
@@ -381,7 +381,7 @@ export async function getContentArticles(universityId?: string, status?: string)
     });
     if (error) throw error;
     return data || [];
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error fetching content articles:', error);
     return [];
   }
@@ -410,7 +410,7 @@ export async function getContentArticleById(id: string): Promise<ContentArticle 
     }
 
     return article;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error fetching content article:', error);
     return null;
   }
@@ -447,7 +447,7 @@ export async function createContentArticle(articleData: Partial<ContentArticle>)
       return await getContentArticleById(created.id);
     }
     return created;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error creating content article:', error);
     return null;
   }
@@ -458,7 +458,7 @@ export async function updateContentArticle(
 ): Promise<ContentArticle | null> {
   const backendService = getBackendService();
   try {
-    const updateData: any = { ...updates };
+    const updateData: Record<string, unknown> = { ...updates };
     delete updateData.id;
     delete updateData.created_at;
     delete updateData.category;
@@ -469,7 +469,7 @@ export async function updateContentArticle(
 
     // Fetch the updated article with category
     return await getContentArticleById(id);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error updating content article:', error);
     return null;
   }
@@ -480,7 +480,7 @@ export async function deleteContentArticle(id: string): Promise<boolean> {
     const { error } = await backendService.database.delete('content_articles', { id });
     if (error) throw error;
     return true;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error deleting content article:', error);
     return false;
   }
@@ -496,7 +496,7 @@ export async function incrementArticleViews(id: string): Promise<void> {
     });
     const currentCount = data?.[0]?.view_count || 0;
     await backendService.database.update('content_articles', { view_count: currentCount + 1 }, { id });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error incrementing article views:', error);
   }
 }
@@ -510,7 +510,7 @@ export async function getContentTags(): Promise<ContentTag[]> {
     });
     if (error) throw error;
     return data || [];
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error fetching content tags:', error);
     return [];
   }
@@ -528,7 +528,7 @@ export async function createContentTag(name: string): Promise<ContentTag | null>
     } as Partial<ContentTag>);
     if (error) throw error;
     return (Array.isArray(data) ? (data[0] ?? null) : data) as ContentTag | null;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error creating content tag:', error);
     return null;
   }
@@ -549,7 +549,7 @@ export async function getCMSStatistics() {
       totalEmergencyContacts: universities?.reduce((sum, u) => sum + (u.emergency_contacts?.length || 0), 0) || 0,
     };
     return stats;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error fetching CMS statistics:', error);
     return {
       totalUniversities: 0,
@@ -591,7 +591,7 @@ export async function getAuthorizedUsers(universityId: string): Promise<Authoriz
       return [];
     }
     return data || [];
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error fetching authorized users:', error);
     return [];
   }
@@ -608,7 +608,7 @@ export async function addAuthorizedUser(
       return null;
     }
     return (Array.isArray(data) ? data[0] : data) as AuthorizedUser | null;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error adding authorized user:', error);
     return null;
   }
@@ -630,7 +630,7 @@ export async function updateAuthorizedUser(
       return null;
     }
     return (Array.isArray(data) ? data[0] : data) as AuthorizedUser | null;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error updating authorized user:', error);
     return null;
   }
@@ -645,7 +645,7 @@ export async function deleteAuthorizedUser(id: string): Promise<boolean> {
       return false;
     }
     return true;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error deleting authorized user:', error);
     return false;
   }
@@ -669,7 +669,7 @@ export async function isUserAuthorized(email: string, universityId: string): Pro
       return false;
     }
     return (data && data.length > 0) || false;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error checking user authorization:', error);
     return false;
   }
@@ -683,7 +683,7 @@ export async function updateUserLastLogin(email: string): Promise<void> {
       { last_login: new Date().toISOString(), login_count: 1 },
       { email }
     );
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error updating user last login:', error);
   }
 }

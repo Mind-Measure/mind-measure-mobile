@@ -56,7 +56,7 @@ const shouldShowProfileReminderThisVisit = async (userId: string): Promise<boole
 
     const count = await incrementProfileReminderVisitCount();
     return count > 0 && count % 3 === 0;
-  } catch (e) {
+  } catch (e: unknown) {
     console.warn('[Profile reminder] Could not check profile/visit:', e);
     return false;
   }
@@ -74,7 +74,7 @@ const getBuddyReminderShown = async (): Promise<boolean> => {
 const setBuddyReminderShown = async (): Promise<void> => {
   try {
     await Preferences.set({ key: BUDDY_REMINDER_SHOWN_KEY, value: '1' });
-  } catch (e) {
+  } catch (e: unknown) {
     console.warn('[Buddy reminder] Could not persist shown flag:', e);
   }
 };
@@ -110,7 +110,7 @@ const shouldShowBuddyReminderThisVisit = async (userId: string): Promise<boolean
     if (checkInCount < 1) return false;
 
     return true;
-  } catch (e) {
+  } catch (e: unknown) {
     console.warn('[Buddy reminder] Could not check buddies/check-ins:', e);
     return false;
   }
@@ -133,7 +133,7 @@ const saveUserToDevice = async (userId: string, baselineCompleted: boolean = fal
     // Verify it was saved
     const { value: _value } = await Preferences.get({ key: 'mindmeasure_user' });
     return true;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('❌ Failed to save user data to device:', error);
     return false;
   }
@@ -155,7 +155,7 @@ const markBaselineComplete = async () => {
       const { value: _newValue } = await Preferences.get({ key: 'mindmeasure_user' });
       return true;
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('❌ Failed to mark baseline complete:', error);
   }
   return false;
@@ -173,7 +173,12 @@ export const MobileAppStructure: React.FC = () => {
   const [onboardingScreen, setOnboardingScreen] = useState<OnboardingScreen | null>(null);
   const [baselineReturnContext, setBaselineReturnContext] = useState<BaselineReturnContext>('dashboard');
   const baselineReturnContextRef = useRef<BaselineReturnContext>('dashboard');
-  const [_deviceUserData, setDeviceUserData] = useState<any>(null);
+  const [_deviceUserData, setDeviceUserData] = useState<{
+    userId?: string;
+    baselineCompleted?: boolean;
+    lastLogin?: number;
+    savedAt?: string;
+  } | null>(null);
   const [showProfileReminderModal, setShowProfileReminderModal] = useState(false);
   const [profileInitialTab, setProfileInitialTab] = useState<'details' | undefined>(undefined);
   const [profileHasUnsavedChanges, setProfileHasUnsavedChanges] = useState(false);
@@ -210,7 +215,7 @@ export const MobileAppStructure: React.FC = () => {
         } else {
           setDeviceUserData(null);
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('❌ Error reading device preferences:', error);
         setDeviceUserData(null);
       }

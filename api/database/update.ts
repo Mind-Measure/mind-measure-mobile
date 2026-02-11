@@ -39,8 +39,8 @@ const ALLOWED_TABLES = new Set(['profiles', 'assessment_sessions', 'weekly_summa
 
 interface UpdateRequest {
   table: string;
-  filters: Record<string, any>;
-  data: Record<string, any>;
+  filters: Record<string, unknown>;
+  data: Record<string, unknown>;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -87,7 +87,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     await client.connect();
 
     const setClauses: string[] = [];
-    const params: any[] = [];
+    const params: unknown[] = [];
     let paramIndex = 1;
 
     Object.entries(data).forEach(([key, value]) => {
@@ -107,8 +107,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     await client.end();
 
     return res.status(200).json({ data: result.rows, error: null });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`[DB UPDATE] Error for user ${userId}:`, error);
-    return res.status(500).json({ error: 'Database update failed', message: error.message, data: null });
+    return res
+      .status(500)
+      .json({
+        error: 'Database update failed',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        data: null,
+      });
   }
 }

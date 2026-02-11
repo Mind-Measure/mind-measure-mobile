@@ -112,15 +112,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         </html>
       `);
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ Email confirmation failed:', error);
 
     let errorMessage = 'Email confirmation failed';
-    if (error.name === 'CodeMismatchException') {
+    const errName = error instanceof Error ? error.name : undefined;
+    if (errName === 'CodeMismatchException') {
       errorMessage = 'Invalid confirmation code. The code may have expired or been used already.';
-    } else if (error.name === 'ExpiredCodeException') {
+    } else if (errName === 'ExpiredCodeException') {
       errorMessage = 'Confirmation code has expired. Please request a new one.';
-    } else if (error.name === 'UserNotFoundException') {
+    } else if (errName === 'UserNotFoundException') {
       errorMessage = 'User not found. Please check the email address.';
     }
 

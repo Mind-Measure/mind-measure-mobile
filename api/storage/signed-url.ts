@@ -51,11 +51,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       success: true,
       url: signedUrl,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ Signed URL generation error:', error);
     res.status(500).json({
       error: 'Failed to generate signed URL',
-      details: error.message,
+      details: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 }

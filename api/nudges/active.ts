@@ -1,6 +1,13 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { Client } from 'pg';
 
+interface Nudge {
+  status: string;
+  expiryDate?: string;
+  isPinned?: boolean;
+  priority?: 'high' | 'low' | 'medium';
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   let auroraClient: Client | null = null;
 
@@ -34,18 +41,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Filter active, non-expired nudges
     const now = new Date();
-    const activeNudges = allNudges.filter((nudge: any) => {
+    const activeNudges = allNudges.filter((nudge: Nudge) => {
       if (nudge.status !== 'active') return false;
       if (nudge.expiryDate && new Date(nudge.expiryDate) < now) return false;
       return true;
     });
 
     // Separate pinned and rotation
-    const pinned = activeNudges.find((n: any) => n.isPinned) || null;
-    const rotation = activeNudges.filter((n: any) => !n.isPinned);
+    const pinned = activeNudges.find((n: Nudge) => n.isPinned) || null;
+    const rotation = activeNudges.filter((n: Nudge) => !n.isPinned);
 
     // Weight rotation by priority
-    const weightedRotation = rotation.flatMap((nudge: any) => {
+    const weightedRotation = rotation.flatMap((nudge: Nudge) => {
       const weight = nudge.priority === 'high' ? 3 : nudge.priority === 'low' ? 0.5 : 1;
       return Array(Math.ceil(weight)).fill(nudge);
     });
@@ -59,9 +66,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       pinned,
       rotated,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching active nudges:', error);
-    return res.status(500).json({ error: error.message || 'Failed to fetch nudges' });
+    return res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to fetch nudges' });
   } finally {
     if (auroraClient) {
       await auroraClient.end();

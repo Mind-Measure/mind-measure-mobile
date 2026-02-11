@@ -1,8 +1,15 @@
 import { useState } from 'react';
 
+export interface CheckinConversationMessage {
+  id?: string;
+  text: string;
+  sender: 'ai' | 'user';
+  timestamp?: Date;
+}
+
 export interface CheckinConversation {
   isActive: boolean;
-  messages: any[];
+  messages: CheckinConversationMessage[];
 }
 
 export function useCheckinConversation(onEnd?: () => void) {

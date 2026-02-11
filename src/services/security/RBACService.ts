@@ -1,6 +1,7 @@
 // Role-Based Access Control (RBAC) Service
 // Medical-grade security implementation for enterprise access control
 import { DatabaseService } from '../database/DatabaseService';
+import type { QueryFilter } from '../database/DatabaseService';
 import { createAuditLogger, AuditLogger } from './AuditLogger';
 export interface Role {
   id: string;
@@ -40,7 +41,7 @@ export interface ResourcePolicy {
   userId?: string;
   roleId?: string;
   permissions: string[];
-  conditions?: Record<string, any>;
+  conditions?: Record<string, unknown>;
   createdBy: string;
   createdAt: string;
   expiresAt?: string;
@@ -83,8 +84,8 @@ export class RBACService {
         });
       }
       return { success: true, role: role ?? undefined };
-    } catch (error: any) {
-      return { success: false, error: error.message };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
     }
   }
   async getRoles(): Promise<Role[]> {
@@ -93,7 +94,7 @@ export class RBACService {
         orderBy: [{ column: 'level', ascending: false }],
       });
       return result.data || [];
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to get roles:', error);
       return [];
     }
@@ -105,7 +106,7 @@ export class RBACService {
         limit: 1,
       });
       return result.data?.[0] || null;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to get role by name:', error);
       return null;
     }
@@ -120,7 +121,7 @@ export class RBACService {
         ],
       });
       return result.data || [];
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to get permissions:', error);
       return [];
     }
@@ -135,7 +136,7 @@ export class RBACService {
         }
       ).rpc<Permission>('get_role_permissions', { role_id: roleId });
       return result.data || [];
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to get role permissions:', error);
       return [];
     }
@@ -159,8 +160,8 @@ export class RBACService {
         action: 'grant',
       });
       return { success: true };
-    } catch (error: any) {
-      return { success: false, error: error.message };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
     }
   }
   // ===== USER ROLE MANAGEMENT =====
@@ -186,8 +187,8 @@ export class RBACService {
         expiresAt: expiresAt?.toISOString(),
       });
       return { success: true };
-    } catch (error: any) {
-      return { success: false, error: error.message };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
     }
   }
   async getUserRoles(userId: string): Promise<UserRole[]> {
@@ -197,7 +198,7 @@ export class RBACService {
         orderBy: [{ column: 'assigned_at', ascending: false }],
       });
       return result.data || [];
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to get user roles:', error);
       return [];
     }
@@ -219,8 +220,8 @@ export class RBACService {
       }
       await this.auditLogger.logAdminAction('ROLE_ASSIGN', removedBy, removedBy, userId, { roleId, action: 'remove' });
       return { success: true };
-    } catch (error: any) {
-      return { success: false, error: error.message };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
     }
   }
   // ===== ACCESS CONTROL =====
@@ -229,7 +230,7 @@ export class RBACService {
     resource: string,
     action: string,
     resourceId?: string,
-    context?: Record<string, any>
+    context?: Record<string, unknown>
   ): Promise<AccessCheckResult> {
     try {
       // Get user roles
@@ -294,11 +295,11 @@ export class RBACService {
         matchedPermissions,
         userRoles: roleNames,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Access check failed:', error);
       return {
         allowed: false,
-        reason: `Access check error: ${error.message}`,
+        reason: `Access check error: ${error instanceof Error ? error.message : String(error)}`,
         userRoles: [],
       };
     }
@@ -332,13 +333,13 @@ export class RBACService {
         });
       }
       return { success: true, policy: policy ?? undefined };
-    } catch (error: any) {
-      return { success: false, error: error.message };
+    } catch (error: unknown) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
     }
   }
   async getResourcePolicies(resourceType: string, resourceId: string, userId?: string): Promise<ResourcePolicy[]> {
     try {
-      const filters: Record<string, any> = {
+      const filters: Record<string, QueryFilter> = {
         resource_type: resourceType,
         resource_id: resourceId,
         is_active: true,
@@ -351,33 +352,36 @@ export class RBACService {
         orderBy: [{ column: 'created_at', ascending: false }],
       });
       return result.data || [];
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to get resource policies:', error);
       return [];
     }
   }
   // ===== UTILITY METHODS =====
-  private evaluatePolicyConditions(conditions?: Record<string, any>, context?: Record<string, any>): boolean {
+  private evaluatePolicyConditions(conditions?: Record<string, unknown>, context?: Record<string, unknown>): boolean {
     if (!conditions || !context) return true;
     // IP address restrictions
-    if (conditions.allowedIPs && context.ipAddress) {
-      const allowedIPs = Array.isArray(conditions.allowedIPs) ? conditions.allowedIPs : [conditions.allowedIPs];
-      if (!allowedIPs.includes(context.ipAddress)) {
+    const allowedIPsVal = conditions.allowedIPs;
+    const ipAddressVal = context.ipAddress;
+    if (allowedIPsVal && ipAddressVal) {
+      const allowedIPs = Array.isArray(allowedIPsVal) ? allowedIPsVal : [allowedIPsVal];
+      if (!allowedIPs.includes(ipAddressVal as string)) {
         return false;
       }
     }
     // Time-based restrictions
-    if (conditions.allowedHours) {
+    const allowedHours = conditions.allowedHours as { start: number; end: number } | undefined;
+    if (allowedHours) {
       const currentHour = new Date().getHours();
-      const allowedHours = conditions.allowedHours;
       if (currentHour < allowedHours.start || currentHour > allowedHours.end) {
         return false;
       }
     }
     // Day of week restrictions
-    if (conditions.allowedDays) {
+    const allowedDays = conditions.allowedDays as number[] | undefined;
+    if (allowedDays) {
       const currentDay = new Date().getDay(); // 0 = Sunday
-      if (!conditions.allowedDays.includes(currentDay)) {
+      if (!allowedDays.includes(currentDay)) {
         return false;
       }
     }
@@ -399,7 +403,7 @@ export class RBACService {
         (permission, index, self) => index === self.findIndex((p) => p.id === permission.id)
       );
       return uniquePermissions;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to get user effective permissions:', error);
       return [];
     }

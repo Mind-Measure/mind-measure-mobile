@@ -1,51 +1,13 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Play, Eye, Mic, MessageCircle, Shield, Volume2, VolumeX } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { BackendServiceFactory } from '@/services/database/BackendServiceFactory';
 import { useCheckinConversation } from '@/hooks/useCheckinConversation';
 import { useSession } from '@/components/SessionManager';
 import { useCostTracking } from '@/hooks/useCostTracking';
-import { StillImageCapture } from '@/components/StillImageCapture';
-import type { StillImageCaptureRef } from '@/components/StillImageCapture';
+import { ConversationWelcome } from './ConversationWelcome';
+import { ConversationActiveView } from './ConversationActiveView';
 import type { VisualCaptureData, ConversationMessage, SessionTextData } from '@/types/assessment';
 import type { ElevenLabsWidgetElement } from '@/types/elevenlabs';
-
-// Declare the ElevenLabs custom element for JSX
-declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
-  namespace JSX {
-    interface IntrinsicElements {
-      'elevenlabs-convai': React.DetailedHTMLProps<
-        React.HTMLAttributes<HTMLElement> & {
-          'agent-id'?: string;
-          'auto-start'?: string;
-          'conversation-mode'?: string;
-          language?: string;
-        },
-        HTMLElement
-      >;
-    }
-  }
-}
-
-declare module 'react' {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
-  namespace JSX {
-    interface IntrinsicElements {
-      'elevenlabs-convai': React.DetailedHTMLProps<
-        React.HTMLAttributes<HTMLElement> & {
-          'agent-id'?: string;
-          'auto-start'?: string;
-          'conversation-mode'?: string;
-          language?: string;
-        },
-        HTMLElement
-      >;
-    }
-  }
-}
 
 /** Shape of the user context loaded for personalised conversations. */
 interface UserContextData {
@@ -664,382 +626,76 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({
       </div>
     );
   }
-  // Conversation step - full-screen interface
+  // ── Start widget handler (passed to ConversationActiveView) ────
+  const handleStartWidget = async () => {
+    if (conversationState === 'idle') {
+      if (!currentSession) {
+        const sessionId = await createSession(actualMode ? 'baseline' : 'checkin');
+        if (!sessionId) {
+          console.error('Failed to create session');
+          return;
+        }
+      }
+      setCurrentStep('conversation');
+      setConversationState('active');
+      setTimeout(() => {
+        const widget = document.querySelector('elevenlabs-convai');
+        if (widget) {
+          const startButton =
+            widget.shadowRoot?.querySelector('[data-testid="start-button"]') ||
+            widget.shadowRoot?.querySelector('button') ||
+            widget.shadowRoot?.querySelector('[aria-label*="start"]') ||
+            widget.shadowRoot?.querySelector('[aria-label*="Start"]');
+          if (startButton && startButton instanceof HTMLElement) {
+            startButton.click();
+          } else {
+            widget.dispatchEvent(new CustomEvent('start-conversation'));
+          }
+        }
+      }, 1500);
+    }
+  };
+
+  const handleToggleMute = () => {
+    setIsMuted(!isMuted);
+    const widget = document.querySelector('elevenlabs-convai');
+    if (widget) {
+      const audioElements: NodeListOf<HTMLAudioElement> | HTMLAudioElement[] =
+        widget.shadowRoot?.querySelectorAll('audio') || [];
+      audioElements.forEach((audio) => {
+        audio.muted = !isMuted;
+      });
+    }
+  };
+
+  const handleRetry = () => {
+    setConnectionError(null);
+    setRetryCount(0);
+    window.location.reload();
+  };
+
+  const agentId = actualMode ? 'agent_9301k22s8e94f7qs5e704ez02npe' : 'agent_7501k3hpgd5gf8ssm3c3530jx8qx';
+
+  // Conversation step — full-screen interface
   if (currentStep === 'conversation') {
     return (
-      <div
-        className="min-h-screen bg-white flex flex-col"
-        style={{
-          position: 'relative',
-          zIndex: 1000,
-          isolation: 'isolate',
-        }}
-      >
-        {/* Header - Mind Measure Logo and Title */}
-        <div className="flex items-center justify-center gap-3 pt-8 pb-4 px-6">
-          <div className="w-14 h-14 flex items-center justify-center">
-            <img
-              src="https://api.mindmeasure.co.uk/storage/marketing/MM%20logo%20square.png"
-              alt="Mind Measure"
-              className="w-full h-full object-contain"
-            />
-          </div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
-            Mind Measure
-          </h1>
-        </div>
-        {/* ElevenLabs Widget Container - Full Screen Text */}
-        <div className="flex-1 flex flex-col relative overflow-hidden" style={{ minHeight: '70vh' }}>
-          {/* Widget container - fills entire space below header */}
-          <div className="flex-1 relative p-0" style={{ minHeight: '60vh' }}>
-            {conversationState === 'processing' ? (
-              <div className="absolute inset-0 bg-gray-50 rounded-lg flex items-center justify-center">
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
-                    <MessageCircle className="w-8 h-8 text-white" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Processing Results...</h3>
-                  <p className="text-gray-600 text-sm">Analyzing your conversation with Mind Measure GPT</p>
-                  <div className="flex items-center justify-center space-x-2 mt-4">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
-                    <div
-                      className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
-                      style={{ animationDelay: '0.1s' }}
-                    ></div>
-                    <div
-                      className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
-                      style={{ animationDelay: '0.2s' }}
-                    ></div>
-                  </div>
-                </div>
-              </div>
-            ) : scriptLoaded ? (
-              <div className="w-full h-full relative">
-                {/* ElevenLabs widget */}
-                <elevenlabs-convai
-                  key="mobile-widget"
-                  agent-id={actualMode ? 'agent_9301k22s8e94f7qs5e704ez02npe' : 'agent_7501k3hpgd5gf8ssm3c3530jx8qx'}
-                ></elevenlabs-convai>
-              </div>
-            ) : (
-              <div className="absolute inset-0 bg-gray-50 rounded-lg flex items-center justify-center">
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <MessageCircle className="w-8 h-8 text-white" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Loading Conversation...</h3>
-                  <p className="text-gray-600 text-sm">
-                    {actualMode ? 'Preparing your baseline assessment' : 'Preparing your check-in conversation'}
-                  </p>
-                </div>
-              </div>
-            )}
-            {/* Hidden camera capture component */}
-            {currentStep === 'conversation' && cameraActive && (
-              <div className="hidden">
-                <StillImageCapture
-                  ref={stillImageCaptureRef}
-                  isActive={true}
-                  onRecordingComplete={handleVisualDataCapture}
-                  onRangeChange={() => {}}
-                  onFrameUpdate={() => {}}
-                />
-              </div>
-            )}
-            {/* Camera status indicator */}
-            {cameraActive && (
-              <div className="absolute top-4 right-4 flex items-center gap-2 bg-background/80 backdrop-blur-sm rounded-full px-3 py-1">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-xs text-muted-foreground">Camera Active</span>
-              </div>
-            )}
-            {/* End Conversation button */}
-            <div className="absolute top-4 left-4 z-20">
-              <Button
-                size="sm"
-                onClick={() => {
-                  endCheckin();
-                }}
-                disabled={conversationState === 'processing'}
-                className="h-8 px-2 text-xs font-normal shadow-lg bg-purple-300 text-purple-900 hover:bg-purple-400"
-              >
-                Finish
-              </Button>
-            </div>
-          </div>
-        </div>
-        {/* Connection Error Display */}
-        {connectionError && (
-          <div className="px-6 py-3 bg-red-50 border-t border-red-200">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-                  />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <h3 className="text-red-800 font-medium text-sm">Connection Issue</h3>
-                <p className="text-red-600 text-xs">{connectionError}</p>
-              </div>
-              <Button
-                onClick={() => {
-                  setConnectionError(null);
-                  setRetryCount(0);
-                  window.location.reload();
-                }}
-                className="h-8 px-3 bg-red-600 hover:bg-red-700 text-white text-xs"
-              >
-                Retry
-              </Button>
-            </div>
-          </div>
-        )}
-        {/* Bottom Control Buttons */}
-        <div className="p-6 bg-white conversation-controls">
-          <div className="flex gap-3">
-            <Button
-              onClick={async () => {
-                if (conversationState === 'idle') {
-                  // First, ensure we have a session
-                  if (!currentSession) {
-                    const sessionId = await createSession(actualMode ? 'baseline' : 'checkin');
-                    if (!sessionId) {
-                      console.error('❌ Failed to create session');
-                      console.error('Failed to start conversation. Please try again.');
-                      return;
-                    }
-                  }
-                  // Transition to conversation step
-                  setCurrentStep('conversation');
-                  setConversationState('active');
-                  // Try to find the widget and start it
-                  setTimeout(() => {
-                    const widget = document.querySelector('elevenlabs-convai');
-                    if (widget) {
-                      // Try to find and click the start button
-                      const startButton =
-                        widget.shadowRoot?.querySelector('[data-testid="start-button"]') ||
-                        widget.shadowRoot?.querySelector('button') ||
-                        widget.shadowRoot?.querySelector('[aria-label*="start"]') ||
-                        widget.shadowRoot?.querySelector('[aria-label*="Start"]');
-                      if (startButton && startButton instanceof HTMLElement) {
-                        startButton.click();
-                      } else {
-                        // Fallback: dispatch custom event
-                        widget.dispatchEvent(new CustomEvent('start-conversation'));
-                      }
-                    } else {
-                      console.error('❌ No widget found in DOM');
-                    }
-                  }, 1500); // Wait for widget to initialize
-                }
-              }}
-              disabled={!scriptLoaded || conversationState === 'active' || !!connectionError}
-              className="flex-1 h-12 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium rounded-xl disabled:opacity-50"
-            >
-              {conversationState === 'active' ? 'Active' : connectionError ? 'Retrying...' : 'Start'}
-            </Button>
-            <Button
-              onClick={() => {
-                setIsMuted(!isMuted);
-                // Toggle audio by muting/unmuting the widget
-                const widget = document.querySelector('elevenlabs-convai');
-                if (widget) {
-                  const audioElements: NodeListOf<HTMLAudioElement> | HTMLAudioElement[] =
-                    widget.shadowRoot?.querySelectorAll('audio') || [];
-                  audioElements.forEach((audio) => {
-                    audio.muted = !isMuted;
-                  });
-                }
-              }}
-              className="h-12 px-6 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all"
-            >
-              {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-            </Button>
-            <Button
-              onClick={() => handleComplete({})}
-              className="h-12 px-6 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all"
-            >
-              Finish
-            </Button>
-          </div>
-        </div>
-      </div>
+      <ConversationActiveView
+        isBaseline={actualMode}
+        agentId={agentId}
+        scriptLoaded={scriptLoaded}
+        conversationState={conversationState}
+        isMuted={isMuted}
+        cameraActive={cameraActive}
+        connectionError={connectionError}
+        onToggleMute={handleToggleMute}
+        onStartWidget={handleStartWidget}
+        onEndConversation={() => endCheckin()}
+        onFinish={() => handleComplete({})}
+        onVisualDataCapture={handleVisualDataCapture}
+        onRetry={handleRetry}
+      />
     );
   }
-  // Welcome step - replicate exact design from MobileCheckin
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-purple-100 to-pink-50 w-full px-4 sm:px-6 py-4 sm:py-8 space-y-6 sm:space-y-8 flex flex-col justify-center">
-      {/* Header */}
-      <div className="text-center pt-4 sm:pt-8">
-        <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-4 sm:mb-6 flex items-center justify-center">
-          <img
-            src="https://api.mindmeasure.co.uk/storage/marketing/MM%20logo%20square.png"
-            alt="Mind Measure"
-            className="w-full h-full object-contain"
-          />
-        </div>
-        <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent mb-2 sm:mb-3">
-          {actualMode ? 'Welcome to Mind Measure' : 'Welcome back, Alex'}
-        </h1>
-        <p className="text-gray-600 leading-relaxed text-sm sm:text-base px-4 sm:px-0">
-          {actualMode
-            ? "Let's get to know you better with a brief assessment to establish your wellness baseline"
-            : 'Ready for your regular wellness check?'}
-        </p>
-      </div>
-      {/* Start Button */}
-      <div className="text-center space-y-3 sm:space-y-4">
-        <Button
-          onClick={handleStartConversation}
-          className="w-full h-14 sm:h-16 bg-gradient-to-r from-purple-500 via-pink-500 to-purple-600 border-0 shadow-2xl text-base sm:text-lg backdrop-blur-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 rounded-2xl"
-        >
-          <Play className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3" />
-          Start {actualMode ? 'Baseline Assessment' : 'Check-in'} with Jodie
-        </Button>
-        <p className="text-gray-500 text-xs sm:text-sm px-4 sm:px-0">
-          Find a quiet, comfortable space where you can speak freely
-        </p>
-      </div>
-      {/* What to Expect - Different content for baseline vs check-in */}
-      {actualMode ? (
-        // Baseline Assessment - Detailed cards
-        <div className="space-y-4 sm:space-y-6">
-          <h3 className="text-gray-900 text-center text-base sm:text-lg font-semibold">What to Expect</h3>
-          <div className="space-y-4 sm:space-y-5">
-            <Card className="border-0 shadow-lg backdrop-blur-xl bg-blue-50/70 p-3 sm:p-5">
-              <div className="flex items-start gap-3 sm:gap-4">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-500/20 rounded-2xl flex items-center justify-center backdrop-blur-xl flex-shrink-0">
-                  <Eye className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-blue-900 mb-1 text-sm sm:text-base font-semibold">Visual Analysis</h4>
-                  <p className="text-blue-700 text-xs sm:text-sm leading-relaxed">
-                    We use your phone's camera to assess your facial expressions. We do not store any images of you,
-                    they are analysed for facial landmarks, emotion categories (happy, sad, angry, confused, calm,
-                    etc.), and attention markers (e.g., eyes closed, head down).
-                  </p>
-                </div>
-              </div>
-            </Card>
-            <Card className="border-0 shadow-lg backdrop-blur-xl bg-green-50/70 p-3 sm:p-5">
-              <div className="flex items-start gap-3 sm:gap-4">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-500/20 rounded-2xl flex items-center justify-center backdrop-blur-xl flex-shrink-0">
-                  <Mic className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-green-900 mb-1 text-sm sm:text-base font-semibold">Voice Patterns</h4>
-                  <p className="text-green-700 text-xs sm:text-sm leading-relaxed">
-                    The human voice is a rich source of affective information. Acoustic features such as pitch, jitter,
-                    speaking rate, and pauses correlate strongly with depression, anxiety, and stress. We listen to how
-                    you sound not just what you say.
-                  </p>
-                </div>
-              </div>
-            </Card>
-            <Card className="border-0 shadow-lg backdrop-blur-xl bg-purple-50/70 p-3 sm:p-5">
-              <div className="flex items-start gap-3 sm:gap-4">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-500/20 rounded-2xl flex items-center justify-center backdrop-blur-xl flex-shrink-0">
-                  <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-purple-900 mb-1 text-sm sm:text-base font-semibold">Conversation</h4>
-                  <p className="text-purple-700 text-xs sm:text-sm leading-relaxed">
-                    When Jodie asks a question ("On a scale of 1–10, how is your mood right now?"), Mind Measure
-                    evaluates your response quantitatively (the numerical score) and qualitatively (tone of voice,
-                    hesitation, choice of words), this ensures a 'multi-modal' form of assessment, because we are not
-                    always completely honest in what we say!
-                  </p>
-                </div>
-              </div>
-            </Card>
-          </div>
-        </div>
-      ) : (
-        // Check-in - Simple, focused content
-        <div className="space-y-4 sm:space-y-6">
-          <div className="space-y-4 sm:space-y-5">
-            <Card className="border-0 shadow-lg backdrop-blur-xl bg-purple-50/70 p-3 sm:p-5">
-              <div className="flex items-start gap-3 sm:gap-4">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-500/20 rounded-2xl flex items-center justify-center backdrop-blur-xl flex-shrink-0">
-                  <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-purple-900 mb-1 text-sm sm:text-base font-semibold">Quick Check-in</h4>
-                  <p className="text-purple-700 text-xs sm:text-sm leading-relaxed">
-                    Jodie will have a brief conversation with you to understand how you're feeling today compared to
-                    your previous check-ins. This helps us track your wellness journey over time.
-                  </p>
-                </div>
-              </div>
-            </Card>
-          </div>
-        </div>
-      )}
-      {/* Private & Secure */}
-      <Card className="border-0 shadow-lg backdrop-blur-xl bg-indigo-50/70 p-4 sm:p-6">
-        <div className="flex items-start gap-3 sm:gap-4">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-indigo-500/20 rounded-2xl flex items-center justify-center backdrop-blur-xl flex-shrink-0">
-            <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600" />
-          </div>
-          <div className="min-w-0">
-            <h4 className="text-indigo-900 mb-2 text-sm sm:text-base font-semibold">Private & Secure</h4>
-            <p className="text-indigo-700 text-xs sm:text-sm leading-relaxed">
-              Your data is encrypted and confidential. Mind Measure complies with GDPR, UK ICO guidance, and aligns with
-              NHS Clinical Governance frameworks (NHS England, 2023). Identifiable raw media (audio and images) are
-              discarded after feature extraction and analysis.
-            </p>
-          </div>
-        </div>
-      </Card>
-      {/* More Information */}
-      <Card className="border-0 shadow-lg backdrop-blur-xl bg-amber-50/70 p-4 sm:p-6">
-        <div className="flex items-start gap-3 sm:gap-4">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-amber-500/20 rounded-2xl flex items-center justify-center backdrop-blur-xl flex-shrink-0">
-            <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6 text-amber-600" />
-          </div>
-          <div className="min-w-0">
-            <h4 className="text-amber-900 mb-2 text-sm sm:text-base font-semibold">More Information</h4>
-            <p className="text-amber-700 text-xs sm:text-sm leading-relaxed">
-              There are more details about how Mind Measure works on our website{' '}
-              <a
-                href="https://mindmeasure.app/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline font-medium hover:text-amber-800 transition-colors"
-              >
-                mindmeasure.app
-              </a>
-            </p>
-          </div>
-        </div>
-      </Card>
-      {/* Mind Measure Branding */}
-      <div className="text-center space-y-4 sm:space-y-6 py-6 sm:py-8">
-        <div className="w-14 h-14 sm:w-16 sm:h-16 mx-auto flex items-center justify-center">
-          <img
-            src="https://api.mindmeasure.co.uk/storage/marketing/MM%20logo%20square.png"
-            alt="Mind Measure"
-            className="w-full h-full object-contain opacity-80"
-          />
-        </div>
-        <div>
-          <h3 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent mb-2 sm:mb-3">
-            Mind Measure
-          </h3>
-          <p className="text-gray-600 text-xs sm:text-sm leading-relaxed max-w-sm mx-auto px-4 sm:px-0">
-            Your trusted companion for understanding and measuring your mental wellbeing through intelligent
-            conversation and analysis.
-          </p>
-        </div>
-      </div>
-      {/* Bottom padding for navigation */}
-      <div className="h-24" />
-    </div>
-  );
+  // Welcome step
+  return <ConversationWelcome isBaseline={actualMode} onStart={handleStartConversation} />;
 };

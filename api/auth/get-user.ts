@@ -47,14 +47,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       attributes,
       error: null,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Cognito get user error:', error);
 
     let errorMessage = 'Failed to get user';
-    if (error.name === 'NotAuthorizedException') {
+    const errName = error instanceof Error ? error.name : undefined;
+    const errMessage = error instanceof Error ? error.message : undefined;
+    if (errName === 'NotAuthorizedException') {
       errorMessage = 'Invalid or expired token';
-    } else if (error.message) {
-      errorMessage = error.message;
+    } else if (errMessage) {
+      errorMessage = errMessage;
     }
 
     res.status(401).json({ error: errorMessage });

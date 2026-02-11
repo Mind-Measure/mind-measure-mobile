@@ -160,7 +160,7 @@ export function CheckinAssessmentSDK({ onBack, onComplete }: CheckinAssessmentSD
       };
 
       return context;
-    } catch (err) {
+    } catch (err: unknown) {
       console.warn('[CheckinSDK] ⚠️ Could not fetch previous context:', err);
       return null;
     }
@@ -192,7 +192,7 @@ export function CheckinAssessmentSDK({ onBack, onComplete }: CheckinAssessmentSD
       // Request microphone permission
       try {
         await navigator.mediaDevices.getUserMedia({ audio: true });
-      } catch (err) {
+      } catch (err: unknown) {
         console.error('[CheckinSDK] ❌ Audio permission denied:', err);
         return;
       }
@@ -207,7 +207,7 @@ export function CheckinAssessmentSDK({ onBack, onComplete }: CheckinAssessmentSD
         await mediaCaptureRef.current.start();
         captureStartTimeRef.current = Date.now();
         setIsCapturingMedia(true);
-      } catch (captureError) {
+      } catch (captureError: unknown) {
         console.warn('[CheckinSDK] ⚠️ Media capture failed, continuing anyway:', captureError);
         setIsCapturingMedia(false);
       }
@@ -251,14 +251,14 @@ export function CheckinAssessmentSDK({ onBack, onComplete }: CheckinAssessmentSD
           const sid = await conversation.startSession({
             agentId: 'agent_7501k3hpgd5gf8ssm3c3530jx8qx', // Check-in agent
             dynamicVariables: dynamicVars,
-          } as any);
+          } as ElevenLabsSessionOptions);
 
           setSessionId(sid);
-        } catch (error) {
+        } catch (error: unknown) {
           console.error('[CheckinSDK] ❌ Failed to start ElevenLabs session:', error);
         }
       }, 100);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('[CheckinSDK] ❌ Failed to start check-in:', error);
     }
   };
@@ -273,7 +273,7 @@ export function CheckinAssessmentSDK({ onBack, onComplete }: CheckinAssessmentSD
       // Try haptics, but don't fail if not supported (web browsers)
       try {
         await Haptics.impact({ style: ImpactStyle.Medium });
-      } catch (hapticsError) {
+      } catch (hapticsError: unknown) {
         /* intentionally empty */
       }
 

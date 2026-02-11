@@ -1,10 +1,11 @@
 /**
  * GET /api/buddies/optout?token=... (public)
  * Token = opt_out_slug for a Buddy. Remove Buddy, show confirmation. Do not notify user why.
+ *
+ * No _lib/ imports from api/_lib/ — CORS inlined to avoid Vercel bundling issues.
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { setCorsHeaders, handleCorsPreflightIfNeeded } from '../_lib/cors-config';
 import { getDbClient } from './_lib/db';
 
 function htmlPage(title: string, body: string): string {
@@ -31,8 +32,15 @@ function htmlPage(title: string, body: string): string {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  setCorsHeaders(req, res);
-  if (handleCorsPreflightIfNeeded(req, res)) return;
+  // ── Inline CORS ─────────────────────────────────────────────────
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
 
   if (req.method !== 'GET' && req.method !== 'POST') {
     res.setHeader('Content-Type', 'text/html');
@@ -78,16 +86,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const body =
-      '<h1>You’ve been removed</h1><p>You won’t receive any further check-in reminders from Mind Measure.</p>';
+      "<h1>You've been removed</h1><p>You won't receive any further check-in reminders from Mind Measure.</p>";
     res.setHeader('Content-Type', 'text/html');
     return res.status(200).end(htmlPage('Opt-out complete', body));
-  } catch (e: any) {
+  } catch (e: unknown) {
     try {
       await client.end();
-    } catch (_) {
+    } catch {
       /* intentionally empty */
     }
-    console.error('[buddies/optout]', e);
+    const message = e instanceof Error ? e.message : String(e);
+    console.error('[buddies/optout]', message);
     res.setHeader('Content-Type', 'text/html');
     return res.status(500).end(htmlPage('Error', '<h1>Something went wrong</h1><p>Please try again later.</p>'));
   }

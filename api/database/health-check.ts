@@ -52,7 +52,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         user: dbConfig.user,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     const connectionTime = Date.now() - startTime;
     console.error('Database connection failed:', error);
 
@@ -62,9 +62,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.error('Error closing client:', endError);
     }
 
+    const errRecord = error as Record<string, unknown>;
+
     return res.status(500).json({
       status: 'unhealthy',
-      error: error.message,
+      error: error instanceof Error ? error.message : 'Unknown error',
       connectionTime: `${connectionTime}ms`,
       config: {
         host: dbConfig.host,
@@ -73,11 +75,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         user: dbConfig.user,
       },
       details: {
-        code: error.code,
-        errno: error.errno,
-        syscall: error.syscall,
-        address: error.address,
-        port: error.port,
+        code: errRecord.code,
+        errno: errRecord.errno,
+        syscall: errRecord.syscall,
+        address: errRecord.address,
+        port: errRecord.port,
       },
     });
   }

@@ -87,7 +87,7 @@ export class CheckinTextAnalyzer {
         averageSentenceLength: words.length / Math.max(1, sentences.length),
         quality,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('[TextAnalyzer] ❌ Analysis failed:', error);
 
       if (error instanceof CheckinMultimodalError) {
@@ -224,7 +224,7 @@ export class CheckinTextAnalyzer {
 
   private extractDrivers(
     text: string,
-    _sentimentData: any
+    _sentimentData: { sentiment: string; score: number; intensity: number }
   ): {
     positive: string[];
     negative: string[];
@@ -364,8 +364,13 @@ export class CheckinTextAnalyzer {
 
   private assessRisk(
     text: string,
-    sentiment: any,
-    linguistic: any,
+    sentiment: { score: number; intensity: number },
+    linguistic: {
+      negativeWordRatio: number;
+      absolutismWords: number;
+      negationFrequency: number;
+      verbTense: { past: number };
+    },
     drivers: { positive: string[]; negative: string[] }
   ): { level: 'none' | 'mild' | 'moderate' | 'high'; reasons: string[] } {
     const reasons: string[] = [];
@@ -447,7 +452,7 @@ export class CheckinTextAnalyzer {
   private generateSummary(
     keywords: string[],
     drivers: { positive: string[]; negative: string[] },
-    _sentiment: any
+    _sentiment: { sentiment: string; score: number; intensity: number }
   ): string {
     const hasPositive = drivers.positive.length > 0;
     const hasNegative = drivers.negative.length > 0;

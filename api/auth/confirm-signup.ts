@@ -89,24 +89,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           await pg.end();
         }
       }
-    } catch (profileErr: any) {
-      console.error('[confirm-signup] Profile create failed (continuing):', profileErr?.message || profileErr);
+    } catch (profileErr: unknown) {
+      console.error(
+        '[confirm-signup] Profile create failed (continuing):',
+        profileErr instanceof Error ? profileErr.message : profileErr
+      );
       // Still return 200 – do not interrupt flow; lazy create can fix later.
     }
 
     res.status(200).json({ error: null });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Cognito confirm sign up error:', error);
 
     let errorMessage = 'Email confirmation failed';
-    if (error.name === 'CodeMismatchException') {
+    const errName = error instanceof Error ? error.name : undefined;
+    const errMessage = error instanceof Error ? error.message : undefined;
+    if (errName === 'CodeMismatchException') {
       errorMessage = 'Invalid confirmation code. Please check the code and try again.';
-    } else if (error.name === 'ExpiredCodeException') {
+    } else if (errName === 'ExpiredCodeException') {
       errorMessage = 'Confirmation code has expired. Please request a new code.';
-    } else if (error.name === 'UserNotFoundException') {
+    } else if (errName === 'UserNotFoundException') {
       errorMessage = 'User not found';
-    } else if (error.message) {
-      errorMessage = error.message;
+    } else if (errMessage) {
+      errorMessage = errMessage;
     }
 
     res.status(500).json({ error: errorMessage });

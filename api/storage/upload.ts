@@ -33,7 +33,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       minFileSize: 1, // Require at least 1 byte
     });
 
-    const [fields, files] = (await form.parse(req)) as [any, any];
+    const [fields, files] = (await form.parse(req)) as [formidable.Fields, formidable.Files];
 
     const file = Array.isArray(files.file) ? files.file[0] : files.file;
     const filePath = Array.isArray(fields.filePath) ? fields.filePath[0] : fields.filePath;
@@ -82,11 +82,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         bucket: bucket || BUCKET_NAME,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ File upload error:', error);
     res.status(500).json({
       error: 'File upload failed',
-      details: error.message,
+      details: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 }

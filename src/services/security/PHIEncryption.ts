@@ -1,7 +1,33 @@
 // Field-Level PHI Encryption Service
 // Medical-grade security implementation for HIPAA compliance
 // Conditional crypto import - only available server-side
-let createCipher: any, createDecipher: any, randomBytes: any, createHash: any;
+// Minimal interfaces for the Node.js crypto functions used in this module
+interface GCMCipher {
+  setAAD(buffer: Buffer): void;
+  update(data: string, inputEncoding: string, outputEncoding: string): string;
+  final(outputEncoding: string): string;
+  getAuthTag(): Buffer;
+}
+interface GCMDecipher {
+  setAuthTag(tag: Buffer): void;
+  setAAD(buffer: Buffer): void;
+  update(data: Buffer, inputEncoding: undefined, outputEncoding: string): string;
+  final(outputEncoding: string): string;
+}
+interface CryptoHash {
+  update(data: string | Buffer): CryptoHash;
+  digest(encoding: string): string;
+}
+
+type CreateCipherFn = (algorithm: string, key: Buffer) => GCMCipher;
+type CreateDecipherFn = (algorithm: string, key: Buffer) => GCMDecipher;
+type RandomBytesFn = (size: number) => Buffer;
+type CreateHashFn = (algorithm: string) => CryptoHash;
+
+let createCipher: CreateCipherFn | undefined,
+  createDecipher: CreateDecipherFn | undefined,
+  randomBytes: RandomBytesFn | undefined,
+  createHash: CreateHashFn | undefined;
 if (typeof window === 'undefined') {
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -10,7 +36,7 @@ if (typeof window === 'undefined') {
     createDecipher = crypto.createDecipher;
     randomBytes = crypto.randomBytes;
     createHash = crypto.createHash;
-  } catch (error) {
+  } catch (error: unknown) {
     console.warn('Crypto module not available - PHI encryption will not work in browser');
   }
 }
@@ -60,7 +86,7 @@ export class PHIEncryption {
         algorithm: PHIEncryption.ALGORITHM,
         iv: iv.toString('hex'),
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('PHI encryption failed:', error);
       throw new Error('Failed to encrypt PHI data');
     }
@@ -95,7 +121,7 @@ export class PHIEncryption {
         decryptedData: decrypted,
         success: true,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('PHI decryption failed:', error);
       return {
         decryptedData: '',
@@ -107,7 +133,7 @@ export class PHIEncryption {
   /**
    * Encrypt multiple fields in an object
    */
-  encryptFields(data: Record<string, any>, fieldsToEncrypt: string[]): Record<string, any> {
+  encryptFields(data: Record<string, unknown>, fieldsToEncrypt: string[]): Record<string, unknown> {
     const result = { ...data };
     const context = { timestamp: new Date().toISOString() };
     for (const field of fieldsToEncrypt) {
@@ -125,12 +151,14 @@ export class PHIEncryption {
   /**
    * Decrypt multiple fields in an object
    */
-  decryptFields(data: Record<string, any>, fieldsToDecrypt: string[]): Record<string, any> {
+  decryptFields(data: Record<string, unknown>, fieldsToDecrypt: string[]): Record<string, unknown> {
     const result = { ...data };
     const context = { timestamp: new Date().toISOString() };
     for (const field of fieldsToDecrypt) {
-      if (result[field] && typeof result[field] === 'object' && result[field].encrypted) {
-        const decrypted = this.decrypt(result[field].encrypted, result[field].keyId, context);
+      const fieldVal = result[field];
+      if (fieldVal && typeof fieldVal === 'object' && fieldVal !== null && 'encrypted' in fieldVal) {
+        const encryptedField = fieldVal as { encrypted: string; keyId?: string };
+        const decrypted = this.decrypt(encryptedField.encrypted, encryptedField.keyId, context);
         if (decrypted.success) {
           result[field] = decrypted.decryptedData;
         } else {

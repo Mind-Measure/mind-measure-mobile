@@ -122,13 +122,23 @@ export function HelpScreen({ onNavigateBack }: HelpPageProps) {
 
           // Map emergency contacts from CMS
           if (university.emergency_contacts && Array.isArray(university.emergency_contacts)) {
-            const emergencyMapped = university.emergency_contacts.map((contact: any) => ({
-              name: contact.name || '',
-              description: contact.description || '',
-              phone: contact.phones?.[0] || contact.phone || '',
-              website: contact.website || '',
-              isEmergency: contact.isPrimary || contact.is24Hour || false,
-            }));
+            const emergencyMapped = university.emergency_contacts.map(
+              (contact: {
+                name?: string;
+                description?: string;
+                phones?: string[];
+                phone?: string;
+                website?: string;
+                isPrimary?: boolean;
+                is24Hour?: boolean;
+              }) => ({
+                name: contact.name || '',
+                description: contact.description || '',
+                phone: contact.phones?.[0] || contact.phone || '',
+                website: contact.website || '',
+                isEmergency: contact.isPrimary || contact.is24Hour || false,
+              })
+            );
             setEmergencyResources(emergencyMapped.length > 0 ? emergencyMapped : defaultEmergency);
           } else {
             setEmergencyResources(defaultEmergency);
@@ -136,13 +146,21 @@ export function HelpScreen({ onNavigateBack }: HelpPageProps) {
 
           // Map mental health services from CMS
           if (university.mental_health_services && Array.isArray(university.mental_health_services)) {
-            const mentalHealthMapped = university.mental_health_services.map((service: any) => ({
-              name: service.name || '',
-              description: service.description || '',
-              phone: service.phones?.[0] || service.phone || '',
-              website: service.website || '',
-              isEmergency: false,
-            }));
+            const mentalHealthMapped = university.mental_health_services.map(
+              (service: {
+                name?: string;
+                description?: string;
+                phones?: string[];
+                phone?: string;
+                website?: string;
+              }) => ({
+                name: service.name || '',
+                description: service.description || '',
+                phone: service.phones?.[0] || service.phone || '',
+                website: service.website || '',
+                isEmergency: false,
+              })
+            );
             setMentalHealthServices(mentalHealthMapped);
           } else {
             setMentalHealthServices([]);
@@ -150,14 +168,26 @@ export function HelpScreen({ onNavigateBack }: HelpPageProps) {
 
           // Map local resources from CMS
           if (university.local_resources && Array.isArray(university.local_resources)) {
-            const localMapped = university.local_resources.map((resource: any) => ({
-              organisation: resource.name || resource.organisation || '',
-              description: resource.description || '',
-              location: resource.location || '',
-              phone: resource.phones?.[0] || resource.phone || '',
-              website: resource.website || '',
-              availability: resource.hours || resource.availability || '',
-            }));
+            const localMapped = university.local_resources.map(
+              (resource: {
+                name?: string;
+                organisation?: string;
+                description?: string;
+                location?: string;
+                phones?: string[];
+                phone?: string;
+                website?: string;
+                hours?: string;
+                availability?: string;
+              }) => ({
+                organisation: resource.name || resource.organisation || '',
+                description: resource.description || '',
+                location: resource.location || '',
+                phone: resource.phones?.[0] || resource.phone || '',
+                website: resource.website || '',
+                availability: resource.hours || resource.availability || '',
+              })
+            );
             setLocalSupport(localMapped.length > 0 ? localMapped : defaultLocal);
           } else {
             setLocalSupport(defaultLocal);
@@ -167,15 +197,23 @@ export function HelpScreen({ onNavigateBack }: HelpPageProps) {
           if (university.national_resources && Array.isArray(university.national_resources)) {
             // Filter for enabled resources only
             const enabledResources = university.national_resources.filter(
-              (resource: any) => resource.isEnabled !== false // Show if isEnabled is true or undefined (backwards compatibility)
+              (resource: { isEnabled?: boolean }) => resource.isEnabled !== false // Show if isEnabled is true or undefined (backwards compatibility)
             );
 
-            const nationalMapped = enabledResources.map((resource: any) => ({
-              name: resource.name || '',
-              description: resource.description || '',
-              phone: resource.phones?.[0] || resource.phone || '',
-              website: resource.website || '',
-            }));
+            const nationalMapped = enabledResources.map(
+              (resource: {
+                name?: string;
+                description?: string;
+                phones?: string[];
+                phone?: string;
+                website?: string;
+              }) => ({
+                name: resource.name || '',
+                description: resource.description || '',
+                phone: resource.phones?.[0] || resource.phone || '',
+                website: resource.website || '',
+              })
+            );
             setNationalResources(nationalMapped.length > 0 ? nationalMapped : defaultNational);
           } else {
             setNationalResources(defaultNational);
@@ -192,7 +230,7 @@ export function HelpScreen({ onNavigateBack }: HelpPageProps) {
         setLocalSupport(defaultLocal);
         setNationalResources(defaultNational);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error loading help resources:', error);
       // On error, use defaults
       setEmergencyResources([

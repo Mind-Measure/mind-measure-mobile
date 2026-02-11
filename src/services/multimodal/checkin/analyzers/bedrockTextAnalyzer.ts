@@ -81,9 +81,9 @@ export async function analyzeTextWithBedrock(
     }
 
     return result.data as TextAnalysisResult;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[BedrockTextAnalyzer] ❌ API call failed:', error);
-    console.error('[BedrockTextAnalyzer] Error details:', error?.message || String(error));
+    console.error('[BedrockTextAnalyzer] Error details:', error instanceof Error ? error.message : String(error));
 
     // Fallback with high uncertainty
     return getEmptyResult('Text analysis was not available for this check in.');

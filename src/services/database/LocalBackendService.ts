@@ -63,7 +63,7 @@ class LocalDatabaseService implements DatabaseService {
       }
 
       return { data, error: null };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Local select error:', error);
       return { data: [], error: error instanceof Error ? error.message : 'Unknown error' };
     }
@@ -104,7 +104,7 @@ class LocalDatabaseService implements DatabaseService {
 
       // Return as DatabaseResult (data is T[])
       return { data: insertedData, error: null } as DatabaseResult<T>;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Local insert error:', error);
       return { data: null, error: error instanceof Error ? error.message : 'Unknown error' } as DatabaseResult<T>;
     }
@@ -148,7 +148,7 @@ class LocalDatabaseService implements DatabaseService {
       });
 
       return { data: updatedData, error: null };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Local update error:', error);
       return { data: null, error: error instanceof Error ? error.message : 'Unknown error' };
     }
@@ -178,7 +178,7 @@ class LocalDatabaseService implements DatabaseService {
       });
 
       return { error: null };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Local delete error:', error);
       return { error: error instanceof Error ? error.message : 'Unknown error' };
     }
@@ -305,7 +305,10 @@ class LocalRealtimeService implements RealtimeService {
 
 // Local Functions Service (mock implementation)
 class LocalFunctionsService implements FunctionService {
-  async invoke(functionName: string, _payload?: Record<string, unknown>): Promise<{ data: any; error: any }> {
+  async invoke<T = Record<string, unknown>>(
+    functionName: string,
+    _payload?: Record<string, unknown>
+  ): Promise<{ data: T | null; error: string | null }> {
     // Mock some common function responses
     if (functionName === 'analyze-baseline') {
       return {
@@ -313,13 +316,13 @@ class LocalFunctionsService implements FunctionService {
           score: Math.floor(Math.random() * 30) + 70, // Random score 70-100
           analysis: 'Local mock analysis completed',
           timestamp: new Date().toISOString(),
-        },
+        } as T,
         error: null,
       };
     }
 
     return {
-      data: { message: 'Local function executed successfully' },
+      data: { message: 'Local function executed successfully' } as T,
       error: null,
     };
   }

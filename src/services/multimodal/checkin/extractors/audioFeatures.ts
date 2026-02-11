@@ -46,7 +46,11 @@ export class CheckinAudioExtractor {
 
     try {
       // Decode audio
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      // webkitAudioContext is Safari's vendor-prefixed AudioContext (no @types)
+      const win = window as Window & { webkitAudioContext?: typeof AudioContext };
+      const AudioContextCtor = window.AudioContext || win.webkitAudioContext;
+      if (!AudioContextCtor) throw new Error('AudioContext not available');
+      const audioContext = new AudioContextCtor();
       const arrayBuffer = await media.audio.arrayBuffer();
       const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
 
@@ -91,7 +95,7 @@ export class CheckinAudioExtractor {
         quality,
         duration,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('[CheckinAudioExtractor] ❌ Extraction failed:', error);
       throw new CheckinMultimodalError(
         `Audio extraction failed: ${error instanceof Error ? error.message : String(error)}`,
@@ -643,9 +647,9 @@ export class CheckinAudioExtractor {
    * Compute overall audio quality score
    */
   private computeQuality(
-    pitchFeatures: any,
-    timingFeatures: any,
-    energyFeatures: any,
+    pitchFeatures: { meanPitch: number },
+    timingFeatures: { speechRatio: number },
+    energyFeatures: { voiceEnergy: number },
     segments: Array<{ start: number; end: number; isSpeech: boolean }>
   ): number {
     let quality = 1.0;

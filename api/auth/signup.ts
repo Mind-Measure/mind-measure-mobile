@@ -67,20 +67,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       codeDeliveryDetails: result.CodeDeliveryDetails,
       error: null,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ Cognito sign up error:', error);
-    console.error('❌ Error name:', error.name);
-    console.error('❌ Error message:', error.message);
+    const errName = error instanceof Error ? error.name : undefined;
+    const errMessage = error instanceof Error ? error.message : undefined;
+    console.error('❌ Error name:', errName);
+    console.error('❌ Error message:', errMessage);
 
     let errorMessage = 'Sign up failed';
-    if (error.name === 'InvalidPasswordException') {
+    if (errName === 'InvalidPasswordException') {
       errorMessage = 'Password must be at least 8 characters long and contain uppercase, lowercase, and numbers';
-    } else if (error.name === 'UsernameExistsException') {
+    } else if (errName === 'UsernameExistsException') {
       errorMessage = 'An account with this email already exists';
-    } else if (error.name === 'InvalidParameterException') {
+    } else if (errName === 'InvalidParameterException') {
       errorMessage = 'Invalid email format';
-    } else if (error.message) {
-      errorMessage = error.message;
+    } else if (errMessage) {
+      errorMessage = errMessage;
     }
 
     res.status(400).json({ error: errorMessage });

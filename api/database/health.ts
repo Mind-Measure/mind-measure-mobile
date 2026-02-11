@@ -44,11 +44,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       },
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Aurora Serverless v2 health check error:', error);
     res.status(500).json({
       status: 'unhealthy',
-      error: error.message,
+      error: error instanceof Error ? error.message : 'Unknown error',
       timestamp: new Date().toISOString(),
     });
   } finally {

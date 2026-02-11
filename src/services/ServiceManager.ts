@@ -19,7 +19,7 @@ export interface ServiceHealth {
   lastCheck: Date;
   responseTime?: number;
   error?: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
 }
 
 // Service configuration with validation
@@ -47,7 +47,7 @@ export class ServiceError extends Error {
     public code: string,
     public service: string,
     public retryable: boolean = false,
-    public details?: any
+    public details?: unknown
   ) {
     super(message);
     this.name = 'ServiceError';
@@ -117,7 +117,7 @@ export class ServiceManager {
       this.startHealthMonitoring(serviceId, service);
 
       return service;
-    } catch (error) {
+    } catch (error: unknown) {
       const serviceError = new ServiceError(
         `Failed to create service ${serviceId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
         'SERVICE_CREATION_FAILED',
@@ -195,7 +195,7 @@ export class ServiceManager {
 
       this.healthStatus.set(serviceId, health);
       return health;
-    } catch (error) {
+    } catch (error: unknown) {
       const responseTime = Date.now() - startTime;
       const health: ServiceHealth = {
         status: 'unhealthy',
@@ -223,7 +223,7 @@ export class ServiceManager {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         return await operation();
-      } catch (error) {
+      } catch (error: unknown) {
         lastError = error instanceof Error ? error : new Error('Unknown error');
 
         if (attempt === maxRetries) {
@@ -268,11 +268,11 @@ export class ServiceManager {
 
     // Cleanup services if they have cleanup methods
     for (const [serviceId, service] of this.services.entries()) {
-      if (service && typeof (service as any).cleanup === 'function') {
+      if (service && typeof (service as BackendService & { cleanup?: () => void }).cleanup === 'function') {
         try {
-          (service as any).cleanup();
+          (service as BackendService & { cleanup: () => void }).cleanup();
           this.log('debug', `Cleaned up service: ${serviceId}`);
-        } catch (error) {
+        } catch (error: unknown) {
           this.log('warn', `Error cleaning up service ${serviceId}:`, error);
         }
       }
@@ -283,10 +283,10 @@ export class ServiceManager {
     this.healthStatus.clear();
 
     // Force garbage collection hint (if available)
-    if (typeof window !== 'undefined' && (window as any).gc) {
+    if (typeof window !== 'undefined' && (window as Window & { gc?: () => void }).gc) {
       try {
-        (window as any).gc();
-      } catch (e) {
+        (window as Window & { gc: () => void }).gc();
+      } catch (e: unknown) {
         // Ignore - gc not available
       }
     }
@@ -381,7 +381,7 @@ export class ServiceManager {
     this.log('debug', `Health monitoring started for service ${serviceId}`);
   }
 
-  private log(level: 'debug' | 'info' | 'warn' | 'error', message: string, details?: any): void {
+  private log(level: 'debug' | 'info' | 'warn' | 'error', message: string, details?: unknown): void {
     const logLevels = { debug: 0, info: 1, warn: 2, error: 3 };
     const currentLevel = logLevels[this.config.logLevel || 'info'];
     const messageLevel = logLevels[level];

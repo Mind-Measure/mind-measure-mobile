@@ -42,20 +42,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     await client.send(command);
 
     res.status(200).json({ error: null });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Cognito confirm forgot password error:', error);
 
     let errorMessage = 'Failed to reset password';
-    if (error.name === 'CodeMismatchException') {
+    const errName = error instanceof Error ? error.name : undefined;
+    const errMessage = error instanceof Error ? error.message : undefined;
+    if (errName === 'CodeMismatchException') {
       errorMessage = 'Invalid reset code. Please check the code and try again.';
-    } else if (error.name === 'ExpiredCodeException') {
+    } else if (errName === 'ExpiredCodeException') {
       errorMessage = 'Reset code has expired. Please request a new code.';
-    } else if (error.name === 'InvalidPasswordException') {
+    } else if (errName === 'InvalidPasswordException') {
       errorMessage = 'Password must be at least 8 characters long and contain uppercase, lowercase, and numbers';
-    } else if (error.name === 'UserNotFoundException') {
+    } else if (errName === 'UserNotFoundException') {
       errorMessage = 'User not found';
-    } else if (error.message) {
-      errorMessage = error.message;
+    } else if (errMessage) {
+      errorMessage = errMessage;
     }
 
     res.status(500).json({ error: errorMessage });

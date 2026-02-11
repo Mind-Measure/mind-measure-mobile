@@ -130,7 +130,7 @@ function getEmptyResult(summary: string): TextAnalysisResult {
   };
 }
 
-function validateAndSanitize(parsed: any): TextAnalysisResult {
+function validateAndSanitize(parsed: Record<string, unknown>): TextAnalysisResult {
   // Validate mood_score (1-10 scale from user's explicit answer)
   if (
     typeof parsed.mood_score !== 'number' ||
@@ -271,7 +271,7 @@ Now produce a single valid JSON object that matches the TextAnalysisResult schem
     }
 
     // Parse JSON from response (defensive)
-    let parsed: any;
+    let parsed: Record<string, unknown>;
     try {
       parsed = JSON.parse(responseText);
     } catch (parseError) {
@@ -291,15 +291,19 @@ Now produce a single valid JSON object that matches the TextAnalysisResult schem
       success: true,
       data: result,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[Bedrock API] ❌ Error:', error);
-    console.error('[Bedrock API] Error message:', error?.message);
-    console.error('[Bedrock API] Error stack:', error?.stack);
-    console.error('[Bedrock API] Error name:', error?.name);
-    console.error('[Bedrock API] Error code:', error?.code);
+    const errMsg = error instanceof Error ? error.message : String(error);
+    const errStack = error instanceof Error ? error.stack : undefined;
+    const errName = error instanceof Error ? error.name : undefined;
+    const errCode = (error as Record<string, unknown>)?.code;
+    console.error('[Bedrock API] Error message:', errMsg);
+    console.error('[Bedrock API] Error stack:', errStack);
+    console.error('[Bedrock API] Error name:', errName);
+    console.error('[Bedrock API] Error code:', errCode);
 
     // Check if it's an AWS credentials error
-    if (error?.message?.includes('credentials') || error?.code === 'CredentialsError') {
+    if (errMsg?.includes('credentials') || errCode === 'CredentialsError') {
       console.error('[Bedrock API] ⚠️ AWS credentials issue detected!');
     }
 

@@ -78,8 +78,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     res.status(200).json({ data: result.rows[0] });
-  } catch (error: any) {
-    console.error(`[API] Profile fetch error for user ${userId}:`, error.message);
+  } catch (error: unknown) {
+    console.error(`[API] Profile fetch error for user ${userId}:`, error instanceof Error ? error.message : error);
     res.status(500).json({ error: 'Internal server error', code: 'PROFILE_FETCH_ERROR' });
   } finally {
     await client.end();

@@ -145,7 +145,7 @@ export class CheckinFusionEngine {
         fusionMethod,
         processingTimeMs: processingTime,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('[FusionEngine] ❌ Fusion failed:', error);
 
       if (error instanceof CheckinMultimodalError) {
@@ -341,7 +341,10 @@ export class CheckinFusionEngine {
   // BASELINE COMPARISON
   // ==========================================================================
 
-  private computeZScoreBasedScore(features: any, baseline: Record<string, { mu: number; sigma: number }>): number {
+  private computeZScoreBasedScore(
+    features: CheckinAudioFeatures | CheckinVisualFeatures | CheckinTextAnalysis,
+    baseline: Record<string, { mu: number; sigma: number }>
+  ): number {
     // Compute z-scores for each feature
     const zScores: number[] = [];
 

@@ -46,9 +46,9 @@ async function existsInCognito(email: string): Promise<boolean> {
       })
     );
     return true;
-  } catch (e: any) {
-    if (e?.name === 'UserNotFoundException') return false;
-    console.error('[check-email] Cognito check failed:', e?.message || e);
+  } catch (e: unknown) {
+    if (e instanceof Error && e.name === 'UserNotFoundException') return false;
+    console.error('[check-email] Cognito check failed:', e instanceof Error ? e.message : e);
     return false;
   }
 }
@@ -91,8 +91,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     await pg.connect();
     const r = await pg.query('SELECT 1 FROM profiles WHERE LOWER(TRIM(email)) = $1 LIMIT 1', [trimmed]);
     existsInProfiles = (r.rowCount ?? 0) > 0;
-  } catch (e: any) {
-    console.error('[check-email]', e?.message);
+  } catch (e: unknown) {
+    console.error('[check-email]', e instanceof Error ? e.message : e);
     return res.status(500).json({ error: 'Check failed', exists: false });
   } finally {
     await pg.end();

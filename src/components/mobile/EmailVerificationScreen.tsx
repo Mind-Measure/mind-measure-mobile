@@ -50,7 +50,7 @@ export function EmailVerificationScreen({ email, onVerified, onBack }: EmailVeri
       } else {
         onVerified();
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('❌ Verification error:', err);
       setError('Verification failed. Please try again.');
     } finally {
@@ -82,7 +82,7 @@ export function EmailVerificationScreen({ email, onVerified, onBack }: EmailVeri
           }
         }, 3000);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('❌ Resend error:', err);
       setError('Failed to resend code. Please try again.');
     } finally {

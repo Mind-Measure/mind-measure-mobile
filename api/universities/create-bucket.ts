@@ -111,16 +111,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       message: `S3 bucket created successfully for ${universityName || universitySlug}`,
       bucketUrl: `https://${bucketName}.s3.${REGION}.amazonaws.com/`,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ Error creating university bucket:', error);
 
+    const errName = error instanceof Error ? error.name : undefined;
+    const errMessage = error instanceof Error ? error.message : 'Unknown error';
+
     // Handle specific AWS errors
-    if (error.name === 'BucketAlreadyExists') {
+    if (errName === 'BucketAlreadyExists') {
       return res.status(409).json({
         error: 'Bucket already exists',
         details: 'This bucket name is already taken by another AWS account',
       });
-    } else if (error.name === 'BucketAlreadyOwnedByYou') {
+    } else if (errName === 'BucketAlreadyOwnedByYou') {
       return res.status(200).json({
         success: true,
         message: 'Bucket already exists and is owned by you',
@@ -129,7 +132,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     } else {
       return res.status(500).json({
         error: 'Failed to create university bucket',
-        details: error.message,
+        details: errMessage,
       });
     }
   }

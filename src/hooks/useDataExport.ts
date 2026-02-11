@@ -40,16 +40,18 @@ export function useDataExport(profileCompleted: boolean): UseDataExportReturn {
       });
 
       if (response.data && response.data.length > 0) {
-        const baselineToday = response.data.find((session: any) => {
-          const sessionDate = new Date(session.created_at).toISOString().split('T')[0];
-          const isBaseline = session.analysis?.assessment_type === 'baseline';
-          return isBaseline && sessionDate === today;
-        });
+        const baselineToday = response.data.find(
+          (session: { created_at?: string; analysis?: { assessment_type?: string } }) => {
+            const sessionDate = new Date(session.created_at).toISOString().split('T')[0];
+            const isBaseline = session.analysis?.assessment_type === 'baseline';
+            return isBaseline && sessionDate === today;
+          }
+        );
         return !!baselineToday;
       }
 
       return false;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error checking baseline:', error);
       return false;
     }
@@ -114,7 +116,7 @@ export function useDataExport(profileCompleted: boolean): UseDataExportReturn {
         alert(
           `Report generated successfully!\n\nWe've sent an email to ${user.email} with a link to view your report.\n\nCheck your inbox (and spam folder).`
         );
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('[Export] Full error object:', error);
         console.error('[Export] Error message:', error instanceof Error ? error.message : String(error));
         alert(

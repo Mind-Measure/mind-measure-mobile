@@ -2,17 +2,25 @@
  * POST /api/buddies/invite/consent (public, no auth)
  * Body: { token }
  * Returns invite data (inviter name, invitee name) for displaying consent page.
- * Does NOT accept/decline - just validates token and returns info.
+ * Does NOT accept/decline — just validates token and returns info.
+ *
+ * No _lib/ imports from api/_lib/ — CORS inlined to avoid Vercel bundling issues.
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { setCorsHeaders, handleCorsPreflightIfNeeded } from '../../_lib/cors-config';
 import { getDbClient } from '../_lib/db';
 import { hashToken, isExpired } from '../_lib/tokens';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  setCorsHeaders(req, res);
-  if (handleCorsPreflightIfNeeded(req, res)) return;
+  // ── Inline CORS ─────────────────────────────────────────────────
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -73,13 +81,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       inviterName,
       inviteeName: inv.invitee_name,
     });
-  } catch (e: any) {
+  } catch (e: unknown) {
     try {
       await client.end();
-    } catch (_) {
+    } catch {
       /* intentionally empty */
     }
-    console.error('[buddies/consent]', e);
-    return res.status(500).json({ error: 'Failed to fetch invite', message: e?.message });
+    const message = e instanceof Error ? e.message : String(e);
+    console.error('[buddies/consent]', message);
+    return res.status(500).json({ error: 'Failed to fetch invite', message });
   }
 }

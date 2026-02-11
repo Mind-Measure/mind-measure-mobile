@@ -67,11 +67,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       },
       message: 'Registration successful. Please check your email for verification.',
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Registration API error:', error);
     res.status(500).json({
       error: 'Internal server error during registration',
-      details: error.message,
+      details: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 }

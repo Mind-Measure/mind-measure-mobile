@@ -60,9 +60,15 @@ const PUBLIC_TABLES = new Set([
   'content_categories',
 ]);
 
+interface FilterValue {
+  in?: unknown[];
+  eq?: unknown;
+  gte?: string;
+}
+
 interface SelectRequest {
   table: string;
-  filters?: Record<string, any>;
+  filters?: Record<string, string | number | boolean | FilterValue>;
   columns?: string;
   orderBy?: Array<{ column: string; ascending: boolean }>;
   limit?: number;
@@ -114,19 +120,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     await client.connect();
 
     let sql = `SELECT ${columns} FROM ${table}`;
-    const params: any[] = [];
+    const params: unknown[] = [];
     let paramIndex = 1;
 
     if (filters && Object.keys(filters).length > 0) {
       const whereConditions: string[] = [];
       Object.entries(filters).forEach(([key, value]) => {
         if (value && typeof value === 'object' && 'in' in value) {
-          const placeholders = value.in.map((_: any) => `$${paramIndex++}`).join(',');
+          const filterVal = value as FilterValue;
+          const placeholders = (filterVal.in ?? []).map(() => `$${paramIndex++}`).join(',');
           whereConditions.push(`${key} IN (${placeholders})`);
-          params.push(...value.in);
+          params.push(...(filterVal.in ?? []));
         } else if (value && typeof value === 'object' && 'eq' in value) {
           whereConditions.push(`${key} = $${paramIndex++}`);
-          params.push(value.eq);
+          params.push((value as FilterValue).eq);
         } else {
           whereConditions.push(`${key} = $${paramIndex++}`);
           params.push(value);
@@ -149,8 +156,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     await client.end();
 
     return res.status(200).json({ data: result.rows, error: null });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`[DB SELECT] Error for user ${userId}:`, error);
-    return res.status(500).json({ error: 'Database query failed', message: error.message, data: null });
+    return res
+      .status(500)
+      .json({
+        error: 'Database query failed',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        data: null,
+      });
   }
 }

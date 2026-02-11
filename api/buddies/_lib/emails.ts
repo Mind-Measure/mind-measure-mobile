@@ -1,9 +1,43 @@
 /**
- * Buddy invite and nudge email templates. SES via shared _lib/ses.
+ * Buddy invite and nudge email templates.
+ * SES inlined — no _lib/ imports to avoid Vercel bundling issues.
  * All buddy emails must state "This isn't an emergency."
  */
 
-import { sendEmail } from '../../_lib/ses';
+import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
+
+const FROM = 'Mind Measure <noreply@mindmeasure.co.uk>';
+const REPLY_TO = 'info@mindmeasure.co.uk';
+const sesClient = new SESClient({
+  region: process.env.AWS_REGION || 'eu-west-2',
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+  },
+});
+
+interface SendEmailOptions {
+  to: string;
+  subject: string;
+  textBody: string;
+  htmlBody?: string;
+}
+
+async function sendEmail({ to, subject, textBody, htmlBody }: SendEmailOptions): Promise<void> {
+  const command = new SendEmailCommand({
+    Source: FROM,
+    Destination: { ToAddresses: [to] },
+    ReplyToAddresses: [REPLY_TO],
+    Message: {
+      Subject: { Data: subject, Charset: 'UTF-8' },
+      Body: {
+        Text: { Data: textBody, Charset: 'UTF-8' },
+        ...(htmlBody ? { Html: { Data: htmlBody, Charset: 'UTF-8' } } : {}),
+      },
+    },
+  });
+  await sesClient.send(command);
+}
 
 const BASE_URL = process.env.BUDDY_BASE_URL || 'https://buddy.mindmeasure.app';
 

@@ -13,7 +13,7 @@ import {
 import { MediaCapture } from '../services/multimodal/baseline/mediaCapture';
 import { BaselineEnrichmentService } from '../services/multimodal/baseline';
 import type { EnrichmentResult } from '../services/multimodal/baseline/enrichmentService';
-import type { CapturedMediaResult, BaselineAnalysisData } from '../types/assessment';
+import type { CapturedMediaResult, BaselineAnalysisData, ElevenLabsSessionOptions } from '../types/assessment';
 import type { Message, ProcessingPhase } from '../components/mobile/baselineAssessment/types';
 import { PROCESSING_MESSAGES } from '../components/mobile/baselineAssessment/types';
 
@@ -51,15 +51,9 @@ export function useBaselineAssessment({ onComplete }: UseBaselineAssessmentOptio
 
   // ElevenLabs conversation hook
   const conversation = useConversation({
-    onConnect: () => {
-      console.log('[SDK] ✅ Connected to ElevenLabs');
-    },
-    onDisconnect: () => {
-      console.log('[SDK] 🔌 Disconnected from ElevenLabs');
-    },
+    onConnect: () => {},
+    onDisconnect: () => {},
     onMessage: (message) => {
-      console.log('[SDK] 📩 Message received:', message);
-
       const newMessage: Message = {
         id: crypto.randomUUID(),
         text: message.message,
@@ -105,17 +99,13 @@ export function useBaselineAssessment({ onComplete }: UseBaselineAssessmentOptio
   }, []);
 
   const handleStartAssessment = useCallback(async () => {
-    console.log('[SDK] 🎯 Starting ElevenLabs SDK baseline assessment');
     setRequestingPermissions(true);
 
     try {
-      console.log('[SDK] 🎤 Requesting microphone permission...');
       await navigator.mediaDevices.getUserMedia({ audio: true });
-      console.log('[SDK] ✅ Audio permission granted');
 
       // Start media capture for multimodal features
       try {
-        console.log('[SDK] 📹 Starting multimodal media capture...');
         mediaCaptureRef.current = new MediaCapture({
           captureAudio: true,
           captureVideo: true,
@@ -123,8 +113,7 @@ export function useBaselineAssessment({ onComplete }: UseBaselineAssessmentOptio
         });
         await mediaCaptureRef.current.start();
         captureStartTimeRef.current = Date.now();
-        console.log('[SDK] ✅ Media capture started');
-      } catch (captureError) {
+      } catch (captureError: unknown) {
         console.warn('[SDK] ⚠️ Media capture failed, continuing with clinical-only:', captureError);
       }
 
@@ -142,15 +131,12 @@ export function useBaselineAssessment({ onComplete }: UseBaselineAssessmentOptio
       // Wait a moment for UI to render, then start the conversation
       setTimeout(async () => {
         try {
-          console.log('[SDK] 🚀 Starting ElevenLabs conversation session...');
-
           const sid = await conversation.startSession({
             agentId: 'agent_9301k22s8e94f7qs5e704ez02npe',
-          } as any);
+          } as ElevenLabsSessionOptions);
 
-          console.log('[SDK] ✅ Session started with ID:', sid);
           setSessionId(sid);
-        } catch (error) {
+        } catch (error: unknown) {
           console.error('[SDK] ❌ Failed to start conversation:', error);
           alert('Failed to start conversation. Please try again.');
           setShowConversation(false);
@@ -161,7 +147,7 @@ export function useBaselineAssessment({ onComplete }: UseBaselineAssessmentOptio
           }
         }
       }, 500);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('[SDK] ❌ Permission request failed:', error);
       alert(
         'Microphone access is required for the baseline assessment. Please check your browser settings and try again.'
@@ -172,8 +158,6 @@ export function useBaselineAssessment({ onComplete }: UseBaselineAssessmentOptio
   }, [conversation]);
 
   const processAssessmentData = useCallback(async () => {
-    console.log('[SDK] 📊 Processing assessment data...');
-
     const endedAt = Date.now();
 
     // Start smooth 9-second message roll (1.5s per message)
@@ -189,12 +173,7 @@ export function useBaselineAssessment({ onComplete }: UseBaselineAssessmentOptio
     }, 1500);
 
     // Extract PHQ/GAD/mood from the full transcript
-    console.log('[SDK] 📝 Transcript to analyze:', assessmentState.transcript.substring(0, 200) + '...');
-    console.log('[SDK] 📝 Full transcript length:', assessmentState.transcript.length);
-
     const { phqResponses, moodScore } = extractAssessmentFromTranscript(assessmentState.transcript);
-    console.log('[SDK] 📊 Extracted PHQ responses:', phqResponses);
-    console.log('[SDK] 📊 Extracted mood score:', moodScore);
 
     const updatedState: AssessmentState = {
       ...assessmentState,
@@ -204,9 +183,7 @@ export function useBaselineAssessment({ onComplete }: UseBaselineAssessmentOptio
     };
 
     // Validate
-    console.log('[SDK] ✅ Starting validation...');
     const validation = validateAssessmentData(updatedState);
-    console.log('[SDK] 📋 Validation result:', validation);
 
     if (!validation.isValid) {
       console.error('[SDK] ❌ Incomplete assessment:', validation.details);
@@ -221,14 +198,9 @@ export function useBaselineAssessment({ onComplete }: UseBaselineAssessmentOptio
       return;
     }
 
-    console.log('[SDK] ✅ Baseline validation passed');
-
     // Calculate clinical scores
     const clinical = calculateClinicalScores(phqResponses, moodScore);
     const composite = calculateMindMeasureComposite(clinical);
-
-    console.log('[SDK] 📊 Clinical scores:', clinical);
-    console.log('[SDK] 📊 Mind Measure composite (clinical-only):', composite);
 
     // Visual phase transitions
     setTimeout(() => setProcessingPhase('calculating'), 3000);
@@ -243,16 +215,9 @@ export function useBaselineAssessment({ onComplete }: UseBaselineAssessmentOptio
 
     if (mediaCaptureRef.current) {
       try {
-        console.log('[SDK] 📹 Stopping media capture...');
         capturedMedia = await mediaCaptureRef.current.stop();
-        console.log('[SDK] ✅ Media captured:', {
-          hasAudio: !!capturedMedia.audio,
-          hasVideo: !!capturedMedia.videoFrames?.length,
-          duration: capturedMedia.duration,
-        });
 
         // Enrich with multimodal features
-        console.log('[SDK] 🎯 Enriching with multimodal features...');
         const enrichmentService = new BaselineEnrichmentService();
 
         enrichmentResult = await enrichmentService.enrichBaseline({
@@ -265,36 +230,19 @@ export function useBaselineAssessment({ onComplete }: UseBaselineAssessmentOptio
           startTime: capturedMedia.startTime,
           endTime: capturedMedia.endTime,
         });
-
-        console.log('[SDK] ✅ Enrichment complete:', {
-          originalScore: enrichmentResult?.originalScore,
-          finalScore: enrichmentResult?.finalScore,
-          success: enrichmentResult?.success,
-          warnings: enrichmentResult?.warnings,
-        });
-      } catch (error) {
-        console.warn('[SDK] ⚠️ Multimodal enrichment failed:', error);
+      } catch (error: unknown) {
+        console.warn('[SDK] Multimodal enrichment failed:', error);
         enrichmentResult = null;
       } finally {
         mediaCaptureRef.current = null;
       }
-    } else {
-      console.log('[SDK] ℹ️ No media capture - using clinical-only scoring');
     }
 
     // Use enriched score if available, otherwise clinical-only
     const finalScore = enrichmentResult?.finalScore ?? composite.score;
-    console.log(
-      '[SDK] 📊 Final score:',
-      finalScore,
-      enrichmentResult ? '(70% clinical + 30% multimodal)' : '(clinical-only)'
-    );
 
     // Phase 3: Saving
     setTimeout(() => setProcessingPhase('saving'), 3000);
-
-    console.log('[SDK] 📊 Clinical scores:', clinical);
-    console.log('[SDK] 📊 Mind Measure composite:', composite);
 
     // Get user ID
     let userId = user?.id;
@@ -305,7 +253,7 @@ export function useBaselineAssessment({ onComplete }: UseBaselineAssessmentOptio
           const userData = JSON.parse(value);
           userId = userData.userId;
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('[SDK] Error reading user ID:', error);
       }
     }
@@ -318,8 +266,6 @@ export function useBaselineAssessment({ onComplete }: UseBaselineAssessmentOptio
     }
 
     try {
-      console.log('[SDK] 💾 Saving assessment to database...');
-
       const { BackendServiceFactory } = await import('../services/database/BackendServiceFactory');
       const backendService = BackendServiceFactory.createService(BackendServiceFactory.getEnvironmentConfig());
 
@@ -335,8 +281,6 @@ export function useBaselineAssessment({ onComplete }: UseBaselineAssessmentOptio
       }
 
       if (!existingProfiles || existingProfiles.length === 0) {
-        console.log('[SDK] Creating user profile...');
-
         const { resolveUniversityFromEmail } = await import('../services/UniversityResolver');
         const userEmail = user?.email || '';
         const universityId = await resolveUniversityFromEmail(userEmail);
@@ -361,9 +305,6 @@ export function useBaselineAssessment({ onComplete }: UseBaselineAssessmentOptio
           console.error('[SDK] ❌ Failed to create profile:', profileCreateError);
           throw new Error('Failed to create user profile');
         }
-        console.log('[SDK] ✅ Profile created');
-      } else {
-        console.log('[SDK] ✅ Profile exists');
       }
 
       // Build analysis object with multimodal data if available
@@ -440,18 +381,6 @@ export function useBaselineAssessment({ onComplete }: UseBaselineAssessmentOptio
         console.error('[SDK] ❌ CRITICAL: No fusion_output_id returned');
         throw new Error('Failed to get fusion_output_id');
       }
-      console.log(
-        '[SDK] ✅ Baseline assessment saved with final score:',
-        finalScore,
-        'fusion_output_id:',
-        fusionOutputId
-      );
-      if (enrichmentResult) {
-        console.log(
-          '[SDK] 📊 Score breakdown: clinical=' + composite.score + ', final=' + finalScore + ' (70/30 weighted)'
-        );
-      }
-
       // Store raw transcript
       const transcriptLines = assessmentState.transcript.split('\n').filter((line: string) => line.trim());
       const transcriptData = {
@@ -468,9 +397,7 @@ export function useBaselineAssessment({ onComplete }: UseBaselineAssessmentOptio
 
       const { error: transcriptError } = await backendService.database.insert('assessment_transcripts', transcriptData);
       if (transcriptError) {
-        console.warn('[SDK] ⚠️ Failed to store transcript:', transcriptError);
-      } else {
-        console.log('[SDK] ✅ Transcript stored');
+        console.warn('[SDK] Failed to store transcript:', transcriptError);
       }
 
       // Store individual assessment items
@@ -547,10 +474,6 @@ export function useBaselineAssessment({ onComplete }: UseBaselineAssessmentOptio
           itemsStored++;
         }
       }
-      if (itemsStored > 0) {
-        console.log('[SDK] ✅ Assessment items stored:', itemsStored, '/', items.length);
-      }
-
       const { error: updateError } = await backendService.database.update(
         'profiles',
         { baseline_established: true, updated_at: new Date().toISOString() },
@@ -561,22 +484,16 @@ export function useBaselineAssessment({ onComplete }: UseBaselineAssessmentOptio
         console.error('[SDK] ❌ CRITICAL: Failed to update profile:', updateError);
         throw new Error('Failed to mark baseline as complete');
       }
-      console.log('[SDK] ✅ Profile updated (baseline_established = true)');
-
       // Mark complete in device storage
       await Preferences.set({
         key: 'mindmeasure_baseline_complete',
         value: 'true',
       });
-      console.log('[SDK] ✅ Device storage updated');
-
-      console.log('[SDK] 🎉 Baseline assessment completed successfully!');
-
       setIsSaving(false);
       if (onComplete) {
         onComplete();
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('[SDK] ❌ Error saving assessment:', error);
       setIsSaving(false);
       alert('There was an error saving your assessment. Please try again or contact support.');
@@ -584,46 +501,33 @@ export function useBaselineAssessment({ onComplete }: UseBaselineAssessmentOptio
   }, [assessmentState, sessionId, user, onComplete]);
 
   const handleFinish = useCallback(async () => {
-    console.log('[SDK] 🏁 Finish button clicked');
-    console.log(
-      '[SDK] 📊 Current state - isSaving:',
-      isSaving,
-      'transcript length:',
-      assessmentState.transcript.length
-    );
-
     if (isSaving) {
-      console.log('[SDK] ⚠️ Already processing, ignoring duplicate click');
       return;
     }
 
     setIsSaving(true);
-    console.log('[SDK] ✅ Setting isSaving to true, processing overlay should appear');
 
     // Play click sound and haptics
     try {
       if (audioRef.current) {
-        audioRef.current.play().catch((e: unknown) => console.log('Audio play failed:', e));
+        audioRef.current.play().catch(() => {});
       }
       await Haptics.impact({ style: ImpactStyle.Heavy });
-    } catch (e) {
-      console.log('[SDK] Haptics/audio not available:', e);
+    } catch {
+      // Haptics/audio not available
     }
 
     // End the conversation
     try {
-      console.log('[SDK] 🔌 Ending ElevenLabs session...');
       await conversation.endSession();
-      console.log('[SDK] ✅ Conversation ended');
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('[SDK] ❌ Error ending conversation:', error);
     }
 
     // Process assessment data
-    console.log('[SDK] 📊 Starting processAssessmentData...');
     try {
       await processAssessmentData();
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('[SDK] ❌ CRITICAL ERROR in processAssessmentData:', error);
       setIsSaving(false);
       alert('There was an error processing your assessment. Please try again or contact support.');

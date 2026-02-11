@@ -4,8 +4,21 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, GraduationCap, Shield, CheckCircle, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+interface UniversityRegistrationUserData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  confirmPassword?: string;
+  university: string;
+  agreeToTerms?: boolean;
+  agreeToPrivacy?: boolean;
+  registrationComplete: boolean;
+  baselineRequired: boolean;
+}
+
 interface UniversityRegistrationProps {
-  onComplete: (userData: any) => void;
+  onComplete: (userData: UniversityRegistrationUserData) => void;
   onBack: () => void;
 }
 export const UniversityRegistration: React.FC<UniversityRegistrationProps> = ({ onComplete, onBack }) => {

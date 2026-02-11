@@ -58,8 +58,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       },
       error: null,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Cognito refresh token error:', error);
-    res.status(400).json({ error: error.message || 'Token refresh failed' });
+    res.status(400).json({ error: error instanceof Error ? error.message : 'Token refresh failed' });
   }
 }

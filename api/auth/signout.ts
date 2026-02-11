@@ -38,10 +38,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       success: true,
       error: null,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Cognito sign out error:', error);
     res.status(500).json({
-      error: error.message || 'Sign out failed',
+      error: error instanceof Error ? error.message : 'Sign out failed',
     });
   }
 }

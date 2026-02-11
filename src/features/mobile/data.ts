@@ -82,10 +82,10 @@ export async function getUserUniversityProfile(userId?: string): Promise<MobileU
     if (articles.length > 0) {
       const categoriesResponse = await backendService.database.select('content_categories', {});
       const categories = categoriesResponse.data || [];
-      const categoryMap = new Map(categories.map((c: any) => [c.id, c]));
+      const categoryMap = new Map(categories.map((c: { id: string; name?: string; slug?: string }) => [c.id, c]));
 
       // Attach category info to each article
-      articles.forEach((article: any) => {
+      articles.forEach((article: ContentArticle & { category?: { name: string; slug: string } }) => {
         if (article.category_id) {
           const cat = categoryMap.get(article.category_id);
           if (cat) {
@@ -111,7 +111,7 @@ export async function getUserUniversityProfile(userId?: string): Promise<MobileU
         | string
         | undefined,
     };
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error fetching user university profile:', error);
     return null;
   }
@@ -130,7 +130,7 @@ export async function getEmergencyContacts(): Promise<EmergencyContact[]> {
       const categoryPriority = { crisis: 1, medical: 2, security: 3, 'mental-health': 4, support: 5 };
       return (categoryPriority[a.category] || 6) - (categoryPriority[b.category] || 6);
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error fetching emergency contacts:', error);
     return [];
   }
@@ -148,7 +148,7 @@ export async function getHelpArticles(category?: string, featured?: boolean): Pr
       articles = articles.filter((article) => article.is_featured);
     }
     return articles;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error fetching help articles:', error);
     return [];
   }
@@ -212,7 +212,7 @@ export async function getHelpArticle(slug: string): Promise<ContentArticle | nul
       .catch(() => {});
 
     return article;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error fetching help article:', error);
     return null;
   }
@@ -235,7 +235,7 @@ export async function setUserUniversity(universityId: string): Promise<boolean> 
       return false;
     }
     return true;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error setting user university:', error);
     return false;
   }
@@ -261,7 +261,7 @@ export async function searchUniversities(query: string): Promise<University[]> {
         (u.name || '').toLowerCase().includes(lowerQuery) || (u.short_name || '').toLowerCase().includes(lowerQuery)
     );
     return filtered.slice(0, 10);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error searching universities:', error);
     return [];
   }
@@ -282,7 +282,7 @@ export async function getUniversityBranding(): Promise<{
       logo: profile.logo,
       logoUrl: profile.logo,
     };
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error fetching university branding:', error);
     return null;
   }

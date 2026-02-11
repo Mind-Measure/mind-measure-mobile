@@ -742,7 +742,7 @@ export function DashboardScreen({ onNeedHelp, onCheckIn, onRetakeBaseline }: Das
           >
             What's Happening
           </h3>
-          <NudgesDisplay pinned={pinned as any} rotated={rotated as any} />
+          <NudgesDisplay pinned={pinned} rotated={rotated} />
         </motion.div>
       )}
 

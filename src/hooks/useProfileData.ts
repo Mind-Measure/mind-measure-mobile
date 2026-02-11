@@ -8,7 +8,10 @@ import type { UserData, UniversityData } from '@/components/mobile/profile/types
 /**
  * Calculates the current check-in streak from a list of sessions.
  */
-function calculateCurrentStreak(sessions: any[]): number {
+interface SessionWithCreatedAt {
+  created_at: string;
+}
+function calculateCurrentStreak(sessions: SessionWithCreatedAt[]): number {
   if (sessions.length === 0) return 0;
 
   const sortedSessions = [...sessions].sort(
@@ -87,7 +90,7 @@ export function useProfileData(): UseProfileDataReturn {
       });
 
       if (profileResponse.data && profileResponse.data.length > 0) {
-        const profile = profileResponse.data[0] as Record<string, any>;
+        const profile = profileResponse.data[0] as Record<string, unknown>;
 
         // Fetch university data
         const universityResponse = await backendService.database.select('universities', {
@@ -99,7 +102,7 @@ export function useProfileData(): UseProfileDataReturn {
         let halls: string[] = [];
 
         if (universityResponse.data && universityResponse.data.length > 0) {
-          const uni = universityResponse.data[0] as Record<string, any>;
+          const uni = universityResponse.data[0] as Record<string, unknown>;
           uniData = {
             id: uni.id as string,
             name: uni.name as string,
@@ -108,8 +111,12 @@ export function useProfileData(): UseProfileDataReturn {
             halls_of_residence: Array.isArray(uni.halls_of_residence) ? uni.halls_of_residence : [],
           };
 
-          schools = (Array.isArray(uni.schools) ? uni.schools : []).map((s: any) => s.name);
-          halls = (Array.isArray(uni.halls_of_residence) ? uni.halls_of_residence : []).map((h: any) => h.name);
+          schools = (Array.isArray(uni.schools) ? uni.schools : []).map((s: { name?: string }) =>
+            String(s?.name ?? '')
+          );
+          halls = (Array.isArray(uni.halls_of_residence) ? uni.halls_of_residence : []).map((h: { name?: string }) =>
+            String(h?.name ?? '')
+          );
 
           setUniversityData(uniData);
           setSchoolOptions(schools);
@@ -128,14 +135,17 @@ export function useProfileData(): UseProfileDataReturn {
 
         const averageScore =
           totalCheckIns > 0
-            ? Math.round(sessions.reduce((sum: number, s: any) => sum + (s.final_score || 0), 0) / totalCheckIns)
+            ? Math.round(
+                sessions.reduce((sum: number, s: { final_score?: number }) => sum + (s.final_score ?? 0), 0) /
+                  totalCheckIns
+              )
             : null;
 
         const currentStreak = calculateCurrentStreak(sessions);
 
         // Extract mood scores
         const moodScores = sessions
-          .map((session: any) => {
+          .map((session: { created_at?: string; analysis?: string | Record<string, unknown> }) => {
             try {
               const analysis = typeof session.analysis === 'string' ? JSON.parse(session.analysis) : session.analysis;
 
@@ -155,7 +165,7 @@ export function useProfileData(): UseProfileDataReturn {
 
         // Extract themes
         const themeCounts: Record<string, number> = {};
-        sessions.forEach((session: any) => {
+        sessions.forEach((session: { analysis?: string | Record<string, unknown> }) => {
           try {
             const analysis = typeof session.analysis === 'string' ? JSON.parse(session.analysis) : session.analysis;
 
@@ -207,7 +217,7 @@ export function useProfileData(): UseProfileDataReturn {
         setOriginalUserData(loadedUserData);
         setHasUnsavedChanges(false);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error loading profile:', error);
     } finally {
       setIsLoading(false);
@@ -254,7 +264,7 @@ export function useProfileData(): UseProfileDataReturn {
       setProfileCompleted(true);
       setOriginalUserData({ ...userData });
       setHasUnsavedChanges(false);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error saving profile:', error);
       alert('Failed to save profile. Please try again.');
     } finally {

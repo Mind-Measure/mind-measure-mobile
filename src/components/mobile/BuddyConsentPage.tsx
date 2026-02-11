@@ -50,8 +50,8 @@ export function BuddyConsentPage() {
         inviteeName: data.inviteeName || 'there',
       });
       setCurrentPage('consent');
-    } catch (err: any) {
-      setError(err.message || 'Failed to load invitation');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load invitation');
       setCurrentPage('error');
     }
   };
@@ -73,8 +73,8 @@ export function BuddyConsentPage() {
       }
 
       setCurrentPage(action === 'accept' ? 'accepted' : 'declined');
-    } catch (err: any) {
-      setError(err.message || 'Failed to respond');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to respond');
       setCurrentPage('error');
     } finally {
       setLoading(false);

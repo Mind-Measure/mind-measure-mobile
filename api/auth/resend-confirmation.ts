@@ -43,18 +43,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       codeDeliveryDetails: result.CodeDeliveryDetails,
       error: null,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Cognito resend confirmation error:', error);
 
     let errorMessage = 'Failed to resend confirmation code';
-    if (error.name === 'InvalidParameterException') {
+    const errName = error instanceof Error ? error.name : undefined;
+    const errMessage = error instanceof Error ? error.message : undefined;
+    if (errName === 'InvalidParameterException') {
       errorMessage = 'User is already confirmed';
-    } else if (error.name === 'UserNotFoundException') {
+    } else if (errName === 'UserNotFoundException') {
       errorMessage = 'User not found';
-    } else if (error.name === 'LimitExceededException') {
+    } else if (errName === 'LimitExceededException') {
       errorMessage = 'Too many requests. Please try again later.';
-    } else if (error.message) {
-      errorMessage = error.message;
+    } else if (errMessage) {
+      errorMessage = errMessage;
     }
 
     res.status(500).json({ error: errorMessage });

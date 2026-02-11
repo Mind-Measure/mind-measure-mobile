@@ -1,7 +1,11 @@
+/**
+ * Generate wellbeing report — Bedrock AI + SES email.
+ * No _lib/ imports — CORS inlined to avoid Vercel bundling issues.
+ */
+
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedrock-runtime';
 import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
-import { setCorsHeaders, handleCorsPreflightIfNeeded } from './_lib/cors-config';
 
 // Initialize Bedrock client
 const bedrockClient = new BedrockRuntimeClient({
@@ -29,9 +33,15 @@ interface RequestBody {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // CORS
-  if (handleCorsPreflightIfNeeded(req, res)) return;
-  setCorsHeaders(req, res);
+  // ── Inline CORS ─────────────────────────────────────────────────
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -94,16 +104,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         checkInCount: sessions.data.length,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Report generation error:', error);
     return res.status(500).json({
       error: 'Failed to generate report',
-      details: error.message,
+      details: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 }
 
-function prepareReportData(sessions: any[], periodDays: number) {
+interface SessionRecord {
+  final_score?: number;
+  analysis?: string | Record<string, unknown>;
+  created_at: string;
+}
+
+interface ReportData {
+  scores: number[];
+  moodScores: number[];
+  themes: Record<string, number>;
+  pleasures: string[];
+  concerns: string[];
+  transcriptSnippets: string[];
+  checkInCount: number;
+  dateRange: { start: string; end: string };
+}
+
+function prepareReportData(sessions: SessionRecord[], periodDays: number): ReportData {
   const scores: number[] = [];
   const moodScores: number[] = [];
   const themes: Record<string, number> = {};
@@ -176,10 +203,10 @@ function prepareReportData(sessions: any[], periodDays: number) {
   };
 }
 
-async function generateAISummary(data: any, periodDays: number): Promise<string> {
+async function generateAISummary(data: ReportData, periodDays: number): Promise<string> {
   // Prepare context for Claude
   const topThemes = Object.entries(data.themes)
-    .sort(([, a]: any, [, b]: any) => b - a)
+    .sort(([, a], [, b]) => b - a)
     .slice(0, 10)
     .map(([theme]) => theme);
 
@@ -250,7 +277,7 @@ Write the report now:`;
   }
 }
 
-function compileReport(data: any, aiSummary: string, periodDays: number): string {
+function compileReport(data: ReportData, aiSummary: string, periodDays: number): string {
   const avgScore =
     data.scores.length > 0
       ? Math.round(data.scores.reduce((a: number, b: number) => a + b, 0) / data.scores.length)
@@ -262,7 +289,7 @@ function compileReport(data: any, aiSummary: string, periodDays: number): string
       : 0;
 
   const topThemes = Object.entries(data.themes)
-    .sort(([, a]: any, [, b]: any) => b - a)
+    .sort(([, a], [, b]) => b - a)
     .slice(0, 15)
     .map(([theme, count]) => `${theme} (${count})`);
 

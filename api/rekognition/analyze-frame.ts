@@ -32,18 +32,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const rekognitionResponse = await rekognitionClient.send(detectFacesCommand);
 
+    interface EmotionResult {
+      type: string | undefined;
+      confidence: number | undefined;
+    }
+
+    interface AgeRangeResult {
+      low: number | undefined;
+      high: number | undefined;
+    }
+
+    interface GenderResult {
+      value: string | undefined;
+      confidence: number | undefined;
+    }
+
     let analysisResult = {
       timestamp: timestamp || Date.now(),
       faceDetected: false,
       brightness: 128, // Default brightness
-      emotions: [] as any[],
+      emotions: [] as EmotionResult[],
       dominantEmotion: null as string | null,
       confidence: 0,
       smile: false,
       eyesOpen: false,
       mouthOpen: false,
-      ageRange: null as any,
-      gender: null as any,
+      ageRange: null as AgeRangeResult | null,
+      gender: null as GenderResult | null,
     };
 
     if (rekognitionResponse.FaceDetails && rekognitionResponse.FaceDetails.length > 0) {

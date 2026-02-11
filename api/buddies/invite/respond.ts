@@ -1,19 +1,27 @@
 /**
  * POST /api/buddies/invite/respond (public, no auth)
  * Body: { token, action: "accept" | "decline" }
- * Accept → mark invite accepted, create Buddy (active). Decline → mark declined.
+ * Accept -> mark invite accepted, create Buddy (active). Decline -> mark declined.
  * Token single-use and expires.
+ *
+ * No _lib/ imports from api/_lib/ — CORS inlined to avoid Vercel bundling issues.
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { randomBytes } from 'crypto';
-import { setCorsHeaders, handleCorsPreflightIfNeeded } from '../../_lib/cors-config';
 import { getDbClient } from '../_lib/db';
 import { hashToken, isExpired } from '../_lib/tokens';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  setCorsHeaders(req, res);
-  if (handleCorsPreflightIfNeeded(req, res)) return;
+  // ── Inline CORS ─────────────────────────────────────────────────
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -91,14 +99,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     await client.end();
 
     return res.status(200).json({ ok: true, action: 'accepted' });
-  } catch (e: any) {
+  } catch (e: unknown) {
     try {
       await client.query('ROLLBACK');
       await client.end();
-    } catch (_) {
+    } catch {
       /* intentionally empty */
     }
-    console.error('[buddies/respond]', e);
-    return res.status(500).json({ error: 'Failed to respond', message: e?.message });
+    const message = e instanceof Error ? e.message : String(e);
+    console.error('[buddies/respond]', message);
+    return res.status(500).json({ error: 'Failed to respond', message });
   }
 }
