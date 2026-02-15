@@ -20,6 +20,7 @@ export class UniversityResolver {
   private static instance: UniversityResolver;
   private cache: Map<string, string> = new Map(); // domain → university_id
   private cacheExpiry: number = 0;
+  private static readonly CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
   private constructor() {}
 
   static getInstance(): UniversityResolver {
@@ -31,8 +32,11 @@ export class UniversityResolver {
 
   /**
    * Resolve university from email address
+   * Matches the email domain against settings.allowed_email_domains
+   * stored in the universities table.
+   *
    * @param email - User's email address
-   * @returns university_id or null if no match found
+   * @returns university slug (e.g. 'worcester', 'lse') or null if no match
    */
   async resolveFromEmail(email: string): Promise<string | null> {
     if (!email || !email.includes('@')) {
@@ -49,6 +53,7 @@ export class UniversityResolver {
     // Check cache first
     if (this.isCacheValid() && this.cache.has(domain)) {
       const universityId = this.cache.get(domain)!;
+      console.log(`[UniversityResolver] Cache hit: ${domain} → ${universityId}`);
       return universityId;
     }
 
@@ -56,11 +61,10 @@ export class UniversityResolver {
     try {
       const backendService = BackendServiceFactory.createService(BackendServiceFactory.getEnvironmentConfig());
 
-      // Query universities - NOTE: 'domains' column may not exist yet
-
+      // Query universities with settings containing allowed_email_domains
       const { data: universities, error } = await backendService.database.select('universities', {
-        columns: ['id', 'name'],
-        filters: {}, // Get all universities
+        columns: 'id, slug, settings',
+        limit: 500,
       });
 
       if (error) {
@@ -73,9 +77,30 @@ export class UniversityResolver {
         return null;
       }
 
-      // For now, we don't have a domains column, so we can't do dynamic mapping
-      // Just return null and let the caller use the default
-      console.warn('[UniversityResolver] Domain mapping not yet implemented, using default university');
+      // Build cache from all university domain mappings
+      const typedUniversities = universities as Array<{
+        id: string;
+        slug?: string;
+        settings?: { allowed_email_domains?: string[] };
+      }>;
+
+      for (const uni of typedUniversities) {
+        const domains = uni.settings?.allowed_email_domains || [];
+        const uniSlug = uni.slug || uni.id;
+        for (const d of domains) {
+          this.cache.set(d.toLowerCase(), uniSlug);
+        }
+      }
+      this.cacheExpiry = Date.now() + UniversityResolver.CACHE_TTL_MS;
+
+      // Now check if the user's domain is in the freshly built cache
+      if (this.cache.has(domain)) {
+        const universitySlug = this.cache.get(domain)!;
+        console.log(`[UniversityResolver] Matched: ${domain} → ${universitySlug}`);
+        return universitySlug;
+      }
+
+      console.log(`[UniversityResolver] No university matched domain '${domain}', will use default`);
       return null;
     } catch (error) {
       console.warn('[UniversityResolver] Error resolving university, using default:', error);
@@ -85,10 +110,11 @@ export class UniversityResolver {
 
   /**
    * Get default fallback university
-   * Used when email domain doesn't match any university
+   * Used when email domain doesn't match any university.
+   * During public testing, unmatched users go to Rummidge (demo institution).
    */
   getDefaultUniversity(): string {
-    return 'worcester'; // Default fallback
+    return 'rummidge'; // Public testing default – route unknown domains to demo university
   }
 
   /**
