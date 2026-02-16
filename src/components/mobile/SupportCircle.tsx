@@ -120,6 +120,7 @@ export function SupportCircle() {
   const total = activeBuddies.length + pendingInvites.length;
   const canInvite = total < 5;
   const isEmpty = activeBuddies.length === 0 && pendingInvites.length === 0;
+  const isTestUniversity = user?.university_id === 'rummidge';
 
   if (loading) {
     return (
@@ -326,24 +327,45 @@ export function SupportCircle() {
                   <p style={{ fontSize: 15, lineHeight: 1.6, color: '#4b5563', margin: '0 0 24px' }}>
                     They only take part with consent, never see your scores, and you and they can opt out at any time.
                   </p>
-                  <button
-                    type="button"
-                    onClick={() => setIsModalOpen(true)}
-                    style={{
-                      width: '100%',
-                      padding: 16,
-                      background: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)',
-                      border: 'none',
-                      borderRadius: 12,
-                      fontSize: 16,
-                      fontWeight: 700,
-                      color: '#fff',
-                      cursor: 'pointer',
-                      boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)',
-                    }}
-                  >
-                    Invite Your First Buddy
-                  </button>
+                  {isTestUniversity ? (
+                    <div
+                      style={{
+                        width: '100%',
+                        padding: 16,
+                        backgroundColor: '#f0f4ff',
+                        border: '1px solid #c7d2fe',
+                        borderRadius: 12,
+                        textAlign: 'center',
+                      }}
+                    >
+                      <p style={{ fontSize: 14, fontWeight: 600, color: '#4338ca', margin: '0 0 4px' }}>
+                        Not available during testing
+                      </p>
+                      <p style={{ fontSize: 13, color: '#6366f1', margin: 0 }}>
+                        The buddy system is disabled for test accounts. It will be fully operational when your
+                        university goes live.
+                      </p>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setIsModalOpen(true)}
+                      style={{
+                        width: '100%',
+                        padding: 16,
+                        background: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)',
+                        border: 'none',
+                        borderRadius: 12,
+                        fontSize: 16,
+                        fontWeight: 700,
+                        color: '#fff',
+                        cursor: 'pointer',
+                        boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)',
+                      }}
+                    >
+                      Invite Your First Buddy
+                    </button>
+                  )}
                 </div>
               </div>
             ) : (
@@ -387,7 +409,7 @@ export function SupportCircle() {
                   </div>
                 )}
 
-                {canInvite && (
+                {canInvite && !isTestUniversity && (
                   <button
                     type="button"
                     onClick={() => setIsModalOpen(true)}
