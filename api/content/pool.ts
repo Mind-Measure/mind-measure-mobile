@@ -16,30 +16,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   let client: Client | null = null;
   try {
-    // The Marketing CMS writes to the 'mindmeasure' database (core DB).
-    // The mobile app may have a different AWS_AURORA_DATABASE set.
-    // Try DB_* vars first (same as core app), fall back to AWS_AURORA_* vars.
-    const host =
-      process.env.DB_HOST ||
-      process.env.AWS_AURORA_HOST ||
-      'mindmeasure-aurora.cluster-cz8c8wq4k3ak.eu-west-2.rds.amazonaws.com';
-    const password = process.env.DB_PASSWORD || process.env.AWS_AURORA_PASSWORD;
-    const database = process.env.DB_NAME || 'mindmeasure';
-    const user = process.env.DB_USERNAME || process.env.AWS_AURORA_USERNAME || 'mindmeasure_admin';
+    // The Marketing CMS writes to a separate 'marketing_cms' database.
+    // Use MARKETING_DATABASE_URL if set; otherwise fall back to AWS_AURORA_* vars.
+    const marketingUrl = process.env.MARKETING_DATABASE_URL;
 
-    if (!password) {
-      return res.status(500).json({ error: 'DB not configured — no password env var' });
+    if (marketingUrl) {
+      // Strip sslmode from URL so our ssl config takes effect
+      const cleanUrl = marketingUrl
+        .replace(/[?&]sslmode=[^&]*/g, '')
+        .replace(/\?&/, '?')
+        .replace(/[?&]$/, '');
+      client = new Client({
+        connectionString: cleanUrl,
+        ssl: { rejectUnauthorized: false },
+        connectionTimeoutMillis: 5000,
+      });
+    } else {
+      const password = process.env.AWS_AURORA_PASSWORD;
+      if (!password) {
+        return res.status(500).json({ error: 'DB not configured — set MARKETING_DATABASE_URL' });
+      }
+      client = new Client({
+        host: process.env.AWS_AURORA_HOST,
+        port: parseInt(process.env.AWS_AURORA_PORT || '5432'),
+        database: process.env.AWS_AURORA_DATABASE || 'mindmeasure',
+        user: process.env.AWS_AURORA_USERNAME || 'mindmeasure_admin',
+        password,
+        ssl: { rejectUnauthorized: false },
+        connectionTimeoutMillis: 5000,
+      });
     }
-
-    client = new Client({
-      host,
-      port: parseInt(process.env.DB_PORT || process.env.AWS_AURORA_PORT || '5432'),
-      database,
-      user,
-      password,
-      ssl: { rejectUnauthorized: false },
-      connectionTimeoutMillis: 5000,
-    });
 
     await client.connect();
 
