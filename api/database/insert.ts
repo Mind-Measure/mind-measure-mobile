@@ -93,6 +93,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     await client.connect();
 
+    // Auto-seed university if inserting a profile with a university_id that doesn't exist
+    if (table === 'profiles' && data.university_id) {
+      const uniCheck = await client.query('SELECT id FROM universities WHERE id = $1 OR slug = $1 LIMIT 1', [
+        data.university_id,
+      ]);
+      if (uniCheck.rows.length === 0) {
+        const uniName =
+          String(data.university_id).charAt(0).toUpperCase() + String(data.university_id).slice(1) + ' University';
+        await client.query(
+          `INSERT INTO universities (id, name, slug, short_name, status, total_students, created_at, updated_at)
+           VALUES ($1, $2, $1, $3, 'active', 0, NOW(), NOW())
+           ON CONFLICT (id) DO NOTHING`,
+          [data.university_id, uniName, String(data.university_id).substring(0, 3).toUpperCase()]
+        );
+      }
+    }
+
     const columns = Object.keys(data);
     const values = Object.values(data);
     const placeholders = values.map((_, index) => `$${index + 1}`).join(', ');
@@ -104,13 +121,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.status(200).json({ data: result.rows, error: null });
   } catch (error: unknown) {
-    console.error(`[DB INSERT] Error for user ${userId}:`, error);
-    return res
-      .status(500)
-      .json({
-        error: 'Database insert failed',
-        message: error instanceof Error ? error.message : 'Unknown error',
-        data: null,
-      });
+    const table = req.body?.table || 'unknown';
+    const errMsg = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`[DB INSERT] Error inserting into ${table} for user ${userId}:`, errMsg, error);
+    return res.status(500).json({
+      error: 'Database insert failed',
+      message: errMsg,
+      table,
+      data: null,
+    });
   }
 }
