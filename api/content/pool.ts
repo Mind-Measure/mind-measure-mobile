@@ -5,10 +5,6 @@
  * marked "University Content Pool" (i.e. 'university-pool' ∈ target_sites).
  *
  * No auth required — this is public wellbeing content pushed to all universities.
- *
- * Optional query params:
- *   category  – filter by category name (case-insensitive)
- *   limit     – max rows (default 50, max 100)
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
@@ -40,13 +36,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   const limit = Math.min(parseInt((req.query.limit as string) || '50', 10) || 50, 100);
-  const category = (req.query.category as string) || '';
+
+  // Validate DB env vars before connecting
+  if (!process.env.AWS_AURORA_HOST || !process.env.AWS_AURORA_PASSWORD) {
+    return res.status(500).json({
+      error: 'Database not configured',
+      details: 'Missing Aurora connection environment variables',
+    });
+  }
 
   const client = new Client(getDbConfig());
   try {
     await client.connect();
 
-    let sql = `
+    // Ensure extra columns exist (idempotent, same as Marketing CMS ensureSchema)
+    await client
+      .query(
+        `
+      ALTER TABLE marketing_blog_posts ADD COLUMN IF NOT EXISTS categories TEXT[] DEFAULT '{}';
+      ALTER TABLE marketing_blog_posts ADD COLUMN IF NOT EXISTS tags TEXT[] DEFAULT '{}';
+      ALTER TABLE marketing_blog_posts ADD COLUMN IF NOT EXISTS is_shared BOOLEAN DEFAULT false;
+      ALTER TABLE marketing_blog_posts ADD COLUMN IF NOT EXISTS original_author TEXT;
+      ALTER TABLE marketing_blog_posts ADD COLUMN IF NOT EXISTS subtitle TEXT;
+      ALTER TABLE marketing_blog_posts ADD COLUMN IF NOT EXISTS excerpt TEXT;
+    `
+      )
+      .catch((e) => console.warn('[content/pool] Schema sync warning (non-fatal):', e.message));
+
+    const sql = `
       SELECT
         id, title, slug, excerpt, content_md,
         cover_image_url, cover_image_position,
@@ -55,20 +72,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       FROM marketing_blog_posts
       WHERE status = 'PUBLISHED'
         AND 'university-pool' = ANY(target_sites)
+      ORDER BY published_at DESC NULLS LAST
+      LIMIT $1
     `;
-    const params: unknown[] = [];
-    let idx = 1;
 
-    if (category) {
-      sql += ` AND $${idx}::text = ANY(categories)`;
-      params.push(category);
-      idx++;
-    }
-
-    sql += ` ORDER BY published_at DESC NULLS LAST LIMIT $${idx}`;
-    params.push(limit);
-
-    const result = await client.query(sql, params);
+    const result = await client.query(sql, [limit]);
 
     return res.status(200).json({
       success: true,
@@ -76,10 +84,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       count: result.rows.length,
     });
   } catch (error) {
-    console.error('[content/pool] Error:', error);
+    const msg = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[content/pool] Error:', msg, error);
     return res.status(500).json({
       error: 'Failed to fetch content pool',
-      details: error instanceof Error ? error.message : 'Unknown error',
+      details: msg,
     });
   } finally {
     await client.end().catch(() => {});
