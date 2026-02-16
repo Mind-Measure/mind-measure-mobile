@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getImageUrl } from '@/utils/imageUrl';
+
 import { ArticleDetailPage } from './ArticleDetailPage';
 import { getUserUniversityProfile } from '../../features/mobile/data';
 import { useAuth } from '@/contexts/AuthContext';
@@ -71,7 +71,8 @@ export function ContentPage({
           description: String(row.excerpt || row.subtitle || ''),
           readTime: Number(row.read_time) || calculateReadTime(String(row.content_md || row.content || '')),
           isNew: isRecent(row.published_at as string | undefined),
-          thumbnail: getPoolThumbnail(row.cover_image_url as string | undefined, category),
+          thumbnail:
+            (row.cover_image_url as string) || 'https://images.unsplash.com/photo-1516534775068-ba3e7458af70?w=800',
           fullContent: String(row.content_md || row.content || ''),
           author: String(row.author_name || 'Mind Measure'),
           publishDate: row.published_at
@@ -99,25 +100,6 @@ export function ContentPage({
     } finally {
       setLoading(false);
     }
-  };
-
-  // Helper: Get a working thumbnail — S3 images may 403, so use quality stock fallbacks
-  const getPoolThumbnail = (url: string | undefined, category: string): string => {
-    // If the URL is a full https:// URL that isn't an S3 private URL, use it directly
-    if (url && url.startsWith('https://') && !url.includes('s3.') && !url.includes('amazonaws.com')) {
-      return url;
-    }
-    // Category-specific stock images for clean visual variety
-    const stockImages: Record<string, string> = {
-      Anxiety: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800',
-      Sleep: 'https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?w=800',
-      Stress: 'https://images.unsplash.com/photo-1499209974431-9dddcece7f88?w=800',
-      Relationships: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=800',
-      Exercise: 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=800',
-      Study: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800',
-      Wellbeing: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800',
-    };
-    return stockImages[category] || 'https://images.unsplash.com/photo-1516534775068-ba3e7458af70?w=800';
   };
 
   // Helper: Map CMS category slugs to ContentPage categories
@@ -450,7 +432,7 @@ export function ContentPage({
                 }}
               >
                 <img
-                  src={getImageUrl(article.thumbnail, 'thumbnail')}
+                  src={article.thumbnail}
                   alt={article.title}
                   loading="lazy"
                   style={{
