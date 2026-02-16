@@ -197,6 +197,15 @@ export function useRegistrationFlow({
         setError(err);
         return;
       }
+
+      // Auto-sign-in after successful email verification so API tokens are available
+      if (signIn && userData.email && userData.password) {
+        const signInResult = await signIn(userData.email.trim(), userData.password);
+        if (signInResult.error) {
+          console.warn('[Registration] Auto sign-in after verification failed:', signInResult.error);
+        }
+      }
+
       onRegistrationComplete?.();
     } finally {
       setLoading(false);
