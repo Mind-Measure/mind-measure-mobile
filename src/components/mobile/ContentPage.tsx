@@ -53,9 +53,12 @@ export function ContentPage({
 
       const [profile, poolData] = await Promise.all([profilePromise, articlesPromise]);
 
-      if (profile) {
+      if (profile?.name) {
         setWellbeingSupportUrl(profile.wellbeing_support_url || '');
         setUniversityName(profile.name);
+      } else {
+        // Default to Rummidge for test users without a matched university
+        setUniversityName('Rummidge University');
       }
 
       // Map marketing_blog_posts rows to ContentArticle format
