@@ -56,11 +56,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
+    // Show all published articles — target_sites varies between databases
+    // ('student', 'university', 'university-pool' etc.)
+    // Status may be lowercase or uppercase depending on which system wrote it
     const result = await client.query(
       `SELECT *
        FROM marketing_blog_posts
-       WHERE status = 'PUBLISHED'
-         AND 'university-pool' = ANY(target_sites)
+       WHERE LOWER(status) = 'published'
        ORDER BY published_at DESC NULLS LAST
        LIMIT 50`
     );

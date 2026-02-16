@@ -68,11 +68,11 @@ export function ContentPage({
           category: mapCategory(firstCategory),
           title: String(row.title || ''),
           description: String(row.excerpt || ''),
-          readTime: Number(row.read_time) || calculateReadTime(String(row.content_md || row.content || '')),
+          readTime: Number(row.read_time) || calculateReadTime(String(row.content || row.content_md || '')),
           isNew: isRecent(row.published_at as string | undefined),
           thumbnail:
             (row.cover_image_url as string) || 'https://images.unsplash.com/photo-1516534775068-ba3e7458af70?w=1080',
-          fullContent: String(row.content_md || row.content || ''),
+          fullContent: String(row.content || row.content_md || ''),
           author: String(row.author_name || 'Mind Measure'),
           publishDate: row.published_at
             ? new Date(row.published_at as string).toLocaleDateString('en-GB', {
