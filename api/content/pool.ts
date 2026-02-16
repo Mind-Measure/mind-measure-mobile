@@ -35,7 +35,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     await client.connect();
 
-    // Use SELECT * to avoid column-name mismatches between Prisma schema and actual DB
+    // Debug: check what's actually in the table
+    const debug = req.query.debug === '1';
+
+    if (debug) {
+      const totalRows = await client.query('SELECT count(*) as total FROM marketing_blog_posts');
+      const statuses = await client.query('SELECT status, count(*) as cnt FROM marketing_blog_posts GROUP BY status');
+      const sampleTargets = await client.query(
+        'SELECT id, title, status, target_sites FROM marketing_blog_posts LIMIT 5'
+      );
+      const cols = await client.query(
+        `SELECT column_name, data_type FROM information_schema.columns
+         WHERE table_name = 'marketing_blog_posts' ORDER BY ordinal_position`
+      );
+      return res.status(200).json({
+        totalRows: totalRows.rows[0]?.total,
+        statuses: statuses.rows,
+        samplePosts: sampleTargets.rows,
+        columns: cols.rows.map((c: { column_name: string; data_type: string }) => c.column_name),
+      });
+    }
+
     const result = await client.query(
       `SELECT *
        FROM marketing_blog_posts
