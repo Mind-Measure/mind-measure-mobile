@@ -3,7 +3,6 @@ import { getImageUrl } from '@/utils/imageUrl';
 import { ArticleDetailPage } from './ArticleDetailPage';
 import { getUserUniversityProfile } from '../../features/mobile/data';
 import { useAuth } from '@/contexts/AuthContext';
-import type { ContentArticle as CMSArticle } from '../../features/cms/data';
 
 interface ContentArticle {
   id: string;
@@ -16,7 +15,7 @@ interface ContentArticle {
   fullContent: string;
   author?: string;
   publishDate?: string;
-  published_at?: string; // For sorting
+  published_at?: string;
 }
 
 interface ContentPageProps {
@@ -37,59 +36,65 @@ export function ContentPage({
   const [universityName, setUniversityName] = useState<string>(propUniversityName);
   const [universityLogo, _setUniversityLogo] = useState<string | undefined>(propUniversityLogo);
 
-  // Load articles and university data when user is available
+  // Load university branding from profile, articles from content pool
   useEffect(() => {
-    if (user) {
-      loadArticlesAndUniversity();
-    }
-  }, [user, activeFilter]);
+    loadContent();
+  }, [user]);
 
-  const loadArticlesAndUniversity = async () => {
-    if (!user?.id) return;
-
+  const loadContent = async () => {
     setLoading(true);
     try {
-      // Get university profile which includes wellbeing URL
-      const profile = await getUserUniversityProfile(user.id);
+      // Load university branding in parallel with content pool articles
+      const profilePromise = user?.id ? getUserUniversityProfile(user.id).catch(() => null) : Promise.resolve(null);
+
+      const articlesPromise = fetch('/api/content/pool?limit=50')
+        .then((r) => (r.ok ? r.json() : { data: [] }))
+        .catch(() => ({ data: [] }));
+
+      const [profile, poolData] = await Promise.all([profilePromise, articlesPromise]);
+
       if (profile) {
         setWellbeingSupportUrl(profile.wellbeing_support_url || '');
         setUniversityName(profile.name);
+      }
 
-        // Get articles
-        const cmsArticles = profile.help_articles;
-
-        // Map CMS articles to ContentPage format
-        const mappedArticles: ContentArticle[] = cmsArticles.map((article: CMSArticle) => ({
-          id: article.id,
-          category: mapCategory(article.category?.slug || article.category?.name),
-          title: article.title,
-          description: article.excerpt || '',
-          readTime: article.read_time || calculateReadTime(article.content),
-          isNew: isRecent(article.published_at),
-          thumbnail: article.featured_image || 'https://images.unsplash.com/photo-1516534775068-ba3e7458af70?w=1080',
-          fullContent: article.content,
-          author: article.author || 'Student Wellbeing Team',
-          publishDate: article.published_at
-            ? new Date(article.published_at).toLocaleDateString('en-GB', {
+      // Map marketing_blog_posts rows to ContentArticle format
+      const rows: Record<string, unknown>[] = poolData.data || [];
+      const mapped: ContentArticle[] = rows.map((row) => {
+        const cats = Array.isArray(row.categories) ? row.categories : [];
+        const firstCategory = typeof cats[0] === 'string' ? cats[0] : '';
+        return {
+          id: String(row.id),
+          category: mapCategory(firstCategory),
+          title: String(row.title || ''),
+          description: String(row.excerpt || ''),
+          readTime: Number(row.read_time) || calculateReadTime(String(row.content_md || '')),
+          isNew: isRecent(row.published_at as string | undefined),
+          thumbnail:
+            (row.cover_image_url as string) || 'https://images.unsplash.com/photo-1516534775068-ba3e7458af70?w=1080',
+          fullContent: String(row.content_md || ''),
+          author: String(row.author_name || 'Mind Measure'),
+          publishDate: row.published_at
+            ? new Date(row.published_at as string).toLocaleDateString('en-GB', {
                 day: 'numeric',
                 month: 'long',
                 year: 'numeric',
               })
             : '',
-          published_at: article.published_at, // Keep original for sorting
-        }));
+          published_at: (row.published_at as string) || undefined,
+        };
+      });
 
-        // Sort by published_at DESC (most recent first)
-        mappedArticles.sort((a, b) => {
-          const dateA = a.published_at ? new Date(a.published_at).getTime() : 0;
-          const dateB = b.published_at ? new Date(b.published_at).getTime() : 0;
-          return dateB - dateA;
-        });
+      // Already sorted by published_at DESC from the API, but ensure it
+      mapped.sort((a, b) => {
+        const dateA = a.published_at ? new Date(a.published_at).getTime() : 0;
+        const dateB = b.published_at ? new Date(b.published_at).getTime() : 0;
+        return dateB - dateA;
+      });
 
-        setArticles(mappedArticles);
-      }
+      setArticles(mapped);
     } catch (error) {
-      console.error('Error loading articles:', error);
+      console.error('Error loading content pool:', error);
       setArticles([]);
     } finally {
       setLoading(false);
