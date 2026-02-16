@@ -2,10 +2,13 @@
  * GET /api/content/pool
  *
  * Returns published blog posts marked for the University Content Pool.
+ * Fetches from the Marketing CMS API (which owns the data) instead of
+ * connecting to its database directly.
  */
 
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { Client } from 'pg';
+
+const MARKETING_CMS_URL = process.env.MARKETING_CMS_URL || 'https://marketing.mindmeasure.co.uk';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS
@@ -14,88 +17,44 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  let client: Client | null = null;
   try {
-    // The Marketing CMS writes to a separate 'marketing_cms' database.
-    // Use MARKETING_DB_* env vars if set; otherwise fall back to AWS_AURORA_* vars.
-    const host =
-      process.env.MARKETING_DB_HOST ||
-      process.env.AWS_AURORA_HOST ||
-      'mindmeasure-db.cz8c8wq4k3ak.eu-west-2.rds.amazonaws.com';
-    const password = process.env.MARKETING_DB_PASSWORD || process.env.AWS_AURORA_PASSWORD;
-    const database = process.env.MARKETING_DB_NAME || process.env.AWS_AURORA_DATABASE || 'marketing_cms';
-    const user = process.env.MARKETING_DB_USER || process.env.AWS_AURORA_USERNAME || 'marketing_user';
+    // Fetch published posts from the Marketing CMS API
+    const response = await fetch(`${MARKETING_CMS_URL}/api/blog-posts?status=PUBLISHED&limit=100`);
 
-    if (!password) {
-      return res.status(500).json({ error: 'DB not configured — set MARKETING_DB_PASSWORD' });
-    }
-
-    client = new Client({
-      host,
-      port: parseInt(process.env.MARKETING_DB_PORT || process.env.AWS_AURORA_PORT || '5432'),
-      database,
-      user,
-      password,
-      ssl: { rejectUnauthorized: false },
-      connectionTimeoutMillis: 5000,
-    });
-
-    await client.connect();
-
-    // Debug: check what's actually in the table
-    const debug = req.query.debug === '1';
-
-    if (debug) {
-      const totalRows = await client.query('SELECT count(*) as total FROM marketing_blog_posts');
-      const statuses = await client.query('SELECT status, count(*) as cnt FROM marketing_blog_posts GROUP BY status');
-      const sampleTargets = await client.query(
-        'SELECT id, title, status, target_sites FROM marketing_blog_posts LIMIT 5'
-      );
-      const cols = await client.query(
-        `SELECT column_name, data_type FROM information_schema.columns
-         WHERE table_name = 'marketing_blog_posts' ORDER BY ordinal_position`
-      );
-      return res.status(200).json({
-        totalRows: totalRows.rows[0]?.total,
-        statuses: statuses.rows,
-        samplePosts: sampleTargets.rows,
-        columns: cols.rows.map((c: { column_name: string; data_type: string }) => c.column_name),
+    if (!response.ok) {
+      const errText = await response.text().catch(() => '');
+      return res.status(502).json({
+        error: 'Failed to fetch from Marketing CMS',
+        status: response.status,
+        details: errText.slice(0, 200),
       });
     }
 
-    // Try Marketing CMS database first (has content_md column, university-pool articles)
-    // Fall back to legacy database (has content column, student/university articles)
-    let result;
-    try {
-      result = await client.query(
-        `SELECT *
-         FROM marketing_blog_posts
-         WHERE LOWER(status) = 'published'
-           AND 'university-pool' = ANY(target_sites)
-         ORDER BY published_at DESC NULLS LAST
-         LIMIT 50`
-      );
-    } catch {
-      // If query fails (wrong DB/table), try without university-pool filter
-      result = await client.query(
-        `SELECT *
-         FROM marketing_blog_posts
-         WHERE LOWER(status) = 'published'
-         ORDER BY published_at DESC NULLS LAST
-         LIMIT 50`
-      );
-    }
+    const json = await response.json();
+    const allPosts: Record<string, unknown>[] = json.data || json || [];
+
+    // Filter for articles with 'university-pool' in target_sites
+    const poolPosts = allPosts.filter((post) => {
+      const targets = post.target_sites || post.targetSites;
+      return Array.isArray(targets) && targets.includes('university-pool');
+    });
+
+    // Sort by published_at descending
+    poolPosts.sort((a, b) => {
+      const da = a.published_at ? new Date(a.published_at as string).getTime() : 0;
+      const db = b.published_at ? new Date(b.published_at as string).getTime() : 0;
+      return db - da;
+    });
 
     return res.status(200).json({
       success: true,
-      data: result.rows,
-      count: result.rows.length,
+      data: poolPosts,
+      count: poolPosts.length,
+      total: allPosts.length,
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     console.error('[content/pool]', message);
     return res.status(500).json({ error: message });
-  } finally {
-    if (client) await client.end().catch(() => {});
   }
 }
