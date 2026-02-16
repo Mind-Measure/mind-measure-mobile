@@ -35,11 +35,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     await client.connect();
 
-    // Simple query - only uses columns from Prisma schema (guaranteed to exist)
+    // Use SELECT * to avoid column-name mismatches between Prisma schema and actual DB
     const result = await client.query(
-      `SELECT id, title, slug, excerpt, content_md,
-              cover_image_url, author_name, published_at, read_time,
-              target_sites, status
+      `SELECT *
        FROM marketing_blog_posts
        WHERE status = 'PUBLISHED'
          AND 'university-pool' = ANY(target_sites)
