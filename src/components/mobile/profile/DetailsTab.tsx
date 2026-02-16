@@ -194,18 +194,7 @@ export function DetailsTab({
               <Select
                 value={userData.school}
                 onChange={(value) => setUserData({ ...userData, school: value })}
-                options={
-                  schoolOptions.length > 0
-                    ? schoolOptions
-                    : [
-                        'School of Arts and Humanities',
-                        'Worcester Business School',
-                        'School of Education',
-                        'School of Health and Wellbeing',
-                        'School of Science and the Environment',
-                        'School of Sport and Exercise Science',
-                      ]
-                }
+                options={schoolOptions.length > 0 ? schoolOptions : ['Select your faculty or school']}
                 disabled={!isEditing}
               />
             </div>

@@ -373,7 +373,7 @@ export const MobileAppStructure: React.FC = () => {
       case 'buddies':
         return <BuddiesScreen />;
       case 'content':
-        return <ContentPage universityName="University of Worcester" />;
+        return <ContentPage />;
       case 'help':
         return <HelpScreen onNavigateBack={handleNavigateBack} />;
       case 'profile': {

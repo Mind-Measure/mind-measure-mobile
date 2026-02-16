@@ -25,7 +25,7 @@ interface ContentPageProps {
 }
 
 export function ContentPage({
-  universityName: propUniversityName = 'University of Worcester',
+  universityName: propUniversityName = 'Your University',
   universityLogo: propUniversityLogo,
 }: ContentPageProps) {
   const { user } = useAuth();

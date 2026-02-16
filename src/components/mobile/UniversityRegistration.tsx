@@ -31,21 +31,14 @@ export const UniversityRegistration: React.FC<UniversityRegistrationProps> = ({ 
     email: '',
     password: '',
     confirmPassword: '',
-    university: 'University of Worcester',
+    university: '',
     agreeToTerms: false,
     agreeToPrivacy: false,
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const universities = [
-    'University of Worcester',
-    'University of Birmingham',
-    'University of Warwick',
-    'University of Oxford',
-    'University of Cambridge',
-    'Other',
-  ];
+  const universities = ['Rummidge University', 'University of Worcester', 'London School of Economics', 'Other'];
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     if (!formData.firstName.trim()) {

@@ -103,20 +103,26 @@ export function useProfileData(): UseProfileDataReturn {
 
         if (universityResponse.data && universityResponse.data.length > 0) {
           const uni = universityResponse.data[0] as Record<string, unknown>;
+          const uniSchools = Array.isArray(uni.schools)
+            ? uni.schools
+            : Array.isArray(uni.faculties)
+              ? uni.faculties
+              : [];
+          const uniHalls = Array.isArray(uni.halls_of_residence)
+            ? uni.halls_of_residence
+            : Array.isArray(uni.halls)
+              ? uni.halls
+              : [];
           uniData = {
             id: uni.id as string,
             name: uni.name as string,
             logo: uni.logo as string | undefined,
-            schools: Array.isArray(uni.schools) ? uni.schools : [],
-            halls_of_residence: Array.isArray(uni.halls_of_residence) ? uni.halls_of_residence : [],
+            schools: uniSchools,
+            halls_of_residence: uniHalls,
           };
 
-          schools = (Array.isArray(uni.schools) ? uni.schools : []).map((s: { name?: string }) =>
-            String(s?.name ?? '')
-          );
-          halls = (Array.isArray(uni.halls_of_residence) ? uni.halls_of_residence : []).map((h: { name?: string }) =>
-            String(h?.name ?? '')
-          );
+          schools = uniSchools.map((s: { name?: string }) => String(s?.name ?? ''));
+          halls = uniHalls.map((h: { name?: string }) => String(h?.name ?? ''));
 
           setUniversityData(uniData);
           setSchoolOptions(schools);
@@ -194,7 +200,7 @@ export function useProfileData(): UseProfileDataReturn {
           lastName: String(profile.last_name || ''),
           email: String(profile.email || user.email || ''),
           phone: String(profile.phone || ''),
-          institution: uniData?.name || 'University of Worcester',
+          institution: uniData?.name || 'Your University',
           institutionLogo: uniData?.logo || '',
           accountType: 'Student',
           ageRange: String(profile.age_range || ''),

@@ -24,7 +24,7 @@ export const EmergencyHelp: React.FC<EmergencyHelpProps> = ({ onBack }) => {
     {
       name: 'University Counseling',
       number: '+1-555-0123',
-      description: 'Worcester University Mental Health Services',
+      description: 'University Mental Health Services',
       priority: 'medium',
       icon: Heart,
     },

@@ -38,7 +38,7 @@ export const DEFAULT_USER_DATA: UserData = {
   lastName: '',
   email: '',
   phone: '',
-  institution: 'University of Worcester',
+  institution: '',
   institutionLogo: '',
   accountType: 'Student',
   ageRange: '',
