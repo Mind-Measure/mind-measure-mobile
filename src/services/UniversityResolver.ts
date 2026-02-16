@@ -50,6 +50,16 @@ export class UniversityResolver {
       return null;
     }
 
+    // Hardcoded overrides that always apply regardless of DB state
+    const DOMAIN_OVERRIDES: Record<string, string> = {
+      'worc.ac.uk': 'worcester',
+      'mindmeasure.co.uk': 'worcester',
+      'lse.ac.uk': 'lse',
+    };
+    if (DOMAIN_OVERRIDES[domain]) {
+      return DOMAIN_OVERRIDES[domain];
+    }
+
     // Check cache first
     if (this.isCacheValid() && this.cache.has(domain)) {
       const universityId = this.cache.get(domain)!;
