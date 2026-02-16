@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
-import { getImageUrl } from '@/utils/imageUrl';
+import { useEffect, useMemo } from 'react';
 import DOMPurify from 'dompurify';
+import { marked } from 'marked';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface ArticleDetailPageProps {
@@ -65,6 +65,15 @@ export function ArticleDetailPage({
   };
 
   const categoryColors = getCategoryColor(article.category);
+
+  // Convert markdown to HTML (Marketing CMS stores content as markdown)
+  const renderedContent = useMemo(() => {
+    const raw = article.fullContent || '';
+    // If content already looks like HTML, use as-is; otherwise parse as markdown
+    const isHtml = raw.trim().startsWith('<') || /<[a-z][\s\S]*>/i.test(raw.slice(0, 200));
+    const html = isHtml ? raw : (marked.parse(raw) as string);
+    return DOMPurify.sanitize(html);
+  }, [article.fullContent]);
 
   return (
     <div
@@ -145,7 +154,7 @@ export function ArticleDetailPage({
         }}
       >
         <img
-          src={getImageUrl(article.thumbnail, 'medium')}
+          src={article.thumbnail}
           alt={article.title}
           loading="lazy"
           style={{
@@ -287,7 +296,7 @@ export function ArticleDetailPage({
             color: '#333333',
             lineHeight: '1.8',
           }}
-          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(article.fullContent) }}
+          dangerouslySetInnerHTML={{ __html: renderedContent }}
         />
 
         {/* Bottom CTA */}

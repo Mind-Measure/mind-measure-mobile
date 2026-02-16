@@ -61,6 +61,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const result = await client.send(command);
 
+    console.log('[signup] Success for:', email);
+    console.log('[signup] UserSub:', result.UserSub);
+    console.log('[signup] UserConfirmed:', result.UserConfirmed);
+    console.log('[signup] CodeDeliveryDetails:', JSON.stringify(result.CodeDeliveryDetails));
+
     res.status(200).json({
       userSub: result.UserSub,
       userConfirmed: result.UserConfirmed,
