@@ -16,18 +16,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   let client: Client | null = null;
   try {
-    const host = process.env.AWS_AURORA_HOST;
-    const password = process.env.AWS_AURORA_PASSWORD;
+    // The Marketing CMS writes to the 'mindmeasure' database (core DB).
+    // The mobile app may have a different AWS_AURORA_DATABASE set.
+    // Try DB_* vars first (same as core app), fall back to AWS_AURORA_* vars.
+    const host =
+      process.env.DB_HOST ||
+      process.env.AWS_AURORA_HOST ||
+      'mindmeasure-aurora.cluster-cz8c8wq4k3ak.eu-west-2.rds.amazonaws.com';
+    const password = process.env.DB_PASSWORD || process.env.AWS_AURORA_PASSWORD;
+    const database = process.env.DB_NAME || 'mindmeasure';
+    const user = process.env.DB_USERNAME || process.env.AWS_AURORA_USERNAME || 'mindmeasure_admin';
 
-    if (!host || !password) {
-      return res.status(500).json({ error: 'DB not configured', host: !!host, pw: !!password });
+    if (!password) {
+      return res.status(500).json({ error: 'DB not configured — no password env var' });
     }
 
     client = new Client({
       host,
-      port: parseInt(process.env.AWS_AURORA_PORT || '5432'),
-      database: process.env.AWS_AURORA_DATABASE || 'mindmeasure',
-      user: process.env.AWS_AURORA_USERNAME || 'mindmeasure_admin',
+      port: parseInt(process.env.DB_PORT || process.env.AWS_AURORA_PORT || '5432'),
+      database,
+      user,
       password,
       ssl: { rejectUnauthorized: false },
       connectionTimeoutMillis: 5000,
@@ -56,16 +64,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Show all published articles — target_sites varies between databases
-    // ('student', 'university', 'university-pool' etc.)
-    // Status may be lowercase or uppercase depending on which system wrote it
-    const result = await client.query(
-      `SELECT *
-       FROM marketing_blog_posts
-       WHERE LOWER(status) = 'published'
-       ORDER BY published_at DESC NULLS LAST
-       LIMIT 50`
-    );
+    // Try Marketing CMS database first (has content_md column, university-pool articles)
+    // Fall back to legacy database (has content column, student/university articles)
+    let result;
+    try {
+      result = await client.query(
+        `SELECT *
+         FROM marketing_blog_posts
+         WHERE LOWER(status) = 'published'
+           AND 'university-pool' = ANY(target_sites)
+         ORDER BY published_at DESC NULLS LAST
+         LIMIT 50`
+      );
+    } catch {
+      // If query fails (wrong DB/table), try without university-pool filter
+      result = await client.query(
+        `SELECT *
+         FROM marketing_blog_posts
+         WHERE LOWER(status) = 'published'
+         ORDER BY published_at DESC NULLS LAST
+         LIMIT 50`
+      );
+    }
 
     return res.status(200).json({
       success: true,
