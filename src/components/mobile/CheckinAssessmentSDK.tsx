@@ -524,7 +524,7 @@ export function CheckinAssessmentSDK({ onBack, onComplete }: CheckinAssessmentSD
       <>
         {isSaving && (
           <div className="fixed inset-0 z-[9999]">
-            <ProcessingScreen mode="baseline" />
+            <ProcessingScreen mode="checkin" />
           </div>
         )}
 

@@ -1,5 +1,10 @@
-import { useEffect, useRef } from 'react';
-import { motion } from 'motion/react';
+import { useState, useEffect, useMemo } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+
+const spectra = '#2D4C4C';
+const pampas = '#FAF9F7';
+const sinbad = '#99CCCE';
+const buttercup = '#F59E0B';
 
 interface Message {
   id: string;
@@ -17,425 +22,252 @@ interface ConversationScreenProps {
   onBack?: () => void;
 }
 
+function renderEmphasis(text: string, baseFontSize: number, baseColour: string) {
+  const parts = text.split(/(\*[^*]+\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith('*') && part.endsWith('*')) {
+      const word = part.slice(1, -1);
+      const needsMargin = i + 1 < parts.length && /^[.,!?;:]/.test(parts[i + 1]);
+      return (
+        <span
+          key={i}
+          style={{
+            fontStyle: 'italic',
+            fontWeight: 400,
+            color: sinbad,
+            fontSize: baseFontSize + 6,
+            marginRight: needsMargin ? 2 : 0,
+          }}
+        >
+          {word}
+        </span>
+      );
+    }
+    return <span key={i} style={{ color: baseColour }}>{part}</span>;
+  });
+}
+
 export function ConversationScreen({
   type = 'checkin',
   messages = [],
   isListening = false,
   onFinish,
-  onBack: _onBack,
+  onBack,
 }: ConversationScreenProps) {
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const contentEndRef = useRef<HTMLDivElement>(null);
+  const [visibleIndex, setVisibleIndex] = useState(0);
 
-  // Auto-scroll to keep current message visible
+  const isLastMessage = useMemo(
+    () => messages.length > 0 && visibleIndex >= messages.length - 1,
+    [visibleIndex, messages.length]
+  );
+
   useEffect(() => {
-    if (contentEndRef.current) {
-      contentEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
-    }
-  }, [messages]);
+    if (messages.length === 0) return;
+    setVisibleIndex(messages.length - 1);
+  }, [messages.length]);
+
+  const currentMessage = messages[visibleIndex];
 
   return (
     <div
       style={{
         height: '100vh',
-        backgroundColor: '#FFFFFF',
+        backgroundColor: spectra,
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
+        position: 'relative',
+        fontFamily: 'Lato, system-ui, sans-serif',
       }}
     >
-      {/* Status bar space + Dynamic Island clearance */}
-      <div
-        style={{
-          height: '60px',
-          flexShrink: 0,
-          backgroundColor: '#2D4C4C',
-        }}
-      />
-
-      {/* Header */}
-      <div
-        style={{
-          backgroundColor: '#2D4C4C',
-          textAlign: 'center',
-          padding: '20px 0',
-          flexShrink: 0,
-        }}
-      >
-        <h1
+      {/* Back button — top-left */}
+      {onBack && (
+        <button
+          onClick={onBack}
           style={{
-            fontFamily: 'Chillax, sans-serif',
-            fontSize: '24px',
-            fontWeight: '500',
-            color: '#FFFFFF',
-            margin: 0,
-            letterSpacing: '-0.5px',
+            position: 'absolute',
+            top: 56,
+            left: 24,
+            zIndex: 20,
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            color: sinbad,
+            opacity: 0.3,
+            fontSize: 14,
+            fontWeight: 500,
+            fontFamily: 'Inter, system-ui, sans-serif',
+            padding: '8px 0',
           }}
         >
-          Mind Measure
-        </h1>
-      </div>
+          Back
+        </button>
+      )}
 
-      {/* Scrollable Message Container - White paper background */}
+      {/* One message at a time — centred */}
       <div
-        ref={scrollContainerRef}
         style={{
           flex: 1,
-          overflowY: 'auto',
-          overflowX: 'hidden',
-          padding: '40px 32px',
           display: 'flex',
           flexDirection: 'column',
-          gap: '40px',
-          backgroundColor: '#FAFAFA',
-          backgroundImage: 'linear-gradient(0deg, transparent 24px, rgba(0, 0, 0, 0.02) 25px, transparent 26px)',
-          backgroundSize: '100% 25px',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '80px 28px 140px',
         }}
       >
-        {messages.map((msg, index) => {
-          const isLatest = index === messages.length - 1;
-          // Split into chunks of words to simulate line-by-line appearance
-          const words = msg.text.split(' ');
-          const wordsPerLine = 6; // Approximate words per visual line at 32px font
-          const lines: string[] = [];
-
-          for (let i = 0; i < words.length; i += wordsPerLine) {
-            lines.push(words.slice(i, i + wordsPerLine).join(' '));
-          }
-
-          return (
+        <AnimatePresence mode="wait">
+          {currentMessage && (
             <motion.div
-              key={msg.id}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.4 }}
+              key={currentMessage.id}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
               style={{
-                width: '100%',
-                textAlign: msg.sender === 'user' ? 'right' : 'left',
+                textAlign: 'center',
+                maxWidth: '100%',
               }}
             >
-              {msg.sender === 'ai' ? (
-                <div
+              {/* Speaker label */}
+              <p
+                style={{
+                  fontSize: 11,
+                  fontWeight: 500,
+                  color: sinbad,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.1em',
+                  margin: '0 0 16px',
+                  fontFamily: 'Inter, system-ui, sans-serif',
+                }}
+              >
+                {currentMessage.sender === 'ai' ? 'JODIE' : 'YOU'}
+              </p>
+
+              {/* Message text */}
+              <div
+                style={{
+                  fontSize: currentMessage.sender === 'ai' ? 34 : 30,
+                  fontWeight: 300,
+                  color: currentMessage.sender === 'ai' ? pampas : sinbad,
+                  lineHeight: 1.25,
+                  whiteSpace: 'pre-line',
+                  margin: 0,
+                }}
+              >
+                {currentMessage.sender === 'ai'
+                  ? renderEmphasis(currentMessage.text, 34, pampas)
+                  : currentMessage.text}
+              </div>
+
+              {/* Baseline options — staggered write-on */}
+              {type === 'baseline' && currentMessage.options && currentMessage.sender === 'ai' && (
+                <div style={{ marginTop: 28 }}>
+                  {currentMessage.options.map((opt, i) => (
+                    <motion.p
+                      key={opt}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 0.7 }}
+                      transition={{ delay: 1.2 + i * 0.9, duration: 0.8 }}
+                      style={{
+                        fontSize: 20,
+                        fontWeight: 300,
+                        fontStyle: 'italic',
+                        color: sinbad,
+                        margin: '8px 0',
+                      }}
+                    >
+                      {opt}
+                    </motion.p>
+                  ))}
+                </div>
+              )}
+
+              {/* Listening indicator */}
+              {isListening && currentMessage.sender === 'ai' && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.8, duration: 0.5 }}
                   style={{
                     display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'flex-start',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 5,
+                    marginTop: 32,
                   }}
                 >
-                  {/* AI Question - line by line reveal */}
-                  <div
-                    style={{
-                      fontSize: '32px',
-                      fontWeight: '400',
-                      color: '#1a1a1a',
-                      lineHeight: '1.2',
-                      letterSpacing: '-0.5px',
-                      margin: 0,
-                      maxWidth: '90%',
-                    }}
-                  >
-                    {lines.map((line, lineIndex) => (
-                      <motion.div
-                        key={lineIndex}
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{
-                          duration: 0.4,
-                          delay: isLatest ? lineIndex * 0.2 : 0,
-                          ease: [0.22, 1, 0.36, 1],
-                        }}
-                      >
-                        {line}
-                      </motion.div>
-                    ))}
-                  </div>
-
-                  {/* Listening indicator */}
-                  {isLatest && isListening && (
+                  {[0, 1, 2].map((i) => (
                     <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: lines.length * 0.2 + 0.4, duration: 0.5 }}
-                      style={{
-                        marginTop: '32px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '12px',
+                      key={i}
+                      animate={{
+                        height: ['12px', '24px', '12px'],
+                        backgroundColor: [sinbad, pampas, sinbad],
                       }}
-                    >
-                      <div
-                        style={{
-                          display: 'flex',
-                          gap: '5px',
-                          alignItems: 'center',
-                        }}
-                      >
-                        {[0, 1, 2].map((i) => (
-                          <motion.div
-                            key={i}
-                            animate={{
-                            height: ['16px', '32px', '16px'],
-                            backgroundColor: ['#99CCCE', '#2D4C4C', '#99CCCE'],
-                            }}
-                            transition={{
-                              duration: 1.2,
-                              repeat: Infinity,
-                              delay: i * 0.15,
-                              ease: 'easeInOut',
-                            }}
-                            style={{
-                              width: '6px',
-                              borderRadius: '3px',
-                            }}
-                          />
-                        ))}
-                      </div>
-                      <span
-                        style={{
-                          fontSize: '16px',
-                          color: '#2D4C4C',
-                          fontWeight: '500',
-                          letterSpacing: '0.5px',
-                        }}
-                      >
-                        Listening...
-                      </span>
-                    </motion.div>
-                  )}
-
-                  {/* Options for baseline assessment */}
-                  {isLatest && type === 'baseline' && msg.options && isListening && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 30 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: lines.length * 0.2 + 0.6, duration: 0.5 }}
-                      style={{
-                        marginTop: '20px',
-                        width: '100%',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '12px',
-                        alignItems: 'flex-start',
+                      transition={{
+                        duration: 1.2,
+                        repeat: Infinity,
+                        delay: i * 0.15,
+                        ease: 'easeInOut',
                       }}
-                    >
-                      {msg.options.map((option, optionIndex) => (
-                        <motion.div
-                          key={option}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{
-                            delay: lines.length * 0.2 + 0.7 + optionIndex * 0.08,
-                            duration: 0.4,
-                          }}
-                          style={{
-                            fontSize: '18px',
-                            color: '#6B7280',
-                            fontWeight: '500',
-                            padding: '8px 0',
-                            letterSpacing: '0.3px',
-                          }}
-                        >
-                          {option}
-                        </motion.div>
-                      ))}
-                    </motion.div>
-                  )}
-                </div>
-              ) : (
-                /* User Response */
-                <motion.div
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                  style={{
-                    display: 'inline-block',
-                    maxWidth: '85%',
-                    marginLeft: 'auto',
-                  }}
-                >
-                  <p
-                    style={{
-                      fontSize: '36px',
-                      fontWeight: '700',
-                      color: '#2D4C4C',
-                      margin: 0,
-                      lineHeight: '1.2',
-                      letterSpacing: '-1px',
-                    }}
-                  >
-                    {msg.text}
-                  </p>
+                      style={{ width: 4, borderRadius: 2 }}
+                    />
+                  ))}
                 </motion.div>
               )}
             </motion.div>
-          );
-        })}
-
-        {/* Scroll anchor */}
-        <div ref={contentEndRef} />
+          )}
+        </AnimatePresence>
       </div>
 
-      {/* Bottom Bar */}
+      {/* Finish button — bottom-right, changes to Buttercup on last message */}
+      {onFinish && (
+        <div style={{ position: 'absolute', bottom: 40, right: 28, zIndex: 20 }}>
+          <motion.button
+            onClick={onFinish}
+            animate={{
+              backgroundColor: isLastMessage ? buttercup : 'transparent',
+              color: isLastMessage ? spectra : sinbad,
+              borderColor: isLastMessage ? buttercup : sinbad,
+              boxShadow: isLastMessage ? '0 4px 20px rgba(245,158,11,0.35)' : '0 0 0 transparent',
+            }}
+            transition={{ duration: 0.5 }}
+            style={{
+              padding: '12px 28px',
+              border: '2px solid',
+              borderRadius: 14,
+              fontSize: 15,
+              fontWeight: 600,
+              cursor: 'pointer',
+              fontFamily: 'Inter, system-ui, sans-serif',
+            }}
+          >
+            Finish
+          </motion.button>
+        </div>
+      )}
+
+      {/* Camera + mic indicators — bottom-left */}
       <div
         style={{
-          backgroundColor: '#2D4C4C',
-          padding: '20px 24px',
+          position: 'absolute',
+          bottom: 44,
+          left: 28,
           display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexShrink: 0,
+          gap: 14,
+          opacity: 0.3,
         }}
       >
-        {/* Finish Button */}
-        <motion.button
-          onClick={onFinish}
-          style={{
-            padding: '14px 36px',
-            background: 'linear-gradient(135deg, #F97316, #FB923C)',
-            color: 'white',
-            border: 'none',
-            borderRadius: '24px',
-            fontSize: '16px',
-            fontWeight: '600',
-            cursor: 'pointer',
-            boxShadow: '0 4px 16px rgba(249, 115, 22, 0.3)',
-            transition: 'all 0.2s',
-          }}
-          whileHover={{
-            scale: 1.05,
-            boxShadow: '0 6px 20px rgba(249, 115, 22, 0.4)',
-          }}
-          whileTap={{ scale: 0.98 }}
-        >
-          Finish
-        </motion.button>
-
-        {/* Camera Indicator */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '16px',
-          }}
-        >
-          {/* Camera Icon */}
-          <div style={{ position: 'relative', width: '20px', height: '20px' }}>
-            {/* Camera SVG Icon - Stills Camera */}
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              style={{ display: 'block' }}
-            >
-              <path
-                d="M23 19C23 19.5304 22.7893 20.0391 22.4142 20.4142C22.0391 20.7893 21.5304 21 21 21H3C2.46957 21 1.96086 20.7893 1.58579 20.4142C1.21071 20.0391 1 19.5304 1 19V8C1 7.46957 1.21071 6.96086 1.58579 6.58579C1.96086 6.21071 2.46957 6 3 6H7L9 3H15L17 6H21C21.5304 6 22.0391 6.21071 22.4142 6.58579C22.7893 6.96086 23 7.46957 23 8V19Z"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <circle
-                cx="12"
-                cy="13"
-                r="4"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-
-            {/* Pulsing orange dot */}
-            <motion.div
-              animate={{
-                opacity: [1, 0.3, 1],
-                scale: [1, 1.2, 1],
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: 'easeInOut',
-              }}
-              style={{
-                position: 'absolute',
-                top: '-2px',
-                right: '-2px',
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                backgroundColor: '#F97316',
-              }}
-            />
-          </div>
-
-          {/* Microphone Icon */}
-          <div style={{ position: 'relative', width: '20px', height: '20px' }}>
-            {/* Mic SVG Icon */}
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              style={{ display: 'block' }}
-            >
-              <path
-                d="M12 1C10.3431 1 9 2.34315 9 4V12C9 13.6569 10.3431 15 12 15C13.6569 15 15 13.6569 15 12V4C15 2.34315 13.6569 1 12 1Z"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M19 10V12C19 15.866 15.866 19 12 19C8.13401 19 5 15.866 5 12V10"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path d="M12 19V23" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M8 23H16" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-
-            {/* Pulsing orange dot */}
-            <motion.div
-              animate={{
-                opacity: [1, 0.3, 1],
-                scale: [1, 1.2, 1],
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: 'easeInOut',
-                delay: 0.5, // Offset from camera pulse for visual interest
-              }}
-              style={{
-                position: 'absolute',
-                top: '-2px',
-                right: '-2px',
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                backgroundColor: '#F97316',
-              }}
-            />
-          </div>
-        </div>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={sinbad} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
+          <circle cx="12" cy="13" r="4" />
+        </svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={sinbad} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
+          <path d="M19 10v2a7 7 0 01-14 0v-2" />
+          <line x1="12" y1="19" x2="12" y2="23" />
+          <line x1="8" y1="23" x2="16" y2="23" />
+        </svg>
       </div>
-
-      {/* CSS for pulse animation */}
-      <style>{`
-        @keyframes pulse {
-          0%, 100% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.5;
-          }
-        }
-      `}</style>
     </div>
   );
 }
