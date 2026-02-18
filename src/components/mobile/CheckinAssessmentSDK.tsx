@@ -470,11 +470,14 @@ export function CheckinAssessmentSDK({ onBack, onComplete }: CheckinAssessmentSD
         }
       }
 
-      // Small delay for UX
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Processing animation runs for at least MIN_PROCESSING_MS regardless of backend speed
+      const MIN_PROCESSING_MS = 10_000;
+      const elapsed = Date.now() - endedAt;
+      const remaining = Math.max(0, MIN_PROCESSING_MS - elapsed);
+      if (remaining > 0) {
+        await new Promise((resolve) => setTimeout(resolve, remaining));
+      }
 
-      // Complete: fusion_outputs saved. Transcript best-effort. No Lambda, no assessment_sessions.
-      // Clear message rotation interval
       if (messageTimeoutRef.current) {
         clearInterval(messageTimeoutRef.current);
         messageTimeoutRef.current = null;
@@ -485,20 +488,17 @@ export function CheckinAssessmentSDK({ onBack, onComplete }: CheckinAssessmentSD
         onComplete();
       }
     } catch (error: unknown) {
-      // Comprehensive error logging for iOS WebView debugging
       const err = error instanceof Error ? error : new Error(String(error));
-      console.error('[CheckinSDK] ❌ CATCH BLOCK - Failed to save check-in');
-      console.error('[CheckinSDK] ❌ Error type:', typeof error);
-      console.error('[CheckinSDK] ❌ Error name:', err.name);
-      console.error('[CheckinSDK] ❌ Error message:', err.message);
-      console.error('[CheckinSDK] ❌ Error stack:', err.stack?.substring(0, 500));
-      try {
-        console.error('[CheckinSDK] ❌ Error JSON:', JSON.stringify(err, Object.getOwnPropertyNames(err)));
-      } catch {
-        console.error('[CheckinSDK] ❌ Could not stringify error');
+      console.error('[CheckinSDK] ❌ Failed to save check-in:', err.message);
+
+      // Still show processing screen for minimum time even on error
+      const MIN_PROCESSING_MS = 10_000;
+      const elapsed = Date.now() - endedAt;
+      const remaining = Math.max(0, MIN_PROCESSING_MS - elapsed);
+      if (remaining > 0) {
+        await new Promise((resolve) => setTimeout(resolve, remaining));
       }
 
-      // Clear message rotation interval
       if (messageTimeoutRef.current) {
         clearInterval(messageTimeoutRef.current);
         messageTimeoutRef.current = null;

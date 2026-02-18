@@ -166,7 +166,6 @@ export function ConversationScreen({
       return;
     }
 
-    // If user's reply is still visible, show only the first sentence initially
     const initialDelay = prevUserMsg ? 2000 : 0;
 
     if (initialDelay > 0) {
@@ -212,7 +211,21 @@ export function ConversationScreen({
         fontFamily: 'Lato, system-ui, sans-serif',
       }}
     >
-      {/* Back button — top-left */}
+      {/* Top fade mask */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '20vh',
+          background: `linear-gradient(to bottom, ${spectra}, transparent)`,
+          zIndex: 10,
+          pointerEvents: 'none',
+        }}
+      />
+
+      {/* Back button */}
       {onBack && (
         <button
           onClick={onBack}
@@ -236,18 +249,18 @@ export function ConversationScreen({
         </button>
       )}
 
-      {/* Conversation — user reply persists briefly, slides up as Jodie arrives */}
+      {/* Message area — centered vertically with breathing room */}
       <div
         style={{
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'flex-end',
-          padding: '80px 28px 140px',
-          gap: 32,
+          justifyContent: 'center',
+          padding: '20vh 28px 25vh',
+          gap: 28,
         }}
       >
-        {/* Previous user message — stays visible, fades gently */}
+        {/* Previous user message */}
         <AnimatePresence>
           {prevUserMsg && (
             <motion.div
@@ -292,9 +305,9 @@ export function ConversationScreen({
           {currentMessage && (
             <motion.div
               key={currentMessage.id}
-              initial={{ opacity: 0, y: 24 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
+              exit={{ opacity: 0, y: -16 }}
               transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
               style={{ textAlign: 'left', maxWidth: '100%' }}
             >
@@ -321,12 +334,7 @@ export function ConversationScreen({
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ duration: 0.5 }}
-                      style={{
-                        display: 'inline',
-                        fontSize: 40,
-                        fontWeight: 700,
-                        color: pampas,
-                      }}
+                      style={{ display: 'inline', fontSize: 40, fontWeight: 700, color: pampas }}
                     >
                       {si > 0 ? ' ' : ''}
                       {renderEmphasis(sentence, 40, pampas, userName)}
@@ -364,31 +372,41 @@ export function ConversationScreen({
                   ))}
                 </div>
               )}
-
-              {/* Listening indicator */}
-              {isListening && currentMessage.sender === 'ai' && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.8, duration: 0.5 }}
-                  style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 32 }}
-                >
-                  {[0, 1, 2].map((i) => (
-                    <motion.div
-                      key={i}
-                      animate={{ height: ['12px', '24px', '12px'], backgroundColor: [sinbad, pampas, sinbad] }}
-                      transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.15, ease: 'easeInOut' }}
-                      style={{ width: 4, borderRadius: 2 }}
-                    />
-                  ))}
-                </motion.div>
-              )}
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      {/* Finish button — hollow until Jodie mentions "finish button", then solid Buttercup */}
+      {/* Listening indicator — fixed position, detached from text flow */}
+      <AnimatePresence>
+        {isListening && currentMessage?.sender === 'ai' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            style={{
+              position: 'absolute',
+              bottom: 100,
+              left: 28,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5,
+            }}
+          >
+            {[0, 1, 2].map((i) => (
+              <motion.div
+                key={i}
+                animate={{ height: ['12px', '24px', '12px'], backgroundColor: [sinbad, pampas, sinbad] }}
+                transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.15, ease: 'easeInOut' }}
+                style={{ width: 4, borderRadius: 2 }}
+              />
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Finish button */}
       {onFinish && (
         <div style={{ position: 'absolute', bottom: 40, right: 28, zIndex: 20 }}>
           <motion.button
@@ -425,7 +443,7 @@ export function ConversationScreen({
         </div>
       )}
 
-      {/* Camera + mic indicators — bottom-left */}
+      {/* Camera + mic indicators */}
       <div
         style={{
           position: 'absolute',
