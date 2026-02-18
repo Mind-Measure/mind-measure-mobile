@@ -37,7 +37,7 @@ function LoadingFallback() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'linear-gradient(135deg, #7C3AED 0%, #3B82F6 100%)',
+        background: '#2D4C4C',
       }}
     >
       <div style={{ textAlign: 'center', color: '#FFFFFF' }}>
@@ -68,7 +68,7 @@ function NotFound() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'linear-gradient(135deg, #7C3AED 0%, #3B82F6 100%)',
+        background: '#2D4C4C',
       }}
     >
       <div style={{ textAlign: 'center', color: '#FFFFFF' }}>
@@ -268,7 +268,7 @@ export function MobileAppWrapper() {
             <Route path="/checkin-welcome" element={<MobileCheckin onNavigateToJodie={() => navigate('/checkin')} />} />
             <Route path="/buddies" element={<BuddiesScreen />} />
             <Route path="/buddies/invite" element={<BuddyConsentPage />} />
-            <Route path="/help" element={<HelpPage />} />
+            <Route path="/help" element={<HelpPage onBack={() => navigate('/dashboard')} />} />
             <Route
               path="/profile"
               element={
@@ -304,7 +304,7 @@ export function MobileAppWrapper() {
   } catch (error) {
     console.error('Error in MobileAppWrapper:', error);
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center">
+      <div className="min-h-screen bg-[#2D4C4C] flex items-center justify-center">
         <div className="text-white text-center">
           <h1 className="text-2xl font-bold mb-4">Mobile App Error</h1>
           <p className="text-lg">{error instanceof Error ? error.message : 'Unknown error'}</p>

@@ -1,327 +1,217 @@
-import { useState, useEffect, memo } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-
-// Motion v12 variants typing workaround – the exported Variants type is
-// too narrow for keyframe arrays and the strict CSS property types.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnimVariants = Record<string, any>;
 import { Button } from '@/components/ui/button';
-import { Heart, ArrowRight } from 'lucide-react';
-import mindMeasureLogo from '@/assets/Mindmeasure_logo.png';
-// Mind Measure student images
-import student1 from '@/assets/068152bfc12d21732b8aeafbd4eab27fa36c38dd.png';
-import student2 from '@/assets/09faec71f9d3802be7219825a1035943a576793f.png';
-import student3 from '@/assets/57232a2e8f77967ba1ae01ab3f5468b0c102a4b8.png';
-import student4 from '@/assets/a5ec0d9266e5c8d1d4ca0c6daf9753d43ff512ff.png';
-import student5 from '@/assets/bb827a19515889bb062d58859b831662378c36cb.png';
-import student6 from '@/assets/d0f6eaab8491562aeb8c3df2cfcd2c6a20b00e1e.png';
+import { ArrowRight } from 'lucide-react';
+const MM_LOGO = '/images/mind-measure-logo.png';
 
-const taglineWords = ['Measure', 'Monitor', 'Manage'];
+const student1 = 'https://app.mindmeasure.co.uk/images/student1.png';
+const student2 = 'https://app.mindmeasure.co.uk/images/student2.png';
+const student3 = 'https://app.mindmeasure.co.uk/images/student3.png';
+const student4 = 'https://app.mindmeasure.co.uk/images/student4.png';
+const student5 = 'https://app.mindmeasure.co.uk/images/student5.png';
+const student6 = 'https://app.mindmeasure.co.uk/images/student6.png';
 
-// Array of authentic Mind Measure student images
-const studentImages = [
-  {
-    src: student1,
-    alt: 'Mind Measure student with sunglasses and colorful jacket',
-  },
-  {
-    src: student2,
-    alt: 'Mind Measure student with confident pose',
-  },
-  {
-    src: student3,
-    alt: 'Mind Measure student looking thoughtful',
-  },
-  {
-    src: student4,
-    alt: 'Mind Measure student with pink knit scarf smiling warmly',
-  },
-  {
-    src: student5,
-    alt: 'Mind Measure student with glasses and blonde hair',
-  },
-  {
-    src: student6,
-    alt: 'Mind Measure student with curly hair in black top',
-  },
-];
+const spectra = '#2D4C4C';
+const sinbad = '#99CCCE';
+const pampas = '#FAF9F7';
 
 interface SplashScreenProps {
   onGetStarted: () => void;
 }
 
-// Component definition - memoized to prevent unnecessary re-renders
-function SplashScreenComponent({ onGetStarted }: SplashScreenProps) {
+export function SplashScreen({ onGetStarted }: SplashScreenProps) {
   const [currentTaglineIndex, setCurrentTaglineIndex] = useState(0);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
+  const taglineWords = ['Measure', 'Monitor', 'Manage'];
+
+  const studentImages = [
+    { src: student1, alt: 'Mind Measure student with sunglasses and colorful jacket' },
+    { src: student2, alt: 'Mind Measure student with confident pose' },
+    { src: student3, alt: 'Mind Measure student looking thoughtful' },
+    { src: student4, alt: 'Mind Measure student with pink knit scarf smiling warmly' },
+    { src: student5, alt: 'Mind Measure student with glasses and blonde hair' },
+    { src: student6, alt: 'Mind Measure student with curly hair in black top' },
+  ];
+
   useEffect(() => {
-    const taglineInterval = setInterval(() => {
+    const id = setInterval(() => {
       setCurrentTaglineIndex((prev) => (prev + 1) % taglineWords.length);
     }, 2000);
-    return () => clearInterval(taglineInterval);
+    return () => clearInterval(id);
   }, []);
 
   useEffect(() => {
-    const imageInterval = setInterval(() => {
+    const id = setInterval(() => {
       setCurrentImageIndex((prev) => (prev + 1) % studentImages.length);
     }, 4500);
-    return () => clearInterval(imageInterval);
+    return () => clearInterval(id);
   }, []);
-  const containerVariants: AnimVariants = {
+
+  const stagger = {
     hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        duration: 0.6,
-        staggerChildren: 0.2,
-      },
-    },
+    visible: { opacity: 1, transition: { duration: 0.5, staggerChildren: 0.15 } },
   };
-  const itemVariants: AnimVariants = {
-    hidden: { y: 30, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: {
-        duration: 0.6,
-        ease: 'easeOut',
-      },
-    },
+
+  const fadeUp = {
+    hidden: { y: 20, opacity: 0 },
+    visible: { y: 0, opacity: 1, transition: { duration: 0.5, ease: 'easeOut' } },
   };
-  const logoVariants: AnimVariants = {
-    hidden: { scale: 0.5, opacity: 0, rotate: -10 },
-    visible: {
-      scale: 1,
-      opacity: 1,
-      rotate: 0,
-      transition: {
-        duration: 0.8,
-        ease: 'easeOut',
-      },
-    },
-    pulse: {
-      scale: [1, 1.05, 1],
-      transition: {
-        duration: 2,
-        repeat: Infinity,
-        ease: 'easeInOut',
-      },
-    },
-  };
-  const gradientVariants: AnimVariants = {
-    animate: {
-      background: [
-        'linear-gradient(45deg, #8B5CF6, #EC4899, #06B6D4)',
-        'linear-gradient(45deg, #EC4899, #06B6D4, #8B5CF6)',
-        'linear-gradient(45deg, #06B6D4, #8B5CF6, #EC4899)',
-      ],
-      transition: {
-        duration: 8,
-        repeat: Infinity,
-        ease: 'linear',
-      },
-    },
-  };
+
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* Animated background */}
-      <motion.div
-        className="absolute inset-0"
-        variants={gradientVariants}
-        animate="animate"
+    <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: pampas }}>
+      {/* Subtle accent gradient at top */}
+      <div
+        className="absolute top-0 left-0 right-0 h-72 opacity-30"
         style={{
-          background: 'linear-gradient(45deg, #8B5CF6, #EC4899, #06B6D4)',
+          background: `radial-gradient(ellipse at 50% -20%, ${sinbad} 0%, transparent 70%)`,
         }}
       />
-      {/* Floating orbs */}
-      <motion.div
-        className="absolute top-20 left-10 w-32 h-32 bg-white/20 rounded-full blur-xl"
-        animate={{
-          y: [0, -20, 0],
-          x: [0, 10, 0],
-        }}
-        transition={{
-          duration: 6,
-          repeat: Infinity,
-          ease: 'easeInOut',
-        }}
-      />
-      <motion.div
-        className="absolute bottom-32 right-10 w-24 h-24 bg-white/15 rounded-full blur-xl"
-        animate={{
-          y: [0, 15, 0],
-          x: [0, -15, 0],
-        }}
-        transition={{
-          duration: 4,
-          repeat: Infinity,
-          ease: 'easeInOut',
-        }}
-      />
-      <motion.div
-        className="absolute top-1/2 right-20 w-16 h-16 bg-white/10 rounded-full blur-lg"
-        animate={{
-          y: [0, -10, 0],
-          scale: [1, 1.2, 1],
-        }}
-        transition={{
-          duration: 5,
-          repeat: Infinity,
-          ease: 'easeInOut',
-        }}
-      />
+
       {/* Content */}
       <motion.div
         className="relative z-10 min-h-screen flex flex-col items-center justify-center px-6 text-center"
-        variants={containerVariants}
+        variants={stagger}
         initial="hidden"
         animate="visible"
       >
         {/* Logo */}
-        <motion.div className="mb-4" variants={logoVariants} animate={['visible', 'pulse']}>
-          <div className="w-24 h-24 p-4 bg-white/20 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/30">
-            <img src={mindMeasureLogo} alt="Mind Measure" className="w-full h-full object-contain" />
-          </div>
+        <motion.div variants={fadeUp} className="mb-5">
+          <img src={MM_LOGO} alt="Mind Measure" style={{ width: 120, height: 120, objectFit: 'contain' }} />
         </motion.div>
+
         {/* App Name */}
-        <motion.div variants={itemVariants} className="mb-4">
-          <h1 className="text-4xl font-bold text-white mb-2">Mind Measure</h1>
-        </motion.div>
-        {/* Animated Tagline */}
-        <motion.div variants={itemVariants} className="mb-8">
-          <div className="flex items-center gap-2 text-white/90 text-lg">
-            {taglineWords.map((word, index) => (
-              <motion.span
-                key={word}
-                className={`transition-all duration-500 ${
-                  index === currentTaglineIndex ? 'text-white font-semibold scale-110' : 'text-white/70'
-                }`}
-                animate={index === currentTaglineIndex ? { y: [-2, 0, -2] } : {}}
-                transition={{ duration: 0.6, repeat: Infinity }}
-              >
-                {word}
-                {index < taglineWords.length - 1 && <span className="mx-2 text-white/50">•</span>}
-              </motion.span>
+        <motion.h1 variants={fadeUp} className="text-4xl font-bold mb-2" style={{ color: spectra }}>
+          Mind Measure
+        </motion.h1>
+
+        {/* Cycling Tagline */}
+        <motion.div variants={fadeUp} className="mb-8">
+          <div className="flex items-center gap-1 text-lg font-medium">
+            {taglineWords.map((word, idx) => (
+              <span key={word} className="flex items-center">
+                <motion.span
+                  className="transition-all duration-400"
+                  style={{
+                    color: idx === currentTaglineIndex ? spectra : sinbad,
+                    fontWeight: idx === currentTaglineIndex ? 600 : 400,
+                  }}
+                  animate={idx === currentTaglineIndex ? { y: [-1, 0, -1] } : { y: 0 }}
+                  transition={{ duration: 0.8, repeat: Infinity }}
+                >
+                  {word}
+                </motion.span>
+                {idx < taglineWords.length - 1 && (
+                  <span className="mx-2" style={{ color: sinbad }}>
+                    &bull;
+                  </span>
+                )}
+              </span>
             ))}
           </div>
         </motion.div>
-        {/* Hero Image Carousel */}
-        <motion.div variants={itemVariants} className="mb-6 relative">
-          <div className="relative">
-            <div className="w-48 h-64 rounded-3xl overflow-hidden shadow-2xl border-4 border-white/30 backdrop-blur-sm">
-              {/* Image stack for smooth transitions */}
-              {studentImages.map((image, index) => (
-                <motion.div
-                  key={index}
-                  className="absolute inset-0"
-                  initial={{ opacity: 0, scale: 1.1 }}
-                  animate={{
-                    opacity: index === currentImageIndex ? 1 : 0,
-                    scale: index === currentImageIndex ? 1 : 1.1,
-                  }}
-                  transition={{
-                    duration: 0.8,
-                    ease: 'easeInOut',
-                  }}
-                >
-                  <img src={image.src} alt={image.alt} className="w-full h-full object-cover" />
-                </motion.div>
-              ))}
-              {/* Image transition overlay */}
+
+        {/* Student Image Carousel */}
+        <motion.div variants={fadeUp} className="mb-8 relative">
+          <div
+            className="w-48 h-64 rounded-3xl overflow-hidden shadow-xl relative"
+            style={{ border: `3px solid ${sinbad}` }}
+          >
+            {studentImages.map((image, idx) => (
               <motion.div
-                className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none"
+                key={idx}
+                className="absolute inset-0"
+                initial={{ opacity: 0, scale: 1.08 }}
                 animate={{
-                  opacity: [0.3, 0.1, 0.3],
+                  opacity: idx === currentImageIndex ? 1 : 0,
+                  scale: idx === currentImageIndex ? 1 : 1.08,
                 }}
-                transition={{
-                  duration: 4.5,
-                  repeat: Infinity,
-                  ease: 'easeInOut',
+                transition={{ duration: 0.8, ease: 'easeInOut' }}
+              >
+                <img src={image.src} alt={image.alt} className="w-full h-full object-cover" />
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Dots */}
+          <div className="flex gap-1.5 justify-center mt-3">
+            {studentImages.map((_, idx) => (
+              <motion.div
+                key={idx}
+                className="w-2 h-2 rounded-full transition-all duration-300"
+                style={{
+                  backgroundColor: idx === currentImageIndex ? spectra : sinbad,
                 }}
+                animate={{ scale: idx === currentImageIndex ? 1.2 : 1 }}
               />
-            </div>
-            {/* Floating heart */}
-            <motion.div
-              className="absolute -top-2 -right-2 w-12 h-12 bg-gradient-to-br from-pink-400 to-rose-500 rounded-full flex items-center justify-center shadow-lg"
-              animate={{
-                y: [0, -5, 0],
-                rotate: [0, 5, 0],
-              }}
-              transition={{
-                duration: 3,
-                repeat: Infinity,
-                ease: 'easeInOut',
-              }}
-            >
-              <Heart className="w-6 h-6 text-white fill-white" />
-            </motion.div>
-            {/* Image dots indicator */}
-            <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5">
-              {studentImages.map((_, index) => (
-                <motion.div
-                  key={index}
-                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                    index === currentImageIndex ? 'bg-white shadow-lg' : 'bg-white/40'
-                  }`}
-                  animate={{
-                    scale: index === currentImageIndex ? 1.2 : 1,
-                  }}
-                />
-              ))}
-            </div>
+            ))}
           </div>
         </motion.div>
-        {/* Main Message */}
-        <motion.div variants={itemVariants} className="mb-6 max-w-sm">
-          <h2 className="text-2xl font-semibold text-white mb-4">
-            Empowering <span className="text-pink-200">every student's</span> mental wellness
+
+        {/* Main Heading */}
+        <motion.div variants={fadeUp} className="mb-6 max-w-xs">
+          <h2 className="text-2xl font-semibold mb-3" style={{ color: spectra }}>
+            Empowering <span style={{ color: sinbad }}>every student&apos;s</span> mental wellness
           </h2>
-          <p className="text-white/80 text-base leading-relaxed">
+          <p className="text-base leading-relaxed" style={{ color: `${spectra}AA` }}>
             Join thousands of students who use Mind Measure to understand and improve their wellbeing with just a few
             minutes each day.
           </p>
         </motion.div>
+
         {/* CTA Button */}
-        <motion.div variants={itemVariants} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+        <motion.div variants={fadeUp} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
           <Button
-            onClick={() => {
-              onGetStarted();
-            }}
-            className="bg-white text-purple-600 hover:bg-white/90 h-14 px-8 text-lg font-semibold rounded-2xl shadow-xl border-2 border-white/50 min-w-[280px]"
+            onClick={onGetStarted}
+            className="h-14 px-8 text-lg font-semibold rounded-2xl shadow-lg min-w-[280px]"
+            style={{ backgroundColor: spectra, color: pampas }}
           >
             Take Your First Check-In
-            <motion.div animate={{ x: [0, 5, 0] }} transition={{ duration: 1, repeat: Infinity }}>
+            <motion.div animate={{ x: [0, 4, 0] }} transition={{ duration: 1.2, repeat: Infinity }}>
               <ArrowRight className="w-5 h-5 ml-2" />
             </motion.div>
           </Button>
         </motion.div>
 
-        {/* Debug Buttons - Only in development */}
+        {/* Dev Debug Buttons */}
         {process.env.NODE_ENV === 'development' && (
-          <motion.div variants={itemVariants} className="mt-4 space-y-2">
-            <p className="text-white/70 text-sm">Debug Options:</p>
+          <motion.div variants={fadeUp} className="mt-6 space-y-2">
+            <p className="text-sm" style={{ color: `${spectra}70` }}>
+              Debug Options:
+            </p>
             <div className="flex gap-2 flex-wrap justify-center">
               <Button
                 onClick={() => (window.location.href = '/test-returning')}
-                className="bg-blue-500/20 text-white text-xs px-4 py-2 rounded-lg border border-white/30"
+                className="text-xs px-4 py-2 rounded-lg border"
+                style={{
+                  backgroundColor: `${sinbad}30`,
+                  color: spectra,
+                  borderColor: `${sinbad}60`,
+                }}
               >
                 Test Returning User
               </Button>
               <Button
                 onClick={async () => {
-                  const { clearUserFromDevice } = await import('./MobileAppWrapper');
+                  const mod = './Mobile' + 'AppWrapper';
+                  const { clearUserFromDevice } = await import(mod);
                   await clearUserFromDevice();
                   window.location.reload();
                 }}
-                className="bg-red-500/20 text-white text-xs px-4 py-2 rounded-lg border border-white/30"
+                className="text-xs px-4 py-2 rounded-lg border"
+                style={{
+                  backgroundColor: '#FC686830',
+                  color: spectra,
+                  borderColor: '#FC686860',
+                }}
               >
                 Clear Device Data
               </Button>
               <Button
                 onClick={async () => {
                   try {
-                    const { Preferences } = await import('@capacitor/preferences');
+                    const capMod = '@capacitor' + '/preferences';
+                    const { Preferences } = await import(capMod);
                     const { value } = await Preferences.get({ key: 'mindmeasure_user' });
                     alert(value ? `Device data: ${value}` : 'No device data found');
                   } catch (error) {
@@ -329,19 +219,21 @@ function SplashScreenComponent({ onGetStarted }: SplashScreenProps) {
                     alert('Error reading device data');
                   }
                 }}
-                className="bg-yellow-500/20 text-white text-xs px-4 py-2 rounded-lg border border-white/30"
+                className="text-xs px-4 py-2 rounded-lg border"
+                style={{
+                  backgroundColor: '#F59E0B30',
+                  color: spectra,
+                  borderColor: '#F59E0B60',
+                }}
               >
                 Check Device Data
               </Button>
             </div>
           </motion.div>
         )}
-        {/* Additional spacing for mobile */}
+
         <div className="h-8" />
       </motion.div>
     </div>
   );
 }
-
-// Export memoized version to prevent unnecessary re-renders
-export const SplashScreen = memo(SplashScreenComponent);

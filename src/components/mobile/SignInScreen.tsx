@@ -1,261 +1,575 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { ChevronLeft, Mail, Loader2, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import mindMeasureLogo from '../../assets/66710e04a85d98ebe33850197f8ef41bd28d8b84.png';
+import { Preferences } from '@capacitor/preferences';
+import {
+  getUniversitiesForPicker,
+  resolveUniversityByAuthorisedEmail,
+  resolveUniversityByAllowedEmailDomain,
+  setProfileUniversity,
+} from '@/features/cms/data';
+import { Keyboard } from '@capacitor/keyboard';
+import { Mail, Lock, ArrowLeft, Eye, EyeOff, ChevronRight } from 'lucide-react';
 
 interface SignInScreenProps {
-  onSignInComplete: (userId: string) => void;
   onBack: () => void;
-  onForgotPassword?: () => void;
-  preFilledEmail?: string;
+  onSuccess: () => void;
+  onError: () => void;
+  onForgotPassword: () => void;
+  onCreateAccount?: () => void;
+  prefilledEmail?: string;
+  onUnverifiedEmail?: (email: string) => void;
 }
 
-export function SignInScreen({ onSignInComplete, onBack, onForgotPassword, preFilledEmail }: SignInScreenProps) {
-  const [email, setEmail] = useState(preFilledEmail || '');
-  const [password, setPassword] = useState('');
+interface FormData {
+  email: string;
+  password: string;
+}
+
+// Palette
+const spectra = '#2D4C4C';
+const pampas = '#FAF9F7';
+const sinbad = '#99CCCE';
+const buttercup = '#F59E0B';
+
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  height: '54px',
+  paddingRight: '16px',
+  fontSize: '16px',
+  fontFamily: 'Inter, system-ui, sans-serif',
+  fontWeight: 400,
+  color: pampas,
+  backgroundColor: 'rgba(153, 204, 206, 0.08)',
+  border: '1.5px solid rgba(153, 204, 206, 0.2)',
+  borderRadius: '12px',
+  outline: 'none',
+  boxSizing: 'border-box' as const,
+};
+
+export function SignInScreen({
+  onBack,
+  onSuccess,
+  onError,
+  onForgotPassword,
+  onCreateAccount,
+  prefilledEmail,
+  onUnverifiedEmail,
+}: SignInScreenProps) {
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [_isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+  const [formData, setFormData] = useState<FormData>({
+    email: prefilledEmail || '',
+    password: '',
+  });
+  const [mmUniversityPicker, setMmUniversityPicker] = useState<{ userId: string } | null>(null);
+  const [universitiesForPicker, setUniversitiesForPicker] = useState<{ id: string; name: string; slug: string }[]>([]);
 
   const { signIn } = useAuth();
 
-  // Sync preFilledEmail when it changes
   useEffect(() => {
-    if (preFilledEmail) {
-      setEmail(preFilledEmail);
+    if (prefilledEmail) {
+      setFormData((prev) => ({ ...prev, email: prefilledEmail }));
     }
-  }, [preFilledEmail]);
+  }, [prefilledEmail]);
 
-  const handleSignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!email || !password) {
-      setError('Please enter both email and password');
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    console.log('🔐 Signing in user:', email);
-    const { error: signInError, user } = await signIn(email, password);
-
-    if (signInError) {
-      console.error('❌ Sign in failed:', signInError);
-      setError(signInError);
-      setIsLoading(false);
+  useEffect(() => {
+    if (mmUniversityPicker) {
+      getUniversitiesForPicker().then(setUniversitiesForPicker);
     } else {
-      console.log('✅ Sign in successful - tokens stored on device');
+      setUniversitiesForPicker([]);
+    }
+  }, [mmUniversityPicker]);
+
+  useEffect(() => {
+    const showListener = Keyboard.addListener('keyboardWillShow', () => setIsKeyboardOpen(true));
+    const hideListener = Keyboard.addListener('keyboardWillHide', () => setIsKeyboardOpen(false));
+    return () => {
+      showListener.remove();
+      hideListener.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    const viewport = document.querySelector('meta[name="viewport"]');
+    const originalContent = viewport?.getAttribute('content') || '';
+
+    if (viewport) {
+      viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+    }
+
+    const style = document.createElement('style');
+    style.textContent = `
+      input, textarea, select {
+        font-size: 16px !important;
+        transform: translateZ(0);
+      }
+      * {
+        -webkit-text-size-adjust: 100%;
+        -moz-text-size-adjust: 100%;
+        -ms-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+      }
+    `;
+    document.head.appendChild(style);
+
+    return () => {
+      if (viewport && originalContent) {
+        viewport.setAttribute('content', originalContent);
+      } else if (viewport) {
+        viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, viewport-fit=cover');
+      }
+      if (document.head.contains(style)) {
+        document.head.removeChild(style);
+      }
+      window.setTimeout(() => {
+        if (window.visualViewport) {
+          window.scrollTo(0, 0);
+        }
+      }, 100);
+    };
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setIsLoading(true);
+
+    try {
+      const result = await signIn(formData.email, formData.password);
+
+      if (result.needsVerification && result.email) {
+        onUnverifiedEmail?.(result.email);
+        return;
+      }
+
+      if (result.error) {
+        console.error('Sign-in error:', result.error);
+        try {
+          await Preferences.set({ key: 'mindmeasure_device_used', value: 'true' });
+        } catch (deviceError) {
+          console.error('Error tracking device:', deviceError);
+        }
+        setError(result.error);
+        onError();
+        return;
+      }
+
+      let resolved: { universityId: string; slug: string } | null = null;
+      if (result.user?.id) {
+        try {
+          resolved = await resolveUniversityByAuthorisedEmail(formData.email);
+          if (!resolved) resolved = await resolveUniversityByAllowedEmailDomain(formData.email);
+          if (resolved) {
+            await setProfileUniversity(result.user.id, resolved.universityId);
+          }
+        } catch (scopeErr) {
+          console.warn('Could not scope user to university:', scopeErr);
+        }
+      }
+
+      if (result.user?.id && formData.email.endsWith('@mindmeasure.co.uk')) {
+        setMmUniversityPicker({ userId: result.user.id });
+        return;
+      }
+
+      onSuccess();
+    } catch (err) {
+      console.error('Unexpected sign-in error:', err);
+      setError('An unexpected error occurred. Please try again.');
+    } finally {
       setIsLoading(false);
-      const userId = user?.id ?? '';
-      onSignInComplete(userId);
     }
   };
 
-  const containerVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.5,
-        staggerChildren: 0.1,
-      },
-    },
-  };
+  // ── University picker for MM staff ──────────────────────
+  if (mmUniversityPicker) {
+    const handleSelectUniversity = async (universityId: string) => {
+      try {
+        await setProfileUniversity(mmUniversityPicker!.userId, universityId);
+        setMmUniversityPicker(null);
+        onSuccess();
+      } catch (e) {
+        console.warn('Could not set university:', e);
+      }
+    };
+    const handleSkip = () => {
+      setMmUniversityPicker(null);
+      onSuccess();
+    };
+    return (
+      <div
+        style={{
+          minHeight: '100vh',
+          backgroundColor: spectra,
+          display: 'flex',
+          flexDirection: 'column',
+          padding: '0 28px',
+          fontFamily: 'Lato, system-ui, sans-serif',
+        }}
+      >
+        <div style={{ paddingTop: '68px', paddingBottom: '24px' }}>
+          <h2 style={{ fontSize: '28px', fontWeight: 300, color: pampas, margin: '0 0 8px', letterSpacing: '-0.02em' }}>
+            Select university
+          </h2>
+          <p style={{ fontSize: '15px', fontWeight: 300, color: sinbad, margin: 0, opacity: 0.7 }}>
+            Choose which university to view as in the app
+          </p>
+        </div>
+        {universitiesForPicker.length === 0 ? (
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span
+              style={{
+                width: '28px',
+                height: '28px',
+                border: `2px solid rgba(153,204,206,0.3)`,
+                borderTopColor: sinbad,
+                borderRadius: '50%',
+                animation: 'spin 0.6s linear infinite',
+              }}
+            />
+          </div>
+        ) : (
+          <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {universitiesForPicker.map((uni) => (
+              <button
+                key={uni.id}
+                type="button"
+                onClick={() => handleSelectUniversity(uni.id)}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '16px 18px',
+                  borderRadius: '12px',
+                  backgroundColor: 'rgba(153, 204, 206, 0.08)',
+                  border: '1.5px solid rgba(153, 204, 206, 0.15)',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  fontFamily: 'Inter, system-ui, sans-serif',
+                }}
+              >
+                <span style={{ fontSize: '15px', fontWeight: 500, color: pampas }}>{uni.name}</span>
+                <ChevronRight size={18} style={{ color: sinbad, opacity: 0.4 }} />
+              </button>
+            ))}
+          </div>
+        )}
+        <div style={{ paddingTop: '16px', paddingBottom: '40px' }}>
+          <button
+            type="button"
+            onClick={handleSkip}
+            style={{
+              width: '100%',
+              padding: '14px',
+              background: 'none',
+              border: `1.5px solid rgba(153, 204, 206, 0.2)`,
+              borderRadius: '12px',
+              color: sinbad,
+              fontSize: '14px',
+              fontWeight: 400,
+              cursor: 'pointer',
+              fontFamily: 'Inter, system-ui, sans-serif',
+              opacity: 0.6,
+            }}
+          >
+            Skip — use app without selecting a university
+          </button>
+        </div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
 
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.4 },
-    },
-  };
+  // ── Main sign-in screen ──────────────────────
+  const canSubmit = formData.email && formData.password && !isLoading;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 overflow-y-auto">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-100" style={{ paddingTop: 'max(3rem, env(safe-area-inset-top))' }}>
-        <div className="flex items-center justify-between px-6 py-4">
-          <button
-            onClick={onBack}
-            className="flex items-center gap-1 text-gray-600 hover:text-gray-900 transition-colors"
-            disabled={isLoading}
-          >
-            <ChevronLeft className="w-6 h-6" />
-            <span className="font-medium text-base">Back</span>
-          </button>
-          <h1 className="text-lg font-semibold text-gray-900">Sign In</h1>
-          <div className="w-24" /> {/* Spacer for centering */}
-        </div>
-      </div>
-
-      {/* Content */}
+    <div
+      style={{
+        minHeight: '100vh',
+        backgroundColor: spectra,
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '0 28px',
+        fontFamily: 'Lato, system-ui, sans-serif',
+      }}
+    >
       <motion.div
-        className="flex-1 px-6 py-8"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        style={{ paddingBottom: 'max(20rem, calc(env(safe-area-inset-bottom) + 20rem))' }}
+        style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '430px', width: '100%' }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
       >
-        <div className="max-w-md mx-auto">
-          {/* Logo */}
-          <motion.div variants={itemVariants} className="flex justify-center mb-6">
-            <div className="w-20 h-20 flex items-center justify-center">
-              <img src={mindMeasureLogo} alt="Mind Measure" className="w-full h-full object-contain" />
-            </div>
-          </motion.div>
+        {/* Back button */}
+        <button
+          type="button"
+          onClick={onBack}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            color: sinbad,
+            opacity: 0.5,
+            paddingTop: '56px',
+            marginBottom: '48px',
+            fontFamily: 'Inter, system-ui, sans-serif',
+            fontSize: '14px',
+          }}
+        >
+          <ArrowLeft size={18} />
+        </button>
 
-          {/* Title */}
-          <motion.h2 variants={itemVariants} className="text-2xl font-bold text-gray-900 text-center mb-2">
-            Welcome back
-          </motion.h2>
-          <motion.p variants={itemVariants} className="text-gray-600 text-center mb-8">
-            Sign in to continue your wellness journey
-          </motion.p>
+        {/* Title */}
+        <h1
+          style={{
+            fontSize: '36px',
+            fontWeight: 300,
+            color: pampas,
+            margin: '0 0 8px',
+            letterSpacing: '-0.02em',
+            lineHeight: 1.15,
+          }}
+        >
+          Welcome back
+        </h1>
+        <p
+          style={{
+            fontSize: '16px',
+            fontWeight: 300,
+            color: sinbad,
+            margin: '0 0 36px',
+            lineHeight: 1.5,
+            opacity: 0.7,
+          }}
+        >
+          Sign in to continue
+        </p>
 
-          {/* Form */}
-          <form onSubmit={handleSignIn} className="space-y-6">
-            {/* Email Input */}
-            <motion.div variants={itemVariants}>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email
-              </label>
-              <div className="relative">
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="your.email@university.ac.uk"
-                  className="w-full h-14 px-4 text-base border-2 border-gray-200 rounded-xl focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all"
-                  style={{ paddingLeft: '2rem' }}
-                  disabled={isLoading || !!preFilledEmail}
-                  autoComplete="email"
-                  readOnly={!!preFilledEmail}
-                />
-                <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              </div>
-            </motion.div>
-
-            {/* Password Input */}
-            <motion.div variants={itemVariants}>
-              <div className="flex items-center justify-between mb-2">
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                  Password
-                </label>
-                {onForgotPassword && (
-                  <button
-                    type="button"
-                    onClick={onForgotPassword}
-                    className="text-sm text-purple-600 hover:text-purple-700 font-medium transition-colors"
-                    disabled={isLoading}
-                  >
-                    Forgot Password?
-                  </button>
-                )}
-              </div>
-              <div className="relative">
-                <input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  className="w-full h-14 px-4 pr-14 text-base border-2 border-gray-200 rounded-xl focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all"
-                  style={{ paddingLeft: '2rem' }}
-                  disabled={isLoading}
-                  autoComplete="current-password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
-                  tabIndex={-1}
-                >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-            </motion.div>
-
-            {/* Error Message */}
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="p-4 bg-red-50 text-red-800 rounded-lg border border-red-200"
-              >
-                <p className="text-sm font-medium">{error}</p>
-
-                {/* Sign Out Button if already signed in */}
-                {error.includes('already a signed in user') && (
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      console.log('🔄 Signing out existing user...');
-                      setIsLoading(true);
-                      setError(null);
-                      try {
-                        const { cognitoApiClient } = await import('@/services/cognito-api-client');
-                        await cognitoApiClient.signOut();
-                        console.log('✅ Signed out successfully');
-
-                        // Clear device preferences too
-                        const { Preferences } = await import('@capacitor/preferences');
-                        await Preferences.clear();
-                        console.log('✅ Device data cleared');
-
-                        // Reload the page to start fresh
-                        window.location.reload();
-                      } catch (err) {
-                        console.error('❌ Error signing out:', err);
-                        setError('Failed to sign out. Please close and reopen the app.');
-                        setIsLoading(false);
-                      }
-                    }}
-                    className="mt-3 w-full h-12 bg-purple-600 text-white font-semibold rounded-xl hover:bg-purple-700 transition-colors"
-                    disabled={isLoading}
-                  >
-                    Sign Out and Try Again
-                  </button>
-                )}
-              </motion.div>
-            )}
-
-            {/* Sign In Button */}
-            <motion.button
-              variants={itemVariants}
-              type="submit"
-              disabled={isLoading}
-              className="w-full h-14 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold text-lg rounded-xl shadow-lg disabled:opacity-50 disabled:cursor-not-allowed hover:from-purple-700 hover:to-blue-700 hover:shadow-xl transition-all flex items-center justify-center gap-2"
+        {/* Form */}
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
+          {/* Email */}
+          <div>
+            <label
+              htmlFor="email"
               style={{
-                background: isLoading ? undefined : 'linear-gradient(to right, rgb(147 51 234), rgb(37 99 235))',
-                color: 'white',
+                display: 'block',
+                fontSize: '13px',
+                fontWeight: 500,
+                color: sinbad,
+                opacity: 0.5,
+                marginBottom: '8px',
+                letterSpacing: '0.04em',
+                textTransform: 'uppercase' as const,
+                fontFamily: 'Inter, system-ui, sans-serif',
               }}
             >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  <span>Signing in...</span>
-                </>
-              ) : (
-                <span>Sign In</span>
-              )}
-            </motion.button>
-          </form>
+              Email
+            </label>
+            <div style={{ position: 'relative' }}>
+              <Mail
+                size={18}
+                style={{
+                  position: 'absolute',
+                  left: '16px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: sinbad,
+                  opacity: 0.4,
+                }}
+              />
+              <input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                placeholder="your.email@university.ac.uk"
+                required
+                disabled={isLoading}
+                style={{ ...inputStyle, paddingLeft: '48px' }}
+              />
+            </div>
+          </div>
 
-          {/* Help Text */}
-          <motion.div variants={itemVariants} className="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-100">
-            <p className="text-sm text-blue-900 text-center">
-              First time signing in after verifying your email?
-              <br />
-              Use the password you created during registration.
-            </p>
-          </motion.div>
-        </div>
+          {/* Password */}
+          <div>
+            <label
+              htmlFor="password"
+              style={{
+                display: 'block',
+                fontSize: '13px',
+                fontWeight: 500,
+                color: sinbad,
+                opacity: 0.5,
+                marginBottom: '8px',
+                letterSpacing: '0.04em',
+                textTransform: 'uppercase' as const,
+                fontFamily: 'Inter, system-ui, sans-serif',
+              }}
+            >
+              Password
+            </label>
+            <div style={{ position: 'relative' }}>
+              <Lock
+                size={18}
+                style={{
+                  position: 'absolute',
+                  left: '16px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: sinbad,
+                  opacity: 0.4,
+                }}
+              />
+              <input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                placeholder="Enter your password"
+                required
+                disabled={isLoading}
+                style={{ ...inputStyle, paddingLeft: '48px', paddingRight: '48px' }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: 'absolute',
+                  right: '14px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: sinbad,
+                  opacity: 0.4,
+                  padding: '4px',
+                }}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+          </div>
+
+          {/* Error */}
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              style={{
+                fontSize: '14px',
+                color: buttercup,
+                backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                border: '1px solid rgba(245, 158, 11, 0.2)',
+                borderRadius: '10px',
+                padding: '12px 16px',
+                lineHeight: 1.5,
+                fontFamily: 'Inter, system-ui, sans-serif',
+              }}
+            >
+              {error}
+            </motion.div>
+          )}
+
+          {/* Forgot password */}
+          <button
+            type="button"
+            onClick={onForgotPassword}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              color: sinbad,
+              opacity: 0.5,
+              fontSize: '14px',
+              fontWeight: 400,
+              fontFamily: 'Inter, system-ui, sans-serif',
+              textAlign: 'left',
+              padding: 0,
+            }}
+          >
+            Forgot your password?
+          </button>
+
+          {/* Sign in button */}
+          <button
+            type="submit"
+            disabled={!canSubmit}
+            style={{
+              width: '100%',
+              height: '54px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              backgroundColor: canSubmit ? buttercup : 'rgba(245, 158, 11, 0.3)',
+              color: spectra,
+              border: 'none',
+              borderRadius: '12px',
+              fontSize: '16px',
+              fontWeight: 600,
+              cursor: canSubmit ? 'pointer' : 'default',
+              fontFamily: 'Inter, system-ui, sans-serif',
+              letterSpacing: '0.01em',
+              transition: 'background-color 200ms ease',
+              marginTop: '4px',
+            }}
+          >
+            {isLoading ? (
+              <>
+                <span
+                  style={{
+                    width: '18px',
+                    height: '18px',
+                    border: '2px solid rgba(45, 76, 76, 0.3)',
+                    borderTopColor: spectra,
+                    borderRadius: '50%',
+                    animation: 'spin 0.6s linear infinite',
+                  }}
+                />
+                Signing in...
+              </>
+            ) : (
+              'Sign in'
+            )}
+          </button>
+
+          {/* Create account link */}
+          {onCreateAccount && (
+            <button
+              type="button"
+              onClick={onCreateAccount}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: sinbad,
+                opacity: 0.5,
+                fontSize: '14px',
+                fontWeight: 400,
+                fontFamily: 'Inter, system-ui, sans-serif',
+                textAlign: 'left',
+                padding: 0,
+              }}
+            >
+              Don't have an account? Create one
+            </button>
+          )}
+        </form>
       </motion.div>
+
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        input::placeholder { color: rgba(153, 204, 206, 0.35); }
+        input:focus { border-color: rgba(153, 204, 206, 0.5) !important; }
+      `}</style>
     </div>
   );
 }

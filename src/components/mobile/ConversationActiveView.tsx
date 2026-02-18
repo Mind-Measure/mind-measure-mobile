@@ -1,11 +1,10 @@
 import React, { useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { MessageCircle, Volume2, VolumeX } from 'lucide-react';
+import { MessageCircle, Volume2, VolumeX, ChevronLeft } from 'lucide-react';
 import { StillImageCapture } from '@/components/StillImageCapture';
 import type { StillImageCaptureRef } from '@/components/StillImageCapture';
 import type { VisualCaptureData } from '@/types/assessment';
 
-// Declare the ElevenLabs custom element for JSX
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace JSX {
@@ -39,10 +38,11 @@ interface ConversationActiveViewProps {
   onRetry: () => void;
 }
 
-/**
- * Full-screen active conversation view with ElevenLabs widget,
- * camera capture, and conversation controls.
- */
+const spectra = '#2D4C4C';
+const pampas = '#FAF9F7';
+const sinbad = '#99CCCE';
+const buttercup = '#F59E0B';
+
 export const ConversationActiveView: React.FC<ConversationActiveViewProps> = ({
   isBaseline,
   agentId,
@@ -62,68 +62,109 @@ export const ConversationActiveView: React.FC<ConversationActiveViewProps> = ({
 
   return (
     <div
-      className="min-h-screen bg-white flex flex-col"
-      style={{ position: 'relative', zIndex: 1000, isolation: 'isolate' }}
+      style={{
+        minHeight: '100vh',
+        backgroundColor: spectra,
+        display: 'flex',
+        flexDirection: 'column',
+        position: 'relative',
+        zIndex: 1000,
+        isolation: 'isolate',
+      }}
     >
-      {/* Header — Mind Measure Logo and Title */}
-      <div className="flex items-center justify-center gap-3 pt-8 pb-4 px-6">
-        <div className="w-14 h-14 flex items-center justify-center">
-          <img
-            src="https://api.mindmeasure.co.uk/storage/marketing/MM%20logo%20square.png"
-            alt="Mind Measure"
-            className="w-full h-full object-contain"
-          />
-        </div>
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
-          Mind Measure
-        </h1>
+      {/* Back / Finish — top left */}
+      <div style={{ position: 'absolute', top: '56px', left: '24px', zIndex: 20 }}>
+        <button
+          onClick={onEndConversation}
+          disabled={conversationState === 'processing'}
+          style={{
+            background: 'none', border: `2px solid ${sinbad}`,
+            borderRadius: '12px', padding: '8px 20px',
+            color: sinbad, fontSize: '14px', fontWeight: 500,
+            cursor: conversationState === 'processing' ? 'default' : 'pointer',
+            opacity: conversationState === 'processing' ? 0.3 : 0.7,
+            fontFamily: 'Inter, system-ui, sans-serif',
+          }}
+        >
+          Finish
+        </button>
       </div>
 
+      {/* Camera status — top right */}
+      {cameraActive && (
+        <div style={{
+          position: 'absolute', top: '60px', right: '24px', zIndex: 20,
+          display: 'flex', alignItems: 'center', gap: '6px',
+          opacity: 0.4,
+        }}>
+          <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#4ADE80' }} />
+          <span style={{ fontSize: '11px', color: sinbad, fontFamily: 'Inter, system-ui, sans-serif' }}>Camera</span>
+        </div>
+      )}
+
       {/* ElevenLabs Widget Container */}
-      <div className="flex-1 flex flex-col relative overflow-hidden" style={{ minHeight: '70vh' }}>
-        <div className="flex-1 relative p-0" style={{ minHeight: '60vh' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden', minHeight: '70vh' }}>
+        <div style={{ flex: 1, position: 'relative', minHeight: '60vh' }}>
           {conversationState === 'processing' ? (
-            <div className="absolute inset-0 bg-gray-50 rounded-lg flex items-center justify-center">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
-                  <MessageCircle className="w-8 h-8 text-white" />
+            <div style={{
+              position: 'absolute', inset: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{
+                  width: '64px', height: '64px', borderRadius: '50%',
+                  backgroundColor: sinbad, display: 'flex',
+                  alignItems: 'center', justifyContent: 'center',
+                  margin: '0 auto 16px',
+                }}>
+                  <MessageCircle size={32} color={spectra} />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Processing Results...</h3>
-                <p className="text-gray-600 text-sm">Analyzing your conversation with Mind Measure GPT</p>
-                <div className="flex items-center justify-center space-x-2 mt-4">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
-                  <div
-                    className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
-                    style={{ animationDelay: '0.1s' }}
-                  ></div>
-                  <div
-                    className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
-                    style={{ animationDelay: '0.2s' }}
-                  ></div>
+                <h3 style={{ fontSize: '24px', fontWeight: 300, color: pampas, marginBottom: '8px', fontFamily: 'Lato, system-ui, sans-serif' }}>
+                  Processing...
+                </h3>
+                <p style={{ fontSize: '15px', color: sinbad, opacity: 0.5 }}>
+                  Analysing your conversation
+                </p>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '24px' }}>
+                  {[0, 1, 2].map(i => (
+                    <div key={i} style={{
+                      width: '8px', height: '8px', borderRadius: '50%', backgroundColor: sinbad,
+                      animation: 'bounce 1s infinite', animationDelay: `${i * 0.15}s`,
+                    }} />
+                  ))}
                 </div>
               </div>
             </div>
           ) : scriptLoaded ? (
-            <div className="w-full h-full relative">
+            <div style={{ width: '100%', height: '100%', position: 'relative' }}>
               <elevenlabs-convai key="mobile-widget" agent-id={agentId}></elevenlabs-convai>
             </div>
           ) : (
-            <div className="absolute inset-0 bg-gray-50 rounded-lg flex items-center justify-center">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <MessageCircle className="w-8 h-8 text-white" />
+            <div style={{
+              position: 'absolute', inset: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{
+                  width: '64px', height: '64px', borderRadius: '50%',
+                  backgroundColor: `${sinbad}40`, display: 'flex',
+                  alignItems: 'center', justifyContent: 'center',
+                  margin: '0 auto 16px',
+                }}>
+                  <MessageCircle size={32} color={sinbad} />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Loading Conversation...</h3>
-                <p className="text-gray-600 text-sm">
-                  {isBaseline ? 'Preparing your baseline assessment' : 'Preparing your check-in conversation'}
+                <h3 style={{ fontSize: '24px', fontWeight: 300, color: pampas, marginBottom: '8px', fontFamily: 'Lato, system-ui, sans-serif' }}>
+                  Loading...
+                </h3>
+                <p style={{ fontSize: '15px', color: sinbad, opacity: 0.5 }}>
+                  {isBaseline ? 'Preparing your baseline assessment' : 'Preparing your check-in'}
                 </p>
               </div>
             </div>
           )}
 
-          {/* Hidden camera capture */}
           {cameraActive && (
-            <div className="hidden">
+            <div style={{ display: 'none' }}>
               <StillImageCapture
                 ref={stillImageCaptureRef}
                 isActive={true}
@@ -133,77 +174,66 @@ export const ConversationActiveView: React.FC<ConversationActiveViewProps> = ({
               />
             </div>
           )}
-
-          {/* Camera status indicator */}
-          {cameraActive && (
-            <div className="absolute top-4 right-4 flex items-center gap-2 bg-background/80 backdrop-blur-sm rounded-full px-3 py-1">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="text-xs text-muted-foreground">Camera Active</span>
-            </div>
-          )}
-
-          {/* End Conversation button */}
-          <div className="absolute top-4 left-4 z-20">
-            <Button
-              size="sm"
-              onClick={onEndConversation}
-              disabled={conversationState === 'processing'}
-              className="h-8 px-2 text-xs font-normal shadow-lg bg-purple-300 text-purple-900 hover:bg-purple-400"
-            >
-              Finish
-            </Button>
-          </div>
         </div>
       </div>
 
-      {/* Connection Error Display */}
+      {/* Connection Error */}
       {connectionError && (
-        <div className="px-6 py-3 bg-red-50 border-t border-red-200">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
-              <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-                />
-              </svg>
+        <div style={{ padding: '16px 24px', backgroundColor: 'rgba(255,107,107,0.15)', borderTop: '1px solid rgba(255,107,107,0.3)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: '14px', fontWeight: 500, color: '#FF6B6B', margin: '0 0 2px' }}>Connection Issue</p>
+              <p style={{ fontSize: '12px', color: 'rgba(255,107,107,0.7)', margin: 0 }}>{connectionError}</p>
             </div>
-            <div className="flex-1">
-              <h3 className="text-red-800 font-medium text-sm">Connection Issue</h3>
-              <p className="text-red-600 text-xs">{connectionError}</p>
-            </div>
-            <Button onClick={onRetry} className="h-8 px-3 bg-red-600 hover:bg-red-700 text-white text-xs">
+            <button onClick={onRetry} style={{
+              padding: '8px 16px', backgroundColor: '#FF6B6B', color: '#ffffff',
+              border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer',
+            }}>
               Retry
-            </Button>
+            </button>
           </div>
         </div>
       )}
 
-      {/* Bottom Control Buttons */}
-      <div className="p-6 bg-white conversation-controls">
-        <div className="flex gap-3">
-          <Button
-            onClick={onStartWidget}
-            disabled={!scriptLoaded || conversationState === 'active' || !!connectionError}
-            className="flex-1 h-12 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium rounded-xl disabled:opacity-50"
-          >
-            {conversationState === 'active' ? 'Active' : connectionError ? 'Retrying...' : 'Start'}
-          </Button>
-          <Button
-            onClick={onToggleMute}
-            className="h-12 px-6 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all"
-          >
-            {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-          </Button>
-          <Button
-            onClick={onFinish}
-            className="h-12 px-6 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all"
-          >
-            Finish
-          </Button>
-        </div>
+      {/* Bottom Controls */}
+      <div style={{ padding: '20px 24px 40px', display: 'flex', gap: '10px' }}>
+        <button
+          onClick={onStartWidget}
+          disabled={!scriptLoaded || conversationState === 'active' || !!connectionError}
+          style={{
+            flex: 1, height: '52px',
+            backgroundColor: conversationState === 'active' ? sinbad : buttercup,
+            color: spectra, border: 'none', borderRadius: '14px',
+            fontSize: '16px', fontWeight: 600, cursor: 'pointer',
+            fontFamily: 'Inter, system-ui, sans-serif',
+            opacity: (!scriptLoaded || conversationState === 'active' || !!connectionError) ? 0.4 : 1,
+          }}
+        >
+          {conversationState === 'active' ? 'Active' : connectionError ? 'Retrying...' : 'Start'}
+        </button>
+        <button
+          onClick={onToggleMute}
+          style={{
+            width: '52px', height: '52px',
+            backgroundColor: `${sinbad}30`, color: sinbad,
+            border: 'none', borderRadius: '14px', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+        </button>
+        <button
+          onClick={onFinish}
+          style={{
+            padding: '0 20px', height: '52px',
+            backgroundColor: 'transparent', color: sinbad,
+            border: `2px solid ${sinbad}`, borderRadius: '14px',
+            fontSize: '14px', fontWeight: 500, cursor: 'pointer',
+            fontFamily: 'Inter, system-ui, sans-serif',
+          }}
+        >
+          Finish
+        </button>
       </div>
     </div>
   );

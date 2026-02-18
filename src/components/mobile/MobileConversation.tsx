@@ -1,16 +1,24 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Play, Eye, Mic, MessageCircle, Shield, Volume2, VolumeX } from 'lucide-react';
+import { ProcessingScreen } from '@/components/mobile/ProcessingScreen';
 import { useAuth } from '@/contexts/AuthContext';
+import { MM_LOGO_URL } from '@/config/endpoints';
 import { BackendServiceFactory } from '@/services/database/BackendServiceFactory';
 import { useCheckinConversation } from '@/hooks/useCheckinConversation';
 import { useSession } from '@/components/SessionManager';
 import { useCostTracking } from '@/hooks/useCostTracking';
-import { ConversationWelcome } from './ConversationWelcome';
-import { ConversationActiveView } from './ConversationActiveView';
-import type { VisualCaptureData, ConversationMessage, SessionTextData } from '@/types/assessment';
-import type { ElevenLabsWidgetElement } from '@/types/elevenlabs';
+import { StillImageCapture, StillImageCaptureRef } from '@/components/StillImageCapture';
 
-/** Shape of the user context loaded for personalised conversations. */
-interface UserContextData {
+/** Visual data captured from StillImageCapture component */
+interface VisualCaptureData {
+  imageAnalysis: unknown[];
+  features: unknown[];
+}
+
+/** User context loaded for personalized conversations */
+interface UserContext {
   user: {
     name: string;
     fullName: string;
@@ -18,13 +26,26 @@ interface UserContextData {
     course?: string;
     yearOfStudy?: string;
   };
-  assessmentHistory: Array<{ created_at: string; [key: string]: unknown }>;
-  wellnessTrends: Array<{ score: number; created_at: string }>;
+  assessmentHistory: Record<string, unknown>[];
+  wellnessTrends: Record<string, unknown>[];
   isFirstTime: boolean;
   platform: string;
 }
-/** When false (default), skip assessment_sessions writes in widget path to avoid schema coupling. */
-const ENABLE_ASSESSMENT_SESSIONS_WIDGET = import.meta.env.VITE_ENABLE_ASSESSMENT_SESSIONS_WIDGET === 'true';
+
+/** ElevenLabs custom element with optional connect method */
+interface ElevenLabsConvaiElement extends HTMLElement {
+  connect?: () => void;
+}
+
+/** Extend Window for mobile conversation client tools */
+declare global {
+  interface Window {
+    mobileClientTools?: {
+      endConversation: () => string;
+      getConversationContext: () => string;
+    };
+  }
+}
 
 interface MobileConversationProps {
   onNavigateBack: () => void;
@@ -38,14 +59,13 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({
   const { currentSession, createSession, updateSessionData } = useSession();
   const { endCheckin } = useCheckinConversation(() => handleConversationEnd());
   const { trackElevenLabsUsage: _trackElevenLabsUsage } = useCostTracking();
-  const [currentStep, setCurrentStep] = useState<'welcome' | 'recording' | 'conversation'>('recording');
-  const [_isProcessing, setIsProcessing] = useState(false);
+  const [currentStep, setCurrentStep] = useState<'welcome' | 'recording'>('recording');
   const [conversationState, setConversationState] = useState<'idle' | 'active' | 'processing'>('idle');
   const [isMuted, setIsMuted] = useState(false);
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const [cameraActive, setCameraActive] = useState(false);
   const [visualData, setVisualData] = useState<VisualCaptureData | null>(null);
-  const [userContext, setUserContext] = useState<UserContextData | null>(null);
+  const [_userContext, setUserContext] = useState<UserContext | null>(null);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -57,21 +77,18 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({
   const stillImageCaptureRef = useRef<StillImageCaptureRef>(null);
   // Use the assessmentMode prop instead of URL parameter
   const actualMode = assessmentMode === 'baseline';
-
-  // AWS Backend Service
-  const backendService = BackendServiceFactory.createService(BackendServiceFactory.getEnvironmentConfig());
-
   // Load user context for personalized conversations
-  const loadUserContext = useCallback(async () => {
+  const _loadUserContext = useCallback(async () => {
     if (!user?.id) return null;
+    const backendService = BackendServiceFactory.createService(BackendServiceFactory.getEnvironmentConfig());
     try {
       // Get user profile data
-      const { data: profile } = await backendService.database.select('profiles', {
+      const { data: profileRows } = await backendService.database.select('profiles', {
         columns: 'first_name, last_name, university, course, year_of_study',
         filters: { id: user.id },
         limit: 1,
       });
-
+      const profile = profileRows?.[0];
       // Get recent assessment history for context
       const { data: recentAssessments } = await backendService.database.select('assessment_sessions', {
         columns: 'assessment_type, created_at, meta',
@@ -79,7 +96,6 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({
         orderBy: [{ column: 'created_at', ascending: false }],
         limit: 3,
       });
-
       // Get wellness trends
       const { data: wellnessData } = await backendService.database.select('fusion_outputs', {
         columns: 'score, created_at',
@@ -87,18 +103,16 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({
         orderBy: [{ column: 'created_at', ascending: false }],
         limit: 5,
       });
-
-      const p = profile?.[0] as Record<string, unknown> | undefined;
-      const context: UserContextData = {
+      const context = {
         user: {
-          name: (p?.first_name as string) || 'there',
-          fullName: `${(p?.first_name as string) || ''} ${(p?.last_name as string) || ''}`.trim(),
-          university: (p?.university as string | undefined) ?? undefined,
-          course: (p?.course as string | undefined) ?? undefined,
-          yearOfStudy: (p?.year_of_study as string | undefined) ?? undefined,
+          name: profile?.first_name || 'there',
+          fullName: `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim(),
+          university: profile?.university,
+          course: profile?.course,
+          yearOfStudy: profile?.year_of_study,
         },
-        assessmentHistory: (recentAssessments || []) as UserContextData['assessmentHistory'],
-        wellnessTrends: (wellnessData || []) as UserContextData['wellnessTrends'],
+        assessmentHistory: recentAssessments || [],
+        wellnessTrends: wellnessData || [],
         isFirstTime: !recentAssessments || recentAssessments.length === 0,
         platform: 'mobile',
       };
@@ -108,13 +122,7 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({
       console.error('Failed to load user context:', error);
       return null;
     }
-  }, [user?.id, backendService]);
-
-  // Load user context on mount
-  useEffect(() => {
-    loadUserContext();
-  }, [loadUserContext]);
-
+  }, [user?.id]);
   // Load ElevenLabs script
   useEffect(() => {
     const id = 'elevenlabs-convai-embed';
@@ -134,7 +142,7 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({
       // Add a timeout to check if the widget is actually working
       setTimeout(() => {
         if (customElements.get('elevenlabs-convai')) {
-          /* intentionally empty */
+          // Widget custom element is registered
         } else {
           console.error('❌ Widget custom element NOT registered');
         }
@@ -142,12 +150,12 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({
       // Check if the custom element is available
       setTimeout(() => {
         if (customElements.get('elevenlabs-convai')) {
-          /* intentionally empty */
+          // ElevenLabs custom element is available
         } else {
           console.error('❌ ElevenLabs custom element not available after script load');
           // Fallback: try to manually register the element
           if (window.customElements && !customElements.get('elevenlabs-convai')) {
-            /* intentionally empty */
+            // Custom element not registered, this may cause issues
           }
         }
       }, 1000);
@@ -225,7 +233,7 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({
     // Set up client tools for the ElevenLabs widget
     const setupClientTools = () => {
       const widget = widgetRef.current?.querySelector('elevenlabs-convai');
-      if (widget && (widget as ElevenLabsWidgetElement).shadowRoot) {
+      if (widget && widget.shadowRoot) {
         // Inject client tools into the widget
         window.mobileClientTools = {
           endConversation: () => {
@@ -233,97 +241,27 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({
             return 'Mobile conversation completed';
           },
           getConversationContext: () => {
-            // Check if userContext is available
-            if (!userContext) {
-              console.warn('[ClientTools] No userContext available, returning basic context');
-              return JSON.stringify({
-                platform: 'mobile',
-                sessionId: currentSession?.id,
-                userId: user?.id,
-                assessmentType: actualMode ? 'baseline' : 'checkin',
-                conversationStage: 'active',
-                studentName: 'there',
-                lastCheckinDays: null,
-                recentTrend: [],
-                currentPeriod: 'General',
-              });
-            }
-
-            // Calculate daysSinceLastCheckin from assessmentHistory
-            let lastCheckinDays = null;
-            const assessmentHistory = userContext.assessmentHistory as Array<{ created_at: string }> | undefined;
-            if (assessmentHistory && assessmentHistory.length > 0) {
-              const lastCheckin = assessmentHistory[0];
-              const lastCheckinDate = new Date(lastCheckin.created_at);
-              const now = new Date();
-              const diffTime = Math.abs(now.getTime() - lastCheckinDate.getTime());
-              lastCheckinDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            } else {
-              /* intentionally empty */
-            }
-
-            // Extract last 3 scores from wellnessTrends
-            const recentTrend: number[] = [];
-            const wellnessTrends = userContext.wellnessTrends as Array<{ score: number }> | undefined;
-            if (wellnessTrends && wellnessTrends.length > 0) {
-              for (let i = 0; i < Math.min(3, wellnessTrends.length); i++) {
-                recentTrend.push(wellnessTrends[i].score);
-              }
-            } else {
-              /* intentionally empty */
-            }
-
-            // Determine current period (e.g., "Exam Season")
-            const now = new Date();
-            const month = now.getMonth(); // 0-11
-            let currentPeriod = 'General';
-
-            // UK Academic Calendar approximate periods
-            if (month >= 0 && month <= 1) {
-              currentPeriod = 'Exam Season'; // Jan-Feb
-            } else if (month >= 2 && month <= 3) {
-              currentPeriod = 'Spring Term'; // Mar-Apr
-            } else if (month >= 4 && month <= 5) {
-              currentPeriod = 'Exam Season'; // May-Jun
-            } else if (month >= 6 && month <= 8) {
-              currentPeriod = 'Summer Break'; // Jul-Sep
-            } else if (month >= 9 && month <= 10) {
-              currentPeriod = 'Autumn Term'; // Oct-Nov
-            } else {
-              currentPeriod = 'Winter Break'; // Dec
-            }
-
-            // Build rich context object
+            // Provide context for mobile conversation
             const context = {
               platform: 'mobile',
               sessionId: currentSession?.id,
               userId: user?.id,
               assessmentType: actualMode ? 'baseline' : 'checkin',
               conversationStage: 'active',
-
-              // Dynamic user data
-              studentName: userContext.user?.name || 'there',
-              fullName: userContext.user?.fullName || '',
-              university: userContext.user?.university || '',
-              course: userContext.user?.course || '',
-              yearOfStudy: userContext.user?.yearOfStudy || '',
-
-              // Wellness tracking data
-              lastCheckinDays: lastCheckinDays,
-              recentTrend: recentTrend,
-              currentPeriod: currentPeriod,
-              isFirstTime: userContext.isFirstTime,
             };
-
             return JSON.stringify(context);
           },
         };
         // Add event listeners for cost tracking
-        widget.addEventListener('conversationstarted', () => {});
-        widget.addEventListener('conversationended', () => {});
+        widget.addEventListener('conversationstarted', () => {
+          // Mobile conversation started
+        });
+        widget.addEventListener('conversationended', () => {
+          // Mobile conversation ended
+        });
       }
     };
-    let conversationHistory: ConversationMessage[] = [];
+    let conversationHistory = [];
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         if (mutation.type === 'childList' || mutation.type === 'attributes') {
@@ -331,12 +269,12 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({
           // Check for conversation end indicators
           const widget = widgetRef.current?.querySelector('elevenlabs-convai');
           if (widget) {
-            const shadowRoot = (widget as ElevenLabsWidgetElement).shadowRoot;
+            const shadowRoot = widget.shadowRoot;
             if (shadowRoot) {
               // Capture conversation data
               const messages = shadowRoot.querySelectorAll('.message, .chat-message, [data-role], [role]');
-              const newConversationData: Array<{ role: string; text: string; timestamp: number }> = [];
-              const transcripts: string[] = [];
+              const newConversationData = [];
+              const transcripts = [];
               messages.forEach((msg: Element) => {
                 const text = msg.textContent?.trim() || '';
                 const role =
@@ -356,10 +294,10 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({
               });
               // Update conversation history if new content detected
               if (newConversationData.length > conversationHistory.length) {
-                conversationHistory = newConversationData as ConversationMessage[];
+                conversationHistory = newConversationData;
                 // Store conversation data in session
                 if (currentSession && conversationHistory.length > 0) {
-                  const textData: SessionTextData = {
+                  const textData = {
                     transcripts,
                     textInputs: transcripts,
                     fullConversation: conversationHistory
@@ -419,10 +357,7 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({
   const initializeWidget = () => {
     if (!widgetRef.current) return;
     // Also check parent container dimensions
-    const parentContainer = widgetRef.current.parentElement;
-    if (parentContainer) {
-      /* intentionally empty */
-    }
+    const _parentContainer = widgetRef.current.parentElement;
     // Check if widget already exists
     const existingWidget = widgetRef.current.querySelector('elevenlabs-convai');
     if (existingWidget) {
@@ -448,7 +383,6 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({
       min-height: 600px !important;
       display: block !important;
     `;
-    // Debug: Check if widget is actually created
     // Add event listeners
     widget.addEventListener('conversation-started', () => {
       setConversationState('active');
@@ -465,14 +399,15 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({
     });
     // Listen for agent ready event
     widget.addEventListener('ready', () => {
-      /* intentionally empty */
+      // Widget ready and agent loaded
     });
     // Append to container
     widgetRef.current.appendChild(widget);
     // Force widget initialization after append
     setTimeout(() => {
-      if (widget && typeof (widget as ElevenLabsWidgetElement).connect === 'function') {
-        (widget as ElevenLabsWidgetElement).connect!();
+      const convaiWidget = widget as ElevenLabsConvaiElement;
+      if (convaiWidget && typeof convaiWidget.connect === 'function') {
+        convaiWidget.connect();
       }
     }, 1500);
     // Check if widget is actually in the DOM
@@ -481,10 +416,8 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({
       if (widgetInDOM) {
         // Check for iframe content
         const iframe = widgetInDOM.querySelector('iframe');
-        if (iframe) {
-          /* intentionally empty */
-        } else {
-          /* intentionally empty */
+        if (!iframe) {
+          // Widget element created, waiting for iframe to initialize
         }
       } else {
         console.error('❌ Widget not found in DOM after append');
@@ -499,15 +432,16 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({
       // Create session first
       if (!currentSession && !sessionCreatedRef.current) {
         sessionCreatedRef.current = true;
-        if (ENABLE_ASSESSMENT_SESSIONS_WIDGET) {
-          try {
-            await backendService.database.update(
-              'assessment_sessions',
-              { status: 'cancelled' },
-              { user_id: user?.id, status: 'pending' }
-            );
-          } catch (e) {
-            console.warn('[MobileConversation] Skip cancel-pending assessment_sessions (flag off or error):', e);
+        // Clean up any pending sessions before creating new one
+        const bs = BackendServiceFactory.createService(BackendServiceFactory.getEnvironmentConfig());
+        if (user?.id) {
+          // Fetch pending sessions then update individually
+          const { data: pendingSessions } = await bs.database.select('assessment_sessions', {
+            columns: 'id',
+            filters: { user_id: user.id, status: 'pending' },
+          });
+          for (const ps of pendingSessions || []) {
+            await bs.database.update('assessment_sessions', { status: 'cancelled' }, { id: ps.id });
           }
         }
         const sessionId = await createSession(actualMode ? 'baseline' : 'checkin');
@@ -528,30 +462,11 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({
       }, 1500);
     }
   };
+  const _handleBackToWelcome = () => {
+    setCurrentStep('welcome');
+  };
   const handleConversationEnd = async () => {
     if (!currentSession) return;
-
-    // CRITICAL VALIDATION: Check if we have actual conversation data for check-in
-    const sessionData = currentSession.text_data;
-    const transcripts = sessionData?.transcripts || [];
-    const conversationHistory = sessionData?.conversationData || [];
-
-    const hasTranscript = transcripts.length > 0 && transcripts.join(' ').length > 50; // At least 50 characters total
-    const hasConversation = conversationHistory.length >= 4; // At least 2 user messages + 2 AI responses
-
-    if (!hasTranscript || !hasConversation) {
-      console.error('❌ Insufficient conversation data - cannot create check-in assessment');
-      alert(
-        'Unable to Complete Check-in\n\n' +
-          "We didn't capture enough conversation data to create a new wellbeing score.\n\n" +
-          'Please try again and spend a little more time talking with Jodie.'
-      );
-
-      // Navigate back to allow retry
-      onNavigateBack();
-      return;
-    }
-
     setIsProcessing(true);
     setCameraActive(false); // Turn off camera indicator immediately
     try {
@@ -569,22 +484,26 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({
   };
   const finalizeSession = async (data: VisualCaptureData | null) => {
     if (!currentSession || !user) return;
+    const backendService = BackendServiceFactory.createService(BackendServiceFactory.getEnvironmentConfig());
     try {
-      if (ENABLE_ASSESSMENT_SESSIONS_WIDGET) {
-        try {
-          await backendService.database.update(
-            'assessment_sessions',
-            {
-              status: 'completed',
-              visual_data: data,
-              assessment_type: actualMode ? 'baseline' : 'checkin',
-            },
-            { id: currentSession.id }
-          );
-        } catch (e) {
-          console.warn('[MobileConversation] Skip assessment_sessions update (flag off or error):', e);
-        }
-      }
+      // Update session with visual data and completion status
+      await backendService.database.update(
+        'assessment_sessions',
+        {
+          status: 'completed',
+          visual_data: data,
+          assessment_type: actualMode ? 'baseline' : 'checkin',
+        },
+        { id: currentSession.id }
+      );
+      // Trigger the analysis pipeline (non-blocking - errors won't affect UI)
+      backendService.functions
+        .invoke('finalize-session', {
+          sessionId: currentSession.id,
+        })
+        .catch(() => {
+          // Errors are already logged in invoke() - continue flow
+        });
       setTimeout(() => {
         onNavigateBack();
       }, 1500);
@@ -602,7 +521,7 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({
       updateSessionData({ visual_data: data });
     }
   };
-  const handleComplete = async (_data: unknown) => {
+  const handleComplete = async (_data: Record<string, unknown>) => {
     // Use the proper conversation end handler
     await handleConversationEnd();
   };
@@ -612,11 +531,7 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({
       <div className="px-6 py-8 space-y-8">
         <div className="text-center pt-8">
           <div className="w-24 h-24 mx-auto mb-6 flex items-center justify-center">
-            <img
-              src="https://api.mindmeasure.co.uk/storage/marketing/MM%20logo%20square.png"
-              alt="Mind Measure"
-              className="w-full h-full object-contain"
-            />
+            <img src={MM_LOGO_URL} alt="Mind Measure" className="w-full h-full object-contain" />
           </div>
           <div className="animate-pulse">
             <div className="h-8 bg-gray-200 rounded mb-3"></div>
@@ -626,76 +541,350 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({
       </div>
     );
   }
-  // ── Start widget handler (passed to ConversationActiveView) ────
-  const handleStartWidget = async () => {
-    if (conversationState === 'idle') {
-      if (!currentSession) {
-        const sessionId = await createSession(actualMode ? 'baseline' : 'checkin');
-        if (!sessionId) {
-          console.error('Failed to create session');
-          return;
-        }
-      }
-      setCurrentStep('conversation');
-      setConversationState('active');
-      setTimeout(() => {
-        const widget = document.querySelector('elevenlabs-convai');
-        if (widget) {
-          const startButton =
-            widget.shadowRoot?.querySelector('[data-testid="start-button"]') ||
-            widget.shadowRoot?.querySelector('button') ||
-            widget.shadowRoot?.querySelector('[aria-label*="start"]') ||
-            widget.shadowRoot?.querySelector('[aria-label*="Start"]');
-          if (startButton && startButton instanceof HTMLElement) {
-            startButton.click();
-          } else {
-            widget.dispatchEvent(new CustomEvent('start-conversation'));
-          }
-        }
-      }, 1500);
-    }
-  };
-
-  const handleToggleMute = () => {
-    setIsMuted(!isMuted);
-    const widget = document.querySelector('elevenlabs-convai');
-    if (widget) {
-      const audioElements: NodeListOf<HTMLAudioElement> | HTMLAudioElement[] =
-        widget.shadowRoot?.querySelectorAll('audio') || [];
-      audioElements.forEach((audio) => {
-        audio.muted = !isMuted;
-      });
-    }
-  };
-
-  const handleRetry = () => {
-    setConnectionError(null);
-    setRetryCount(0);
-    window.location.reload();
-  };
-
-  const agentId = actualMode ? 'agent_9301k22s8e94f7qs5e704ez02npe' : 'agent_7501k3hpgd5gf8ssm3c3530jx8qx';
-
-  // Conversation step — full-screen interface
+  // Conversation step - full-screen interface
   if (currentStep === 'conversation') {
     return (
-      <ConversationActiveView
-        isBaseline={actualMode}
-        agentId={agentId}
-        scriptLoaded={scriptLoaded}
-        conversationState={conversationState}
-        isMuted={isMuted}
-        cameraActive={cameraActive}
-        connectionError={connectionError}
-        onToggleMute={handleToggleMute}
-        onStartWidget={handleStartWidget}
-        onEndConversation={() => endCheckin()}
-        onFinish={() => handleComplete({})}
-        onVisualDataCapture={handleVisualDataCapture}
-        onRetry={handleRetry}
-      />
+      <div
+        className="min-h-screen bg-white flex flex-col"
+        style={{
+          position: 'relative',
+          zIndex: 1000,
+          isolation: 'isolate',
+        }}
+      >
+        {/* Header - Mind Measure Logo and Title */}
+        <div className="flex items-center justify-center gap-3 pt-8 pb-4 px-6">
+          <div className="w-14 h-14 flex items-center justify-center">
+            <img src={MM_LOGO_URL} alt="Mind Measure" className="w-full h-full object-contain" />
+          </div>
+          <h1 className="text-3xl font-bold text-[#2D4C4C]">
+            Mind Measure
+          </h1>
+        </div>
+        {/* ElevenLabs Widget Container - Full Screen Text */}
+        <div className="flex-1 flex flex-col relative overflow-hidden" style={{ minHeight: '70vh' }}>
+          {/* Widget container - fills entire space below header */}
+          <div className="flex-1 relative p-0" style={{ minHeight: '60vh' }}>
+            {conversationState === 'processing' ? (
+              <ProcessingScreen />
+            ) : scriptLoaded ? (
+              <div className="w-full h-full relative">
+                {/* ElevenLabs widget */}
+                <elevenlabs-convai
+                  key="mobile-widget"
+                  agent-id={actualMode ? 'agent_9301k22s8e94f7qs5e704ez02npe' : 'agent_7501k3hpgd5gf8ssm3c3530jx8qx'}
+                ></elevenlabs-convai>
+              </div>
+            ) : (
+              <div className="absolute inset-0 bg-gray-50 rounded-lg flex items-center justify-center">
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-[#2D4C4C] rounded-full flex items-center justify-center mx-auto mb-4">
+                    <MessageCircle className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Loading Conversation...</h3>
+                  <p className="text-gray-600 text-sm">
+                    {needsBaseline ? 'Preparing your baseline assessment' : 'Preparing your check-in conversation'}
+                  </p>
+                </div>
+              </div>
+            )}
+            {/* Hidden camera capture component */}
+            {currentStep === 'conversation' && cameraActive && (
+              <div className="hidden">
+                <StillImageCapture
+                  ref={stillImageCaptureRef}
+                  isActive={true}
+                  onRecordingComplete={handleVisualDataCapture}
+                  onRangeChange={() => {}}
+                  onFrameUpdate={() => {}}
+                />
+              </div>
+            )}
+            {/* Camera status indicator */}
+            {cameraActive && (
+              <div className="absolute top-4 right-4 flex items-center gap-2 bg-background/80 backdrop-blur-sm rounded-full px-3 py-1">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-xs text-muted-foreground">Camera Active</span>
+              </div>
+            )}
+            {/* End Conversation button */}
+            <div className="absolute top-4 left-4 z-20">
+              <Button
+                size="sm"
+                onClick={() => {
+                  endCheckin();
+                }}
+                disabled={conversationState === 'processing'}
+                className="h-8 px-2 text-xs font-normal shadow-lg bg-[#99CCCE]/40 text-[#2D4C4C] hover:bg-[#99CCCE]/60"
+              >
+                Finish
+              </Button>
+            </div>
+          </div>
+        </div>
+        {/* Connection Error Display */}
+        {connectionError && (
+          <div className="px-6 py-3 bg-red-50 border-t border-red-200">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                  />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-red-800 font-medium text-sm">Connection Issue</h3>
+                <p className="text-red-600 text-xs">{connectionError}</p>
+              </div>
+              <Button
+                onClick={() => {
+                  setConnectionError(null);
+                  setRetryCount(0);
+                  loadScript();
+                }}
+                className="h-8 px-3 bg-red-600 hover:bg-red-700 text-white text-xs"
+              >
+                Retry
+              </Button>
+            </div>
+          </div>
+        )}
+        {/* Bottom Control Buttons */}
+        <div className="p-6 bg-white conversation-controls">
+          <div className="flex gap-3">
+            <Button
+              onClick={async () => {
+                if (conversationState === 'idle') {
+                  // First, ensure we have a session
+                  if (!currentSession) {
+                    const sessionId = await createSession(actualMode ? 'baseline' : 'checkin');
+                    if (!sessionId) {
+                      console.error('❌ Failed to create session');
+                      toast.error('Failed to start conversation. Please try again.');
+                      return;
+                    }
+                  }
+                  // Transition to conversation step
+                  setCurrentStep('conversation');
+                  setConversationState('active');
+                  // Try to find the widget and start it
+                  setTimeout(() => {
+                    const widget = document.querySelector('elevenlabs-convai');
+                    if (widget) {
+                      // Try to find and click the start button
+                      const startButton =
+                        widget.shadowRoot?.querySelector('[data-testid="start-button"]') ||
+                        widget.shadowRoot?.querySelector('button') ||
+                        widget.shadowRoot?.querySelector('[aria-label*="start"]') ||
+                        widget.shadowRoot?.querySelector('[aria-label*="Start"]');
+                      if (startButton && startButton instanceof HTMLElement) {
+                        startButton.click();
+                      } else {
+                        // Fallback: dispatch custom event
+                        widget.dispatchEvent(new CustomEvent('start-conversation'));
+                      }
+                    } else {
+                      console.error('❌ No widget found in DOM');
+                    }
+                  }, 1500); // Wait for widget to initialize
+                }
+              }}
+              disabled={!scriptLoaded || conversationState === 'active' || !!connectionError}
+              className="flex-1 h-12 bg-[#2D4C4C] text-white font-medium rounded-xl disabled:opacity-50"
+            >
+              {conversationState === 'active' ? 'Active' : connectionError ? 'Retrying...' : 'Start'}
+            </Button>
+            <Button
+              onClick={() => {
+                setIsMuted(!isMuted);
+                // Toggle audio by muting/unmuting the widget
+                const widget = document.querySelector('elevenlabs-convai');
+                if (widget) {
+                  const audioElements = widget.shadowRoot?.querySelectorAll('audio') || [];
+                  audioElements.forEach((audio) => {
+                    audio.muted = !isMuted;
+                  });
+                }
+              }}
+              className="h-12 px-6 bg-[#2D4C4C] text-white font-medium rounded-xl hover:bg-[#1a3535] transition-all"
+            >
+              {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+            </Button>
+            <Button
+              onClick={() => handleComplete({})}
+              className="h-12 px-6 bg-[#2D4C4C] text-white font-medium rounded-xl hover:bg-[#1a3535] transition-all"
+            >
+              Finish
+            </Button>
+          </div>
+        </div>
+      </div>
     );
   }
-  // Welcome step
-  return <ConversationWelcome isBaseline={actualMode} onStart={handleStartConversation} />;
+  // Welcome step - replicate exact design from MobileCheckin
+  return (
+    <div className="min-h-screen bg-[#FAF9F7] w-full px-4 sm:px-6 py-4 sm:py-8 space-y-6 sm:space-y-8 flex flex-col justify-center">
+      {/* Header */}
+      <div className="text-center pt-4 sm:pt-8">
+        <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-4 sm:mb-6 flex items-center justify-center">
+          <img src={MM_LOGO_URL} alt="Mind Measure" className="w-full h-full object-contain" />
+        </div>
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#2D4C4C] mb-2 sm:mb-3">
+          {actualMode ? 'Welcome to Mind Measure' : 'Welcome back, Alex'}
+        </h1>
+        <p className="text-gray-600 leading-relaxed text-sm sm:text-base px-4 sm:px-0">
+          {actualMode
+            ? "Let's get to know you better with a brief assessment to establish your wellness baseline"
+            : 'Ready for your regular wellness check?'}
+        </p>
+      </div>
+      {/* Start Button */}
+      <div className="text-center space-y-3 sm:space-y-4">
+        <Button
+          onClick={handleStartConversation}
+          className="w-full h-14 sm:h-16 bg-[#2D4C4C] text-white border-0 shadow-lg text-base sm:text-lg hover:shadow-xl transition-all duration-300 rounded-2xl"
+        >
+          <Play className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3" />
+          Start {actualMode ? 'Baseline Assessment' : 'Check-in'} with Jodie
+        </Button>
+        <p className="text-gray-500 text-xs sm:text-sm px-4 sm:px-0">
+          Find a quiet, comfortable space where you can speak freely
+        </p>
+      </div>
+      {/* What to Expect - Different content for baseline vs check-in */}
+      {actualMode ? (
+        // Baseline Assessment - Detailed cards
+        <div className="space-y-4 sm:space-y-6">
+          <h3 className="text-gray-900 text-center text-base sm:text-lg font-semibold">What to Expect</h3>
+          <div className="space-y-4 sm:space-y-5">
+            <Card className="border-0 shadow-lg backdrop-blur-xl bg-blue-50/70 p-3 sm:p-5">
+              <div className="flex items-start gap-3 sm:gap-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-500/20 rounded-2xl flex items-center justify-center backdrop-blur-xl flex-shrink-0">
+                  <Eye className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-blue-900 mb-1 text-sm sm:text-base font-semibold">Visual Analysis</h4>
+                  <p className="text-blue-700 text-xs sm:text-sm leading-relaxed">
+                    We use your phone's camera to assess your facial expressions. We do not store any images of you,
+                    they are analysed for facial landmarks, emotion categories (happy, sad, angry, confused, calm,
+                    etc.), and attention markers (e.g., eyes closed, head down).
+                  </p>
+                </div>
+              </div>
+            </Card>
+            <Card className="border-0 shadow-lg backdrop-blur-xl bg-green-50/70 p-3 sm:p-5">
+              <div className="flex items-start gap-3 sm:gap-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-500/20 rounded-2xl flex items-center justify-center backdrop-blur-xl flex-shrink-0">
+                  <Mic className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-green-900 mb-1 text-sm sm:text-base font-semibold">Voice Patterns</h4>
+                  <p className="text-green-700 text-xs sm:text-sm leading-relaxed">
+                    The human voice is a rich source of affective information. Acoustic features such as pitch, jitter,
+                    speaking rate, and pauses correlate strongly with depression, anxiety, and stress. We listen to how
+                    you sound not just what you say.
+                  </p>
+                </div>
+              </div>
+            </Card>
+            <Card className="border-0 shadow-lg bg-[#99CCCE]/15 p-3 sm:p-5">
+              <div className="flex items-start gap-3 sm:gap-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#99CCCE]/25 rounded-2xl flex items-center justify-center flex-shrink-0">
+                  <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6 text-[#2D4C4C]" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-[#2D4C4C] mb-1 text-sm sm:text-base font-semibold">Conversation</h4>
+                  <p className="text-[#2D4C4C]/70 text-xs sm:text-sm leading-relaxed">
+                    When Jodie asks a question ("On a scale of 1–10, how is your mood right now?"), Mind Measure
+                    evaluates your response quantitatively (the numerical score) and qualitatively (tone of voice,
+                    hesitation, choice of words), this ensures a 'multi-modal' form of assessment, because we are not
+                    always completely honest in what we say!
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </div>
+      ) : (
+        // Check-in - Simple, focused content
+        <div className="space-y-4 sm:space-y-6">
+          <div className="space-y-4 sm:space-y-5">
+            <Card className="border-0 shadow-lg bg-[#F59E0B]/10 p-3 sm:p-5">
+              <div className="flex items-start gap-3 sm:gap-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#F59E0B]/20 rounded-2xl flex items-center justify-center flex-shrink-0">
+                  <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6 text-[#2D4C4C]" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-[#2D4C4C] mb-1 text-sm sm:text-base font-semibold">Quick Check-in</h4>
+                  <p className="text-[#2D4C4C]/70 text-xs sm:text-sm leading-relaxed">
+                    Jodie will have a brief conversation with you to understand how you're feeling today compared to
+                    your previous check-ins. This helps us track your wellness journey over time.
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </div>
+      )}
+      {/* Private & Secure */}
+      <Card className="border-0 shadow-lg bg-[#DDD6FE]/20 p-4 sm:p-6">
+        <div className="flex items-start gap-3 sm:gap-4">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#DDD6FE]/30 rounded-2xl flex items-center justify-center flex-shrink-0">
+            <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-[#2D4C4C]" />
+          </div>
+          <div className="min-w-0">
+            <h4 className="text-[#2D4C4C] mb-2 text-sm sm:text-base font-semibold">Private & Secure</h4>
+            <p className="text-[#2D4C4C]/70 text-xs sm:text-sm leading-relaxed">
+              Your data is encrypted and confidential. Mind Measure complies with GDPR, UK ICO guidance, and aligns with
+              NHS Clinical Governance frameworks (NHS England, 2023). Identifiable raw media (audio and images) are
+              discarded after feature extraction and analysis.
+            </p>
+          </div>
+        </div>
+      </Card>
+      {/* More Information */}
+      <Card className="border-0 shadow-lg backdrop-blur-xl bg-amber-50/70 p-4 sm:p-6">
+        <div className="flex items-start gap-3 sm:gap-4">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-amber-500/20 rounded-2xl flex items-center justify-center backdrop-blur-xl flex-shrink-0">
+            <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6 text-amber-600" />
+          </div>
+          <div className="min-w-0">
+            <h4 className="text-amber-900 mb-2 text-sm sm:text-base font-semibold">More Information</h4>
+            <p className="text-amber-700 text-xs sm:text-sm leading-relaxed">
+              There are more details about how Mind Measure works on our website{' '}
+              <a
+                href="https://mindmeasure.app/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline font-medium hover:text-amber-800 transition-colors"
+              >
+                mindmeasure.app
+              </a>
+            </p>
+          </div>
+        </div>
+      </Card>
+      {/* Mind Measure Branding */}
+      <div className="text-center space-y-4 sm:space-y-6 py-6 sm:py-8">
+        <div className="w-14 h-14 sm:w-16 sm:h-16 mx-auto flex items-center justify-center">
+          <img src={MM_LOGO_URL} alt="Mind Measure" className="w-full h-full object-contain opacity-80" />
+        </div>
+        <div>
+          <h3 className="text-lg sm:text-xl font-bold text-[#2D4C4C] mb-2 sm:mb-3">
+            Mind Measure
+          </h3>
+          <p className="text-gray-600 text-xs sm:text-sm leading-relaxed max-w-sm mx-auto px-4 sm:px-0">
+            Your trusted companion for understanding and measuring your mental wellbeing through intelligent
+            conversation and analysis.
+          </p>
+        </div>
+      </div>
+      {/* Bottom padding for navigation */}
+      <div className="h-24" />
+    </div>
+  );
 };

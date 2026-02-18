@@ -405,7 +405,7 @@ export const MobileAppStructure: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-white">
       <div className="pb-24">{renderContent()}</div>
       {!onboardingScreen && ['dashboard', 'content', 'buddies', 'profile'].includes(currentScreen) && (
         <BottomNav
@@ -508,7 +508,7 @@ export const MobileAppStructure: React.FC = () => {
                   padding: '12px',
                   border: 'none',
                   borderRadius: '8px',
-                  background: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)',
+                  background: '#2D4C4C',
                   color: 'white',
                   fontSize: '14px',
                   fontWeight: '600',

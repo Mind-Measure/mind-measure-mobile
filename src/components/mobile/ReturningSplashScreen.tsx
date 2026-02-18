@@ -1,11 +1,6 @@
 import { useEffect } from 'react';
 import { motion } from 'motion/react';
-
-// Motion v12 variants typing workaround – the exported Variants type is
-// too narrow for keyframe arrays and the strict CSS property types.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnimVariants = Record<string, any>;
-import mindMeasureLogo from '@/assets/Mindmeasure_logo.png';
+const mindMeasureLogo = '/images/mind-measure-logo.png';
 interface ReturningSplashScreenProps {
   onComplete: () => void;
 }
@@ -17,7 +12,7 @@ export function ReturningSplashScreen({ onComplete }: ReturningSplashScreenProps
     }, 5000);
     return () => clearTimeout(timer);
   }, [onComplete]);
-  const containerVariants: AnimVariants = {
+  const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
@@ -34,7 +29,7 @@ export function ReturningSplashScreen({ onComplete }: ReturningSplashScreenProps
       },
     },
   };
-  const itemVariants: AnimVariants = {
+  const itemVariants = {
     hidden: { y: 20, opacity: 0 },
     visible: {
       y: 0,
@@ -45,7 +40,7 @@ export function ReturningSplashScreen({ onComplete }: ReturningSplashScreenProps
       },
     },
   };
-  const logoVariants: AnimVariants = {
+  const logoVariants = {
     hidden: { scale: 0.8, opacity: 0 },
     visible: {
       scale: 1,
@@ -64,7 +59,7 @@ export function ReturningSplashScreen({ onComplete }: ReturningSplashScreenProps
       },
     },
   };
-  const gradientVariants: AnimVariants = {
+  const gradientVariants = {
     animate: {
       background: [
         'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',

@@ -1,114 +1,66 @@
 import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Phone, ExternalLink, ChevronDown, ChevronLeft, MessageSquare } from 'lucide-react';
 import { BackendServiceFactory } from '@/services/database/BackendServiceFactory';
 import { useAuth } from '@/contexts/AuthContext';
 
-interface Resource {
-  name: string;
-  description: string;
-  phone?: string;
-  website?: string;
-  isEmergency?: boolean;
-}
+const pampas = '#FAF9F7';
+const spectra = '#2D4C4C';
+const sinbad = '#99CCCE';
 
-interface LocalSupport {
-  organisation: string;
-  description: string;
-  location?: string;
+interface CmsContact {
+  name?: string;
+  description?: string;
+  phones?: string[];
   phone?: string;
   website?: string;
+  hours?: string;
   availability?: string;
+  isPrimary?: boolean;
+  is24Hour?: boolean;
+  isEnabled?: boolean;
+  organisation?: string;
+  location?: string;
 }
 
-interface HelpPageProps {
+interface HelpScreenProps {
+  onBack?: () => void;
   onNavigateBack?: () => void;
 }
 
-export function HelpScreen({ onNavigateBack }: HelpPageProps) {
+export function HelpScreen({ onBack, onNavigateBack }: HelpScreenProps) {
+  const handleBack = onBack || onNavigateBack;
   const { user } = useAuth();
-  const [emergencyResources, setEmergencyResources] = useState<Resource[]>([]);
-  const [mentalHealthServices, setMentalHealthServices] = useState<Resource[]>([]);
-  const [localSupport, setLocalSupport] = useState<LocalSupport[]>([]);
-  const [nationalResources, setNationalResources] = useState<Resource[]>([]);
+  const [openUni, setOpenUni] = useState(false);
+  const [openNational, setOpenNational] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [universityName, setUniversityName] = useState<string>('');
+
+  const [universityName, setUniversityName] = useState('');
+  const [uniSecurity, setUniSecurity] = useState<CmsContact | null>(null);
+  const [uniWellbeing, setUniWellbeing] = useState<CmsContact[]>([]);
+  const [nationalServices, setNationalServices] = useState<CmsContact[]>([]);
 
   useEffect(() => {
-    loadHelpResources();
+    loadCmsResources();
   }, [user]);
 
-  const loadHelpResources = async () => {
+  const loadCmsResources = async () => {
     try {
       setLoading(true);
       const backendService = BackendServiceFactory.createService(BackendServiceFactory.getEnvironmentConfig());
 
-      // Get user's university from their profile
       let universityId = null;
       if (user?.id) {
         const { data: profileData } = await backendService.database.select('profiles', {
           filters: { user_id: user.id },
           limit: 1,
         });
-
         if (profileData && profileData.length > 0) {
           universityId = profileData[0].university_id as string | null;
         }
       }
 
-      // Default fallback resources (in case CMS data isn't available)
-      const defaultEmergency: Resource[] = [
-        {
-          name: 'Crisis Chat',
-          description: 'If you or someone else is in immediate danger, call',
-          phone: '999',
-          isEmergency: true,
-        },
-        {
-          name: 'NHS Free Response Service',
-          description: 'Immediate mental health crisis support',
-          phone: '0845 111 Online',
-          website: 'https://111.nhs.uk',
-        },
-      ];
-
-      const defaultLocal: LocalSupport[] = [
-        {
-          organisation: 'University Counselling Service',
-          description: 'Free confidential counselling for all students',
-          availability: 'Mon-Fri 9am-5pm',
-          website: '#',
-        },
-      ];
-
-      const defaultNational: Resource[] = [
-        {
-          name: 'Samaritans',
-          description: '24/7 confidential emotional support',
-          phone: '116 123',
-        },
-        {
-          name: 'Shout',
-          description: '24/7 text support',
-          phone: '85258 (text)',
-        },
-        {
-          name: 'Mind',
-          description: 'Information and support for mental health',
-          website: 'www.mind.org.uk',
-        },
-        {
-          name: 'Student Space (Student Minds)',
-          description: 'Support for students',
-          website: 'www.studentspace.org.uk',
-        },
-        {
-          name: 'Papyrus HOPELINEUK',
-          description: 'Support for people under 35',
-          phone: '0800 068 4141',
-        },
-      ];
-
       if (universityId) {
-        // Fetch CMS data for this university
         const { data: universityData } = await backendService.database.select('universities', {
           filters: { id: universityId },
           limit: 1,
@@ -116,150 +68,71 @@ export function HelpScreen({ onNavigateBack }: HelpPageProps) {
 
         if (universityData && universityData.length > 0) {
           const university = universityData[0];
+          setUniversityName((university.name as string) || '');
 
-          // Set university name
-          setUniversityName((university.name as string) || 'your university');
-
-          // Map emergency contacts from CMS
           if (university.emergency_contacts && Array.isArray(university.emergency_contacts)) {
-            const emergencyMapped = university.emergency_contacts.map(
-              (contact: {
-                name?: string;
-                description?: string;
-                phones?: string[];
-                phone?: string;
-                website?: string;
-                isPrimary?: boolean;
-                is24Hour?: boolean;
-              }) => ({
-                name: contact.name || '',
-                description: contact.description || '',
-                phone: contact.phones?.[0] || contact.phone || '',
-                website: contact.website || '',
-                isEmergency: contact.isPrimary || contact.is24Hour || false,
-              })
+            const security = (university.emergency_contacts as CmsContact[]).find(
+              (c) => c.name?.toLowerCase().includes('security')
             );
-            setEmergencyResources(emergencyMapped.length > 0 ? emergencyMapped : defaultEmergency);
-          } else {
-            setEmergencyResources(defaultEmergency);
+            if (security) setUniSecurity(security);
           }
 
-          // Map mental health services from CMS
           if (university.mental_health_services && Array.isArray(university.mental_health_services)) {
-            const mentalHealthMapped = university.mental_health_services.map(
-              (service: {
-                name?: string;
-                description?: string;
-                phones?: string[];
-                phone?: string;
-                website?: string;
-              }) => ({
-                name: service.name || '',
-                description: service.description || '',
-                phone: service.phones?.[0] || service.phone || '',
-                website: service.website || '',
-                isEmergency: false,
-              })
-            );
-            setMentalHealthServices(mentalHealthMapped);
-          } else {
-            setMentalHealthServices([]);
+            setUniWellbeing(university.mental_health_services as CmsContact[]);
           }
 
-          // Map local resources from CMS
-          if (university.local_resources && Array.isArray(university.local_resources)) {
-            const localMapped = university.local_resources.map(
-              (resource: {
-                name?: string;
-                organisation?: string;
-                description?: string;
-                location?: string;
-                phones?: string[];
-                phone?: string;
-                website?: string;
-                hours?: string;
-                availability?: string;
-              }) => ({
-                organisation: resource.name || resource.organisation || '',
-                description: resource.description || '',
-                location: resource.location || '',
-                phone: resource.phones?.[0] || resource.phone || '',
-                website: resource.website || '',
-                availability: resource.hours || resource.availability || '',
-              })
-            );
-            setLocalSupport(localMapped.length > 0 ? localMapped : defaultLocal);
-          } else {
-            setLocalSupport(defaultLocal);
-          }
-
-          // Map national resources from CMS (only show enabled ones)
           if (university.national_resources && Array.isArray(university.national_resources)) {
-            // Filter for enabled resources only
-            const enabledResources = university.national_resources.filter(
-              (resource: { isEnabled?: boolean }) => resource.isEnabled !== false // Show if isEnabled is true or undefined (backwards compatibility)
+            const enabled = (university.national_resources as CmsContact[]).filter(
+              (r) => r.isEnabled !== false
             );
-
-            const nationalMapped = enabledResources.map(
-              (resource: {
-                name?: string;
-                description?: string;
-                phones?: string[];
-                phone?: string;
-                website?: string;
-              }) => ({
-                name: resource.name || '',
-                description: resource.description || '',
-                phone: resource.phones?.[0] || resource.phone || '',
-                website: resource.website || '',
-              })
-            );
-            setNationalResources(nationalMapped.length > 0 ? nationalMapped : defaultNational);
-          } else {
-            setNationalResources(defaultNational);
+            setNationalServices(enabled);
           }
-        } else {
-          // No university data found, use defaults
-          setEmergencyResources(defaultEmergency);
-          setLocalSupport(defaultLocal);
-          setNationalResources(defaultNational);
         }
-      } else {
-        // No university ID, use defaults
-        setEmergencyResources(defaultEmergency);
-        setLocalSupport(defaultLocal);
-        setNationalResources(defaultNational);
       }
-    } catch (error: unknown) {
+
+      if (nationalServices.length === 0) {
+        setNationalServices([
+          { name: 'Shout', description: '24/7 text support. Text SHOUT to 85258.', website: 'https://giveusashout.org/' },
+          { name: 'Mind', description: 'Information and support for mental health.', website: 'https://www.mind.org.uk/' },
+          { name: 'Student Space (Student Minds)', description: 'Support for students via webchat, text and resources.', website: 'https://studentspace.org.uk/' },
+          { name: 'Papyrus HOPELINE247', description: 'Support for people under 35 experiencing suicidal thoughts.', website: 'https://www.papyrus-uk.org/', phone: '08006844141' },
+        ]);
+      }
+    } catch (error) {
       console.error('Error loading help resources:', error);
-      // On error, use defaults
-      setEmergencyResources([
-        {
-          name: 'Crisis Chat',
-          description: 'If you or someone else is in immediate danger, call',
-          phone: '999',
-          isEmergency: true,
-        },
+      setNationalServices([
+        { name: 'Shout', description: '24/7 text support. Text SHOUT to 85258.', website: 'https://giveusashout.org/' },
+        { name: 'Mind', description: 'Information and support for mental health.', website: 'https://www.mind.org.uk/' },
+        { name: 'Student Space (Student Minds)', description: 'Support for students via webchat, text and resources.', website: 'https://studentspace.org.uk/' },
+        { name: 'Papyrus HOPELINE247', description: 'Support for people under 35 experiencing suicidal thoughts.', website: 'https://www.papyrus-uk.org/', phone: '08006844141' },
       ]);
-      setLocalSupport([]);
-      setNationalResources([]);
     } finally {
       setLoading(false);
     }
   };
+
+  const handleCall = (number: string) => {
+    window.location.href = `tel:${number.replace(/\s/g, '')}`;
+  };
+
+  const handleVisit = (url: string) => {
+    window.open(url?.startsWith('http') ? url : `https://${url}`, '_blank');
+  };
+
+  const getPhone = (c: CmsContact) => c.phones?.[0] || c.phone || '';
 
   if (loading) {
     return (
       <div
         style={{
           minHeight: '100vh',
-          backgroundColor: '#F5F5F5',
+          backgroundColor: pampas,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        <div style={{ color: '#666666' }}>Loading support resources...</div>
+        <div style={{ color: spectra, opacity: 0.4 }}>Loading support resources...</div>
       </div>
     );
   }
@@ -268,686 +141,311 @@ export function HelpScreen({ onNavigateBack }: HelpPageProps) {
     <div
       style={{
         minHeight: '100vh',
-        backgroundColor: '#F5F5F5',
-        paddingBottom: '80px',
+        backgroundColor: pampas,
+        padding: '0 20px 100px',
+        fontFamily: 'Lato, system-ui, sans-serif',
       }}
     >
       {/* Header */}
-      <div
-        style={{
-          backgroundColor: '#FFFFFF',
-          paddingTop: '60px',
-          paddingLeft: '20px',
-          paddingRight: '20px',
-          paddingBottom: '20px',
-          borderBottom: '1px solid #F0F0F0',
-        }}
-      >
-        {onNavigateBack && (
+      <div style={{ paddingTop: '72px', marginBottom: '14px' }}>
+        {handleBack && (
           <button
+            onClick={handleBack}
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              background: 'none',
-              border: 'none',
-              padding: '8px 0',
-              fontSize: '14px',
-              color: '#666666',
-              cursor: 'pointer',
-              marginBottom: '16px',
+              background: 'none', border: 'none', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: '4px',
+              color: spectra, opacity: 0.4, padding: '0 0 16px',
+              fontSize: '14px', fontFamily: 'Inter, system-ui, sans-serif',
             }}
-            onClick={onNavigateBack}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M19 12H5M12 19l-7-7 7-7" />
-            </svg>
-            Back to Dashboard
+            <ChevronLeft size={18} />
+            Back
           </button>
         )}
-
         <h1
           style={{
             fontSize: '24px',
-            fontWeight: '600',
-            color: '#1a1a1a',
-            margin: '0 0 8px 0',
-          }}
-        >
-          Find Mental Health Support
-        </h1>
-        <p
-          style={{
-            fontSize: '14px',
-            color: '#666666',
+            fontWeight: 400,
+            color: spectra,
             margin: 0,
+            letterSpacing: '-0.02em',
+            lineHeight: 1.2,
           }}
         >
-          {universityName
-            ? `Personalised support resources for ${universityName}`
-            : 'Personalised support resources for the UK'}
-        </p>
+          Get support
+        </h1>
       </div>
 
-      {/* Emergency Section */}
-      <div style={{ padding: '20px' }}>
-        <div
-          style={{
-            background: '#FEF2F2',
-            border: '2px solid #FEE2E2',
-            borderRadius: '16px',
-            padding: '20px',
-            marginBottom: '20px',
-          }}
-        >
-          <h2
-            style={{
-              fontSize: '16px',
-              fontWeight: '600',
-              color: '#DC2626',
-              margin: '0 0 12px 0',
-            }}
-          >
-            If you need urgent help
-          </h2>
-          <p
-            style={{
-              fontSize: '14px',
-              color: '#991B1B',
-              margin: '0 0 16px 0',
-              lineHeight: '1.5',
-            }}
-          >
-            If you or someone else is in immediate danger, call emergency services
-          </p>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: '12px',
-            }}
-          >
-            <a
-              href="https://www.samaritans.org/how-we-can-help/if-youre-having-difficult-time/"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                padding: '14px',
-                background: '#F97316',
-                color: 'white',
-                border: 'none',
-                borderRadius: '12px',
-                fontSize: '15px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                boxShadow: '0 2px 8px rgba(249, 115, 22, 0.3)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                textDecoration: 'none',
-              }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-              </svg>
-              Crisis Chat
-            </a>
-            <a
-              href="tel:999"
-              style={{
-                padding: '14px',
-                background: '#DC2626',
-                color: 'white',
-                border: 'none',
-                borderRadius: '12px',
-                fontSize: '15px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                boxShadow: '0 2px 8px rgba(220, 38, 38, 0.3)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                textDecoration: 'none',
-              }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-              </svg>
-              Call 999
-            </a>
-          </div>
-        </div>
+      {/* ─── HARDCODED EMERGENCY PILLS ─── */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '24px' }}>
+        {/* 999 */}
+        <EmergencyPill
+          name="999"
+          desc="Immediate danger"
+          bg="#DC2626"
+          actions={<PillButton label="Call" icon={<Phone size={14} />} bg="white" color="#DC2626" onClick={() => handleCall('999')} />}
+        />
+
+        {/* Samaritans */}
+        <EmergencyPill
+          name="Samaritans"
+          desc="24/7 emotional support"
+          bg="#EF4444"
+          actions={
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <PillButton label="Call" icon={<Phone size={13} />} bg="rgba(255,255,255,0.2)" color="white" border="1px solid rgba(255,255,255,0.3)" onClick={() => handleCall('116123')} />
+              <PillButton label="Text" icon={<MessageSquare size={13} />} bg="white" color="#EF4444" onClick={() => handleVisit('https://www.samaritans.org/how-we-can-help/contact-samaritans/')} bold />
+            </div>
+          }
+        />
+
+        {/* NHS 111 */}
+        <EmergencyPill
+          name="NHS 111"
+          desc="Crisis support — 24/7"
+          bg="#F87171"
+          actions={
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <PillButton label="Call" icon={<Phone size={13} />} bg="rgba(255,255,255,0.2)" color="white" border="1px solid rgba(255,255,255,0.3)" onClick={() => handleCall('111')} />
+              <PillButton label="Online" icon={<ExternalLink size={13} />} bg="white" color="#F87171" onClick={() => handleVisit('https://111.nhs.uk/service/mental-health/')} bold />
+            </div>
+          }
+        />
+
+        {/* University Security — from CMS */}
+        {uniSecurity && (
+          <EmergencyPill
+            name={uniSecurity.name || 'University Security'}
+            desc={uniSecurity.description || '24/7 on-campus support'}
+            bg="#FBBF24"
+            textColor={spectra}
+            actions={
+              getPhone(uniSecurity) ? (
+                <PillButton label="Call" icon={<Phone size={13} />} bg="white" color={spectra} onClick={() => handleCall(getPhone(uniSecurity))} bold />
+              ) : null
+            }
+          />
+        )}
       </div>
 
-      {/* Section 1: Emergency Contacts from CMS */}
-      {emergencyResources.length > 0 && (
-        <div style={{ padding: '0 20px 20px 20px' }}>
-          <h2
-            style={{
-              fontSize: '18px',
-              fontWeight: '600',
-              color: '#1a1a1a',
-              margin: '0 0 16px 0',
-            }}
-          >
-            Emergency Contacts
-          </h2>
-          <p
-            style={{
-              fontSize: '14px',
-              color: '#666666',
-              margin: '0 0 16px 0',
-            }}
-          >
-            24/7 support services available to you
-          </p>
+      {/* ═══ UNIVERSITY WELLBEING — accordion (CMS) ═══ */}
+      {uniWellbeing.length > 0 && (
+        <div style={{ marginBottom: '12px' }}>
+          <AccordionHeader
+            title="University Wellbeing"
+            subtitle={universityName}
+            open={openUni}
+            onToggle={() => setOpenUni(!openUni)}
+          />
+          <AnimatePresence initial={false}>
+            {openUni && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.25 }}
+                style={{
+                  overflow: 'hidden',
+                  backgroundColor: 'white',
+                  borderRadius: '0 0 14px 14px',
+                  boxShadow: '0 1px 6px rgba(0,0,0,0.03)',
+                }}
+              >
+                <div style={{ padding: '0 20px 16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  {uniWellbeing.map((r, i) => {
+                    const phone = getPhone(r);
+                    const website = r.website || '';
+                    return (
+                      <div
+                        key={i}
+                        style={{
+                          borderTop: i > 0 ? '1px solid rgba(45,76,76,0.06)' : undefined,
+                          paddingTop: i > 0 ? '14px' : 0,
+                        }}
+                      >
+                        <p style={{ fontSize: '14px', fontWeight: 500, color: spectra, margin: '0 0 3px', fontFamily: 'Inter, system-ui, sans-serif' }}>
+                          {r.name || r.organisation || ''}
+                        </p>
+                        <p style={{ fontSize: '13px', color: spectra, margin: '0 0 3px', opacity: 0.45, lineHeight: 1.4 }}>
+                          {r.description || ''}
+                        </p>
+                        {(r.hours || r.availability) && (
+                          <p style={{ fontSize: '12px', color: spectra, margin: '0 0 10px', opacity: 0.3 }}>{r.hours || r.availability}</p>
+                        )}
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                          {phone && (
+                            <ServiceButton label={phone} icon={<Phone size={13} />} bg={sinbad} color={spectra} onClick={() => handleCall(phone)} />
+                          )}
+                          {website && (
+                            <ServiceButton label="Visit Website" icon={<ExternalLink size={13} />} bg="white" color={spectra} border="1px solid rgba(45,76,76,0.1)" onClick={() => handleVisit(website)} />
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
 
-          {emergencyResources.map((resource, index) => (
-            <div
-              key={index}
+      {/* ═══ NATIONAL SUPPORT — accordion (CMS or defaults) ═══ */}
+      <div style={{ marginBottom: '28px' }}>
+        <AccordionHeader
+          title="National Support"
+          subtitle="UK-wide mental health services"
+          open={openNational}
+          onToggle={() => setOpenNational(!openNational)}
+        />
+        <AnimatePresence initial={false}>
+          {openNational && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.25 }}
               style={{
-                background: 'white',
-                borderRadius: '16px',
-                padding: '20px',
-                marginBottom: '12px',
-                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+                overflow: 'hidden',
+                backgroundColor: 'white',
+                borderRadius: '0 0 14px 14px',
+                boxShadow: '0 1px 6px rgba(0,0,0,0.03)',
               }}
             >
-              <h3
-                style={{
-                  fontSize: '16px',
-                  fontWeight: '600',
-                  color: '#1a1a1a',
-                  margin: '0 0 8px 0',
-                }}
-              >
-                {resource.name}
-              </h3>
-              {resource.description && (
-                <p
-                  style={{
-                    fontSize: '14px',
-                    color: '#666666',
-                    margin: '0 0 12px 0',
-                    lineHeight: '1.5',
-                  }}
-                >
-                  {resource.description}
-                </p>
-              )}
-              <div
-                style={{
-                  display: 'flex',
-                  gap: '12px',
-                  flexWrap: 'wrap',
-                }}
-              >
-                {resource.phone && (
-                  <a
-                    href={`tel:${resource.phone}`}
-                    style={{
-                      padding: '10px 16px',
-                      background: '#DC2626',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '12px',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      textDecoration: 'none',
-                      boxShadow: '0 2px 8px rgba(220, 38, 38, 0.3)',
-                    }}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                    </svg>
-                    {resource.phone}
-                  </a>
-                )}
-                {resource.website && (
-                  <a
-                    href={resource.website.startsWith('http') ? resource.website : `https://${resource.website}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      padding: '10px 16px',
-                      background: '#6366F1',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '12px',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      textDecoration: 'none',
-                      boxShadow: '0 2px 8px rgba(99, 102, 241, 0.3)',
-                    }}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                      <polyline points="15 3 21 3 21 9" />
-                      <line x1="10" y1="14" x2="21" y2="3" />
-                    </svg>
-                    Visit Website
-                  </a>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Section 2: Mental Health Services from CMS */}
-      {mentalHealthServices.length > 0 && (
-        <div style={{ padding: '0 20px 20px 20px' }}>
-          <h2
-            style={{
-              fontSize: '18px',
-              fontWeight: '600',
-              color: '#1a1a1a',
-              margin: '0 0 16px 0',
-            }}
-          >
-            Mental Health Services
-          </h2>
-          <p
-            style={{
-              fontSize: '14px',
-              color: '#666666',
-              margin: '0 0 16px 0',
-            }}
-          >
-            Professional mental health support
-          </p>
-
-          {mentalHealthServices.map((service, index) => (
-            <div
-              key={index}
-              style={{
-                background: 'white',
-                borderRadius: '16px',
-                padding: '20px',
-                marginBottom: '12px',
-                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
-              }}
-            >
-              <h3
-                style={{
-                  fontSize: '16px',
-                  fontWeight: '600',
-                  color: '#1a1a1a',
-                  margin: '0 0 8px 0',
-                }}
-              >
-                {service.name}
-              </h3>
-              {service.description && (
-                <p
-                  style={{
-                    fontSize: '14px',
-                    color: '#666666',
-                    margin: '0 0 12px 0',
-                    lineHeight: '1.5',
-                  }}
-                >
-                  {service.description}
-                </p>
-              )}
-              <div
-                style={{
-                  display: 'flex',
-                  gap: '12px',
-                  flexWrap: 'wrap',
-                }}
-              >
-                {service.phone && (
-                  <a
-                    href={`tel:${service.phone}`}
-                    style={{
-                      padding: '10px 16px',
-                      background: '#10B981',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '12px',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      textDecoration: 'none',
-                      boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)',
-                    }}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                    </svg>
-                    {service.phone}
-                  </a>
-                )}
-                {service.website && (
-                  <a
-                    href={service.website.startsWith('http') ? service.website : `https://${service.website}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      padding: '10px 16px',
-                      background: '#6366F1',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '12px',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      textDecoration: 'none',
-                      boxShadow: '0 2px 8px rgba(99, 102, 241, 0.3)',
-                    }}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                      <polyline points="15 3 21 3 21 9" />
-                      <line x1="10" y1="14" x2="21" y2="3" />
-                    </svg>
-                    Visit Website
-                  </a>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Section 3: Local Student Support (already exists, just rename header) */}
-      {localSupport.length > 0 && (
-        <div style={{ padding: '0 20px 20px 20px' }}>
-          <h2
-            style={{
-              fontSize: '18px',
-              fontWeight: '600',
-              color: '#1a1a1a',
-              margin: '0 0 16px 0',
-            }}
-          >
-            Local Resources
-          </h2>
-          <p
-            style={{
-              fontSize: '14px',
-              color: '#666666',
-              margin: '0 0 16px 0',
-            }}
-          >
-            Resources specific to {universityName || 'your university'}
-          </p>
-
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '12px',
-            }}
-          >
-            {localSupport.map((support, index) => (
-              <div
-                key={index}
-                style={{
-                  background: 'white',
-                  borderRadius: '16px',
-                  padding: '20px',
-                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
-                }}
-              >
-                <h3
-                  style={{
-                    fontSize: '15px',
-                    fontWeight: '600',
-                    color: '#1a1a1a',
-                    margin: '0 0 8px 0',
-                  }}
-                >
-                  {support.organisation}
-                </h3>
-                <p
-                  style={{
-                    fontSize: '14px',
-                    color: '#666666',
-                    margin: '0 0 12px 0',
-                    lineHeight: '1.5',
-                  }}
-                >
-                  {support.description}
-                </p>
-                {support.availability && (
-                  <p
-                    style={{
-                      fontSize: '13px',
-                      color: '#999999',
-                      margin: '0 0 12px 0',
-                    }}
-                  >
-                    {support.availability}
-                  </p>
-                )}
-                {support.location && (
-                  <p
-                    style={{
-                      fontSize: '13px',
-                      color: '#999999',
-                      margin: '0 0 12px 0',
-                    }}
-                  >
-                    {support.location}
-                  </p>
-                )}
-                <div
-                  style={{
-                    display: 'flex',
-                    gap: '8px',
-                  }}
-                >
-                  {support.website && (
-                    <a
-                      href={support.website}
-                      target="_blank"
-                      rel="noopener noreferrer"
+              <div style={{ padding: '0 20px 16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {nationalServices.map((s, i) => {
+                  const phone = getPhone(s);
+                  const website = s.website || '';
+                  return (
+                    <div
+                      key={i}
                       style={{
-                        padding: '10px 16px',
-                        background: 'white',
-                        color: '#8B5CF6',
-                        border: '2px solid #8B5CF6',
-                        borderRadius: '10px',
-                        fontSize: '13px',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        textDecoration: 'none',
+                        borderTop: i > 0 ? '1px solid rgba(45,76,76,0.06)' : undefined,
+                        paddingTop: i > 0 ? '14px' : 0,
                       }}
                     >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                        <polyline points="15 3 21 3 21 9" />
-                        <line x1="10" y1="14" x2="21" y2="3" />
-                      </svg>
-                      Visit
-                    </a>
-                  )}
-                  {support.phone && (
-                    <a
-                      href={`tel:${support.phone.replace(/\s/g, '')}`}
-                      style={{
-                        padding: '10px 16px',
-                        background: '#8B5CF6',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '10px',
-                        fontSize: '13px',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        textDecoration: 'none',
-                      }}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                      </svg>
-                      Call
-                    </a>
-                  )}
-                </div>
+                      <p style={{ fontSize: '14px', fontWeight: 500, color: spectra, margin: '0 0 3px', fontFamily: 'Inter, system-ui, sans-serif' }}>
+                        {s.name || ''}
+                      </p>
+                      <p style={{ fontSize: '13px', color: spectra, margin: '0 0 10px', opacity: 0.45, lineHeight: 1.4 }}>
+                        {s.description || ''}
+                      </p>
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        {phone && (
+                          <ServiceButton label={phone} icon={<Phone size={13} />} bg={sinbad} color={spectra} onClick={() => handleCall(phone)} />
+                        )}
+                        {website && (
+                          <ServiceButton label="Visit" icon={<ExternalLink size={13} />} bg="white" color={spectra} border="1px solid rgba(45,76,76,0.1)" onClick={() => handleVisit(website)} />
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            ))}
-          </div>
-        </div>
-      )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
-      {/* National UK Support */}
-      {nationalResources.length > 0 && (
-        <div style={{ padding: '0 20px 20px 20px' }}>
-          <h2
-            style={{
-              fontSize: '18px',
-              fontWeight: '600',
-              color: '#1a1a1a',
-              margin: '0 0 16px 0',
-            }}
-          >
-            National UK Support
-          </h2>
-
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '12px',
-            }}
-          >
-            {nationalResources.map((resource, index) => (
-              <div
-                key={index}
-                style={{
-                  background: 'white',
-                  borderRadius: '16px',
-                  padding: '18px 20px',
-                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '16px',
-                }}
-              >
-                <div style={{ flex: 1 }}>
-                  <h3
-                    style={{
-                      fontSize: '15px',
-                      fontWeight: '600',
-                      color: '#1a1a1a',
-                      margin: '0 0 4px 0',
-                    }}
-                  >
-                    {resource.name}
-                  </h3>
-                  <p
-                    style={{
-                      fontSize: '13px',
-                      color: '#666666',
-                      margin: 0,
-                      lineHeight: '1.4',
-                    }}
-                  >
-                    {resource.description}
-                  </p>
-                  {resource.phone && (
-                    <p
-                      style={{
-                        fontSize: '13px',
-                        color: '#8B5CF6',
-                        margin: '4px 0 0 0',
-                        fontWeight: '500',
-                      }}
-                    >
-                      {resource.phone}
-                    </p>
-                  )}
-                  {resource.website && (
-                    <a
-                      href={resource.website.startsWith('http') ? resource.website : `https://${resource.website}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        fontSize: '13px',
-                        color: '#8B5CF6',
-                        margin: '4px 0 0 0',
-                        fontWeight: '500',
-                        textDecoration: 'none',
-                      }}
-                    >
-                      {resource.website}
-                    </a>
-                  )}
-                </div>
-                {(resource.website || resource.phone) && (
-                  <a
-                    href={
-                      resource.phone
-                        ? `tel:${resource.phone.replace(/\s/g, '')}`
-                        : resource.website?.startsWith('http')
-                          ? resource.website
-                          : `https://${resource.website}`
-                    }
-                    target={resource.website ? '_blank' : undefined}
-                    rel={resource.website ? 'noopener noreferrer' : undefined}
-                    style={{
-                      padding: '8px 12px',
-                      background: '#F3F4F6',
-                      color: '#666666',
-                      border: 'none',
-                      borderRadius: '8px',
-                      fontSize: '13px',
-                      fontWeight: '600',
-                      cursor: 'pointer',
-                      flexShrink: 0,
-                      textDecoration: 'none',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M9 18l6-6-6-6" />
-                    </svg>
-                  </a>
-                )}
-              </div>
-            ))}
-          </div>
-
-          <p
-            style={{
-              fontSize: '12px',
-              color: '#999999',
-              textAlign: 'center',
-              margin: '20px 0 0 0',
-              lineHeight: '1.5',
-            }}
-          >
-            If you are outside the UK, please use local emergency numbers and services in your country.
-          </p>
-        </div>
-      )}
+      {/* Footer */}
+      <p style={{ fontSize: '13px', fontWeight: 300, color: spectra, opacity: 0.25, lineHeight: 1.5 }}>
+        If you are outside the UK, please use local emergency numbers and services in your country.
+      </p>
     </div>
+  );
+}
+
+function EmergencyPill({ name, desc, bg, textColor, actions }: {
+  name: string; desc: string; bg: string; textColor?: string;
+  actions: React.ReactNode;
+}) {
+  const c = textColor || 'white';
+  return (
+    <div
+      style={{
+        width: '100%', display: 'flex', alignItems: 'center',
+        justifyContent: 'space-between', padding: '12px 16px',
+        borderRadius: '14px', backgroundColor: bg, color: c,
+      }}
+    >
+      <div>
+        <p style={{ fontSize: '15px', fontWeight: 600, margin: 0, fontFamily: 'Inter, system-ui, sans-serif' }}>{name}</p>
+        <p style={{ fontSize: '11px', margin: 0, opacity: textColor ? 0.65 : 0.85 }}>{desc}</p>
+      </div>
+      {actions}
+    </div>
+  );
+}
+
+function PillButton({ label, icon, bg, color, border, bold, onClick }: {
+  label: string; icon: React.ReactNode; bg: string; color: string;
+  border?: string; bold?: boolean; onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: '5px',
+        padding: '8px 12px', borderRadius: '8px',
+        backgroundColor: bg, color, border: border || 'none',
+        cursor: 'pointer', fontSize: '13px',
+        fontWeight: bold ? 700 : 600,
+        fontFamily: 'Inter, system-ui, sans-serif',
+      }}
+    >
+      {icon}
+      {label}
+    </button>
+  );
+}
+
+function ServiceButton({ label, icon, bg, color, border, onClick }: {
+  label: string; icon: React.ReactNode; bg: string; color: string;
+  border?: string; onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: '6px',
+        padding: '8px 14px', borderRadius: '8px',
+        backgroundColor: bg, color, border: border || 'none',
+        cursor: 'pointer', fontSize: '13px', fontWeight: 500,
+        fontFamily: 'Inter, system-ui, sans-serif',
+      }}
+    >
+      {icon}
+      {label}
+    </button>
+  );
+}
+
+function AccordionHeader({ title, subtitle, open, onToggle }: {
+  title: string; subtitle: string; open: boolean; onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      style={{
+        width: '100%', display: 'flex', alignItems: 'center',
+        justifyContent: 'space-between', padding: '16px 20px',
+        borderRadius: open ? '14px 14px 0 0' : '14px',
+        backgroundColor: 'white', border: 'none', cursor: 'pointer',
+        boxShadow: '0 1px 6px rgba(0,0,0,0.03)', textAlign: 'left',
+      }}
+    >
+      <div>
+        <p style={{ fontSize: '15px', fontWeight: 500, color: '#2D4C4C', margin: '0 0 2px', fontFamily: 'Inter, system-ui, sans-serif' }}>
+          {title}
+        </p>
+        <p style={{ fontSize: '13px', color: '#2D4C4C', margin: 0, opacity: 0.4 }}>{subtitle}</p>
+      </div>
+      <motion.div animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.25 }}>
+        <ChevronDown size={18} color="#2D4C4C" opacity={0.3} />
+      </motion.div>
+    </button>
   );
 }

@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Settings } from 'lucide-react';
+import { motion } from 'motion/react';
+import { Settings, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfileData } from '@/hooks/useProfileData';
 import { useDataExport } from '@/hooks/useDataExport';
-import mindMeasureLogo from '@/assets/Mindmeasure_logo.png';
 import { OverviewTab } from './profile/OverviewTab';
 import { DetailsTab } from './profile/DetailsTab';
 import { WellnessTab } from './profile/WellnessTab';
@@ -34,7 +34,7 @@ export function MobileProfile({
   onUnsavedChangesChange,
   saveRef,
 }: MobileProfileProps) {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
 
   // Suppress unused-var lint (kept for API compatibility)
   void _onNavigateBack;
@@ -170,39 +170,44 @@ export function MobileProfile({
       <div
         style={{
           minHeight: '100vh',
-          backgroundColor: '#F5F5F5',
+          backgroundColor: '#2D4C4C',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        <div style={{ fontSize: '14px', color: '#999999' }}>Loading profile...</div>
+        <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.6)' }}>Loading profile...</div>
       </div>
     );
   }
+
+  const initials = `${(userData.firstName || '')[0] || ''}${(userData.lastName || '')[0] || ''}`.toUpperCase() || '?';
 
   return (
     <div
       style={{
         minHeight: '100vh',
-        backgroundColor: '#F5F5F5',
-        paddingBottom: '80px',
+        backgroundColor: '#F5F5F0',
+        paddingBottom: '100px',
       }}
     >
-      {/* Header */}
+      {/* ═══ SPECTRA HERO ═══ */}
       <div
         style={{
-          backgroundColor: '#FFFFFF',
-          padding: '72px 20px 24px 20px',
-          borderBottom: '1px solid #F0F0F0',
+          backgroundColor: '#2D4C4C',
+          padding: '56px 24px 32px',
+          minHeight: '240px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'flex-end',
         }}
       >
-        {/* Settings gear */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
+        {/* Settings gear - top right */}
+        <div style={{ position: 'absolute', top: '56px', right: '24px' }}>
           <button
             onClick={() => onNavigateToSettings?.()}
             style={{
-              background: '#F5F5F5',
+              background: 'rgba(255,255,255,0.1)',
               border: 'none',
               borderRadius: '50%',
               width: '36px',
@@ -211,76 +216,46 @@ export function MobileProfile({
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
-              transition: 'background 200ms ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = '#E5E7EB';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = '#F5F5F5';
             }}
             aria-label="Settings"
           >
-            <Settings size={18} color="#666666" />
+            <Settings size={18} color="rgba(255,255,255,0.6)" />
           </button>
         </div>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '16px',
-            marginBottom: '20px',
-          }}
-        >
-          {/* University Logo */}
-          {userData.institutionLogo ? (
-            <img
-              src={userData.institutionLogo}
-              alt={userData.institution}
-              style={{
-                width: '64px',
-                height: '64px',
-                borderRadius: '12px',
-                objectFit: 'contain',
-                flexShrink: 0,
-                border: '1px solid #E0E0E0',
-                padding: '4px',
-                backgroundColor: 'white',
-              }}
-            />
-          ) : (
-            <img
-              src={mindMeasureLogo}
-              alt="Logo"
-              style={{
-                width: '64px',
-                height: '64px',
-                borderRadius: '12px',
-                objectFit: 'contain',
-                flexShrink: 0,
-              }}
-            />
-          )}
+
+        {/* Avatar + name */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '16px' }}>
+          <div style={{
+            width: '56px', height: '56px', borderRadius: '50%',
+            backgroundColor: '#99CCCE', display: 'flex',
+            alignItems: 'center', justifyContent: 'center',
+            fontSize: '22px', fontWeight: 700, color: '#1a2e2e',
+          }}>{initials}</div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div
               style={{
-                fontSize: '20px',
-                fontWeight: '600',
-                color: '#1a1a1a',
+                fontSize: '26px',
+                fontWeight: 700,
+                color: '#ffffff',
                 marginBottom: '2px',
-                lineHeight: '1.2',
+                lineHeight: 1.2,
+                letterSpacing: '-0.025em',
+                fontFamily: 'Inter, system-ui, sans-serif',
               }}
             >
               {userData.firstName} {userData.lastName}
             </div>
-            <div style={{ fontSize: '13px', color: '#999999', marginBottom: '2px' }}>
-              {userData.institution || 'No institution'}
-            </div>
-            <div style={{ fontSize: '13px', color: '#666666' }}>{userData.email}</div>
+            <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)' }}>{userData.email}</div>
           </div>
         </div>
 
-        {/* Tabs */}
+        <p style={{ fontSize: '14px', fontWeight: 400, color: 'rgba(255,255,255,0.5)', margin: 0 }}>
+          {userData.institution || 'No institution'}
+        </p>
+      </div>
+
+      {/* Tabs */}
+      <div style={{ padding: '16px 24px 0', backgroundColor: '#F5F5F0' }}>
         <div style={{ display: 'flex', gap: '8px' }}>
           {(['overview', 'details', 'wellness'] as const).map((tab) => (
             <button
@@ -290,13 +265,14 @@ export function MobileProfile({
                 flex: 1,
                 padding: '10px 16px',
                 borderRadius: '12px',
-                border: 'none',
+                border: activeTab === tab ? 'none' : '1.5px solid rgba(45,76,76,0.15)',
                 fontSize: '14px',
-                fontWeight: '500',
+                fontWeight: activeTab === tab ? 600 : 400,
                 cursor: 'pointer',
                 transition: 'all 0.2s',
-                background: activeTab === tab ? 'linear-gradient(135deg, #5B8FED, #6BA3FF)' : '#F5F5F5',
-                color: activeTab === tab ? 'white' : '#666666',
+                background: activeTab === tab ? '#2D4C4C' : '#ffffff',
+                color: activeTab === tab ? '#ffffff' : '#2D4C4C',
+                fontFamily: 'Inter, system-ui, sans-serif',
               }}
             >
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -323,6 +299,151 @@ export function MobileProfile({
         )}
 
         {activeTab === 'wellness' && <WellnessTab userData={userData} onExportData={handleExportData} />}
+      </div>
+
+      {/* Wellbeing Report */}
+      <div style={{ padding: '0 20px' }}>
+        <motion.div
+          initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          style={{
+            backgroundColor: '#ffffff', borderRadius: '16px',
+            overflow: 'hidden', marginBottom: '12px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+          }}
+        >
+          <div style={{ height: '4px', background: 'linear-gradient(90deg, #99CCCE, #DDD6FE, #F59E0B)' }} />
+          <div style={{ padding: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '14px' }}>
+              <div>
+                <h3 style={{ fontSize: '17px', fontWeight: 700, color: '#2D4C4C', margin: '0 0 4px', fontFamily: 'Inter, system-ui, sans-serif' }}>
+                  Your Wellbeing Report
+                </h3>
+                <p style={{ fontSize: '13px', color: 'rgba(45,76,76,0.5)', margin: 0 }}>AI-powered personal insights</p>
+              </div>
+              <div style={{ backgroundColor: 'rgba(153,204,206,0.15)', borderRadius: '10px', padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2D4C4C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" />
+                </svg>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '6px', marginBottom: '14px' }}>
+              {['14 days', '30 days', '90 days'].map((period, i) => (
+                <button key={period} onClick={() => setExportPeriod(period === '14 days' ? 14 : period === '30 days' ? 30 : 90)} style={{
+                  flex: 1, padding: '8px',
+                  borderRadius: '10px',
+                  border: exportPeriod === (period === '14 days' ? 14 : period === '30 days' ? 30 : 90) ? 'none' : '1.5px solid rgba(45,76,76,0.1)',
+                  backgroundColor: exportPeriod === (period === '14 days' ? 14 : period === '30 days' ? 30 : 90) ? '#2D4C4C' : 'transparent',
+                  color: exportPeriod === (period === '14 days' ? 14 : period === '30 days' ? 30 : 90) ? '#ffffff' : 'rgba(45,76,76,0.5)',
+                  fontSize: '13px', fontWeight: exportPeriod === (period === '14 days' ? 14 : period === '30 days' ? 30 : 90) ? 600 : 400,
+                  cursor: 'pointer',
+                  fontFamily: 'Inter, system-ui, sans-serif',
+                }}>
+                  {period}
+                </button>
+              ))}
+            </div>
+
+            <button onClick={handleExportData} style={{
+              width: '100%', padding: '14px',
+              backgroundColor: '#2D4C4C', color: '#ffffff',
+              border: 'none', borderRadius: '14px',
+              fontSize: '15px', fontWeight: 600, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+              fontFamily: 'Inter, system-ui, sans-serif',
+            }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
+              </svg>
+              Generate & Email Report
+            </button>
+            <p style={{ fontSize: '11px', color: 'rgba(45,76,76,0.35)', textAlign: 'center', margin: '10px 0 0' }}>
+              Report sent to your email with a secure 7-day link
+            </p>
+          </div>
+        </motion.div>
+
+        {/* Data Ownership */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          style={{
+            backgroundColor: 'rgba(153,204,206,0.1)',
+            borderRadius: '16px', padding: '18px 20px', marginBottom: '12px',
+          }}
+        >
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2D4C4C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: '1px' }}>
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            </svg>
+            <div>
+              <p style={{ fontSize: '14px', fontWeight: 600, color: '#2D4C4C', margin: '0 0 4px' }}>This is your data</p>
+              <p style={{ fontSize: '13px', color: 'rgba(45,76,76,0.5)', margin: 0, lineHeight: 1.5 }}>
+                Every conversation, score and insight belongs to you. Share it with a counsellor, keep it for yourself, or export it any time.
+              </p>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Legal & Settings */}
+        <motion.div
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          style={{
+            backgroundColor: '#ffffff', borderRadius: '16px',
+            overflow: 'hidden', marginBottom: '12px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+          }}
+        >
+          {[
+            { label: 'Settings', sub: 'Notifications, preferences', onClick: () => onNavigateToSettings?.(), isLink: false },
+            { label: 'Privacy Policy', sub: 'mindmeasure.app', onClick: () => window.open('https://mindmeasure.app/privacy', '_blank'), isLink: true },
+            { label: 'Terms of Service', sub: 'mindmeasure.app', onClick: () => window.open('https://mindmeasure.app/terms', '_blank'), isLink: true },
+          ].map((item, i) => (
+            <div
+              key={item.label}
+              onClick={item.onClick}
+              style={{
+                padding: '16px 20px',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                cursor: 'pointer',
+                borderTop: i > 0 ? '1px solid rgba(45,76,76,0.06)' : 'none',
+              }}
+            >
+              <div>
+                <span style={{ fontSize: '15px', fontWeight: 500, color: '#2D4C4C', fontFamily: 'Inter, system-ui, sans-serif', display: 'block' }}>{item.label}</span>
+                <span style={{ fontSize: '12px', color: 'rgba(45,76,76,0.35)' }}>{item.sub}</span>
+              </div>
+              {item.isLink ? (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(45,76,76,0.2)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
+                </svg>
+              ) : (
+                <ChevronRight size={16} color="rgba(45,76,76,0.2)" />
+              )}
+            </div>
+          ))}
+        </motion.div>
+
+        {/* Sign Out */}
+        <motion.button
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+          transition={{ delay: 0.35 }}
+          onClick={() => { if (window.confirm('Are you sure you want to sign out?')) { signOut(); } }}
+          style={{
+            width: '100%', padding: '14px',
+            backgroundColor: 'transparent',
+            color: '#FF6B6B',
+            border: '1.5px solid rgba(255,107,107,0.2)',
+            borderRadius: '14px',
+            fontSize: '15px', fontWeight: 500, cursor: 'pointer',
+            fontFamily: 'Inter, system-ui, sans-serif',
+            marginBottom: '12px',
+          }}
+        >
+          Sign Out
+        </motion.button>
       </div>
 
       {/* Export Modal */}
@@ -389,8 +510,8 @@ export function MobileProfile({
                   padding: '12px',
                   border: 'none',
                   borderRadius: '8px',
-                  background: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)',
-                  color: 'white',
+                  background: '#2D4C4C',
+                  color: '#ffffff',
                   fontSize: '14px',
                   fontWeight: '600',
                   cursor: isSaving ? 'default' : 'pointer',
@@ -498,8 +619,8 @@ export function MobileProfile({
                   padding: '12px',
                   border: 'none',
                   borderRadius: '8px',
-                  background: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)',
-                  color: 'white',
+                  background: '#2D4C4C',
+                  color: '#ffffff',
                   fontSize: '14px',
                   fontWeight: '600',
                   cursor: 'pointer',
@@ -596,8 +717,8 @@ export function MobileProfile({
                   padding: '12px',
                   border: 'none',
                   borderRadius: '8px',
-                  background: 'linear-gradient(135deg, #5B8FED, #6BA3FF)',
-                  color: 'white',
+                  background: '#2D4C4C',
+                  color: '#ffffff',
                   fontSize: '14px',
                   fontWeight: '600',
                   cursor: 'pointer',

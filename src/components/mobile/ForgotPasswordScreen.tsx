@@ -1,333 +1,359 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { ChevronLeft, Mail, Loader2, CheckCircle } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import mindMeasureLogo from '../../assets/66710e04a85d98ebe33850197f8ef41bd28d8b84.png';
+import { ArrowLeft } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { Keyboard } from '@capacitor/keyboard';
 
 interface ForgotPasswordScreenProps {
   onBack: () => void;
-  onComplete?: () => void;
-  /** Prefill email when coming from RegistrationFlow "Lost password?" */
+  onSuccess: () => void;
+  onUnverifiedEmail?: (email: string) => void;
   prefilledEmail?: string;
 }
 
-export function ForgotPasswordScreen({ onBack, onComplete, prefilledEmail = '' }: ForgotPasswordScreenProps) {
+const spectra = '#2D4C4C';
+const pampas = '#FAF9F7';
+const sinbad = '#99CCCE';
+const buttercup = '#F59E0B';
+
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  height: '54px',
+  paddingLeft: '16px',
+  paddingRight: '16px',
+  fontSize: '16px',
+  fontFamily: 'Inter, system-ui, sans-serif',
+  fontWeight: 400,
+  color: pampas,
+  backgroundColor: 'rgba(153, 204, 206, 0.08)',
+  border: '1.5px solid rgba(153, 204, 206, 0.2)',
+  borderRadius: '12px',
+  outline: 'none',
+  boxSizing: 'border-box' as const,
+};
+
+const labelStyle: React.CSSProperties = {
+  display: 'block',
+  fontSize: '13px',
+  fontWeight: 500,
+  color: sinbad,
+  opacity: 0.5,
+  marginBottom: '8px',
+  letterSpacing: '0.04em',
+  textTransform: 'uppercase' as const,
+  fontFamily: 'Inter, system-ui, sans-serif',
+};
+
+export function ForgotPasswordScreen({
+  onBack,
+  onSuccess,
+  onUnverifiedEmail,
+  prefilledEmail = '',
+}: ForgotPasswordScreenProps) {
+  const { forgotPassword, confirmForgotPassword, loading } = useAuth();
   const [email, setEmail] = useState(prefilledEmail);
-  const [code, setCode] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [step, setStep] = useState<'email' | 'code' | 'success'>('email');
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [_isCodeSent, setIsCodeSent] = useState(false);
+  const [confirmationCode, setConfirmationCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [step, setStep] = useState<'email' | 'reset'>('email');
+  const [_isKeyboardOpen, setIsKeyboardOpen] = useState(false);
 
   useEffect(() => {
     if (prefilledEmail.trim()) setEmail(prefilledEmail.trim());
   }, [prefilledEmail]);
 
-  const { forgotPassword, confirmForgotPassword } = useAuth();
+  useEffect(() => {
+    const showListener = Keyboard.addListener('keyboardWillShow', () => setIsKeyboardOpen(true));
+    const hideListener = Keyboard.addListener('keyboardWillHide', () => setIsKeyboardOpen(false));
+    return () => {
+      showListener.remove();
+      hideListener.remove();
+    };
+  }, []);
 
-  const handleSendCode = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!email) {
+  const handleSendCode = async () => {
+    if (!email.trim()) {
       setError('Please enter your email address');
       return;
     }
-
-    setIsLoading(true);
     setError(null);
-
-    console.log('🔐 Requesting password reset for:', email);
-    const { error: forgotError } = await forgotPassword(email);
-
-    if (forgotError) {
-      console.error('❌ Forgot password failed:', forgotError);
-      setError(forgotError);
-      setIsLoading(false);
+    const result = await forgotPassword(email);
+    if (result.needsVerification && result.email) {
+      onUnverifiedEmail?.(result.email);
+      return;
+    }
+    if (result.error) {
+      setError(result.error);
     } else {
-      console.log('✅ Password reset code sent');
-      setStep('code');
-      setIsLoading(false);
+      setIsCodeSent(true);
+      setStep('reset');
     }
   };
 
-  const handleResetPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!code || !newPassword || !confirmPassword) {
-      setError('Please fill in all fields');
+  const handleResetPassword = async () => {
+    if (!confirmationCode.trim()) {
+      setError('Please enter the confirmation code');
       return;
     }
-
-    if (newPassword !== confirmPassword) {
-      setError('Passwords do not match');
+    if (!newPassword.trim()) {
+      setError('Please enter your new password');
       return;
     }
-
-    if (newPassword.length < 8) {
-      setError('Password must be at least 8 characters long');
+    const hasMinLength = newPassword.length >= 8;
+    const hasUppercase = /[A-Z]/.test(newPassword);
+    const hasLowercase = /[a-z]/.test(newPassword);
+    const hasNumber = /[0-9]/.test(newPassword);
+    if (!hasMinLength || !hasUppercase || !hasLowercase || !hasNumber) {
+      setError('Password must be at least 8 characters with uppercase, lowercase, and numbers');
       return;
     }
-
-    setIsLoading(true);
     setError(null);
-
-    console.log('🔐 Confirming password reset for:', email);
-    const { error: confirmError } = await confirmForgotPassword(email, code, newPassword);
-
-    if (confirmError) {
-      console.error('❌ Confirm password reset failed:', confirmError);
-      setError(confirmError);
-      setIsLoading(false);
+    const { error: resetError } = await confirmForgotPassword(email, confirmationCode, newPassword);
+    if (resetError) {
+      setError(resetError);
     } else {
-      console.log('✅ Password reset successful');
-      setStep('success');
-      setIsLoading(false);
-
-      // Auto-navigate back after 2 seconds
-      setTimeout(() => {
-        if (onComplete) {
-          onComplete();
-        } else {
-          onBack();
-        }
-      }, 2000);
+      onSuccess();
     }
-  };
-
-  const containerVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.5,
-        staggerChildren: 0.1,
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.4 },
-    },
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 overflow-y-auto">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-100" style={{ paddingTop: 'max(3rem, env(safe-area-inset-top))' }}>
-        <div className="flex items-center justify-between px-6 py-4">
-          <button
-            onClick={onBack}
-            className="flex items-center gap-1 text-gray-600 hover:text-gray-900 transition-colors"
-            disabled={isLoading}
-          >
-            <ChevronLeft className="w-6 h-6" />
-            <span className="font-medium text-base">Back</span>
-          </button>
-          <h1 className="text-lg font-semibold text-gray-900">
-            {step === 'email' ? 'Reset Password' : step === 'code' ? 'Enter Code' : 'Success'}
-          </h1>
-          <div className="w-24" /> {/* Spacer for centering */}
-        </div>
-      </div>
-
-      {/* Content */}
+    <div
+      style={{
+        minHeight: '100vh',
+        backgroundColor: spectra,
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '0 28px',
+        fontFamily: 'Lato, system-ui, sans-serif',
+      }}
+    >
       <motion.div
-        className="flex-1 px-6 py-8"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        style={{ paddingBottom: 'max(20rem, calc(env(safe-area-inset-bottom) + 20rem))' }}
+        style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '430px', width: '100%' }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
       >
-        <div className="max-w-md mx-auto">
-          {/* Logo */}
-          <motion.div variants={itemVariants} className="flex justify-center mb-6">
-            <div className="w-20 h-20 flex items-center justify-center">
-              <img src={mindMeasureLogo} alt="Mind Measure" className="w-full h-full object-contain" />
-            </div>
-          </motion.div>
+        {/* Back button */}
+        <button
+          type="button"
+          onClick={onBack}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            color: sinbad,
+            opacity: 0.5,
+            paddingTop: '56px',
+            marginBottom: '48px',
+            fontFamily: 'Inter, system-ui, sans-serif',
+            fontSize: '14px',
+          }}
+        >
+          <ArrowLeft size={18} />
+        </button>
 
-          {step === 'email' && (
-            <>
-              <motion.h2 variants={itemVariants} className="text-2xl font-bold text-gray-900 text-center mb-2">
-                Forgot Password?
-              </motion.h2>
-              <motion.p variants={itemVariants} className="text-gray-600 text-center mb-8">
-                Enter your email address and we'll send you a code to reset your password.
-              </motion.p>
+        {step === 'email' ? (
+          <>
+            {/* Title */}
+            <h1
+              style={{
+                fontSize: '36px',
+                fontWeight: 300,
+                color: pampas,
+                margin: '0 0 12px',
+                letterSpacing: '-0.02em',
+                lineHeight: 1.15,
+              }}
+            >
+              Reset password
+            </h1>
+            <p
+              style={{
+                fontSize: '16px',
+                fontWeight: 300,
+                color: sinbad,
+                margin: '0 0 40px',
+                lineHeight: 1.5,
+                opacity: 0.7,
+              }}
+            >
+              Enter your email and we'll send you a code to reset your password.
+            </p>
 
-              <form onSubmit={handleSendCode} className="space-y-6">
-                <motion.div variants={itemVariants}>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                    Email
-                  </label>
-                  <div className="relative">
-                    <input
-                      id="email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="your.email@university.ac.uk"
-                      className="w-full h-14 px-4 text-base border-2 border-gray-200 rounded-xl focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all"
-                      style={{ paddingLeft: '2rem' }}
-                      disabled={isLoading}
-                      autoComplete="email"
-                    />
-                    <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  </div>
-                </motion.div>
-
-                {error && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="p-4 bg-red-50 text-red-800 rounded-lg border border-red-200"
-                  >
-                    <p className="text-sm font-medium">{error}</p>
-                  </motion.div>
-                )}
-
-                <motion.button
-                  variants={itemVariants}
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full h-14 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold text-lg rounded-xl shadow-lg disabled:opacity-50 disabled:cursor-not-allowed hover:from-purple-700 hover:to-blue-700 hover:shadow-xl transition-all flex items-center justify-center gap-2"
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      <span>Sending code...</span>
-                    </>
-                  ) : (
-                    <span>Send Reset Code</span>
-                  )}
-                </motion.button>
-              </form>
-            </>
-          )}
-
-          {step === 'code' && (
-            <>
-              <motion.h2 variants={itemVariants} className="text-2xl font-bold text-gray-900 text-center mb-2">
-                Enter Reset Code
-              </motion.h2>
-              <motion.p variants={itemVariants} className="text-gray-600 text-center mb-8">
-                We've sent a code to <strong>{email}</strong>. Enter it below along with your new password.
-              </motion.p>
-
-              <form onSubmit={handleResetPassword} className="space-y-6">
-                <motion.div variants={itemVariants}>
-                  <label htmlFor="code" className="block text-sm font-medium text-gray-700 mb-2">
-                    Reset Code
-                  </label>
-                  <input
-                    id="code"
-                    type="text"
-                    value={code}
-                    onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    placeholder="000000"
-                    className="w-full h-14 px-4 text-base border-2 border-gray-200 rounded-xl focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all text-center text-2xl tracking-widest"
-                    disabled={isLoading}
-                    autoComplete="one-time-code"
-                    maxLength={6}
-                  />
-                </motion.div>
-
-                <motion.div variants={itemVariants}>
-                  <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                    New Password
-                  </label>
-                  <input
-                    id="newPassword"
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Enter new password"
-                    className="w-full h-14 px-4 text-base border-2 border-gray-200 rounded-xl focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all"
-                    disabled={isLoading}
-                    autoComplete="new-password"
-                  />
-                </motion.div>
-
-                <motion.div variants={itemVariants}>
-                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                    Confirm Password
-                  </label>
-                  <input
-                    id="confirmPassword"
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Confirm new password"
-                    className="w-full h-14 px-4 text-base border-2 border-gray-200 rounded-xl focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all"
-                    disabled={isLoading}
-                    autoComplete="new-password"
-                  />
-                </motion.div>
-
-                {error && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="p-4 bg-red-50 text-red-800 rounded-lg border border-red-200"
-                  >
-                    <p className="text-sm font-medium">{error}</p>
-                  </motion.div>
-                )}
-
-                <motion.button
-                  variants={itemVariants}
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full h-14 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold text-lg rounded-xl shadow-lg disabled:opacity-50 disabled:cursor-not-allowed hover:from-purple-700 hover:to-blue-700 hover:shadow-xl transition-all flex items-center justify-center gap-2"
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      <span>Resetting password...</span>
-                    </>
-                  ) : (
-                    <span>Reset Password</span>
-                  )}
-                </motion.button>
-
-                <motion.button
-                  variants={itemVariants}
-                  type="button"
-                  onClick={() => {
-                    setStep('email');
-                    setCode('');
-                    setNewPassword('');
-                    setConfirmPassword('');
-                    setError(null);
-                  }}
-                  className="w-full text-center text-purple-600 font-medium hover:text-purple-700 transition-colors"
-                  disabled={isLoading}
-                >
-                  Back to email entry
-                </motion.button>
-              </form>
-            </>
-          )}
-
-          {step === 'success' && (
-            <motion.div variants={itemVariants} className="text-center space-y-6">
-              <div className="flex justify-center">
-                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center">
-                  <CheckCircle className="w-12 h-12 text-green-600" />
-                </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div>
+                <label htmlFor="reset-email" style={labelStyle}>
+                  Email address
+                </label>
+                <input
+                  id="reset-email"
+                  type="email"
+                  placeholder="Enter your email address"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  style={inputStyle}
+                />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900">Password Reset Successful!</h2>
-              <p className="text-gray-600">Your password has been reset. You can now sign in with your new password.</p>
-            </motion.div>
-          )}
-        </div>
+
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  style={{
+                    fontSize: '14px',
+                    color: buttercup,
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    border: '1px solid rgba(245, 158, 11, 0.2)',
+                    borderRadius: '10px',
+                    padding: '12px 16px',
+                    lineHeight: 1.5,
+                    fontFamily: 'Inter, system-ui, sans-serif',
+                  }}
+                >
+                  {error}
+                </motion.div>
+              )}
+
+              <button
+                type="button"
+                onClick={handleSendCode}
+                disabled={loading || !email.trim()}
+                style={{
+                  width: '100%',
+                  height: '54px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: loading || !email.trim() ? 'rgba(245, 158, 11, 0.3)' : buttercup,
+                  color: spectra,
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontSize: '16px',
+                  fontWeight: 600,
+                  cursor: loading || !email.trim() ? 'default' : 'pointer',
+                  fontFamily: 'Inter, system-ui, sans-serif',
+                  transition: 'background-color 200ms ease',
+                }}
+              >
+                {loading ? 'Sending...' : 'Send reset code'}
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Reset step */}
+            <h1
+              style={{
+                fontSize: '36px',
+                fontWeight: 300,
+                color: pampas,
+                margin: '0 0 12px',
+                letterSpacing: '-0.02em',
+                lineHeight: 1.15,
+              }}
+            >
+              Check your email
+            </h1>
+            <p
+              style={{
+                fontSize: '16px',
+                fontWeight: 300,
+                color: sinbad,
+                margin: '0 0 36px',
+                lineHeight: 1.5,
+                opacity: 0.7,
+              }}
+            >
+              We've sent a code to <span style={{ color: pampas, fontWeight: 400 }}>{email}</span>
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div>
+                <label htmlFor="reset-code" style={labelStyle}>
+                  Reset code
+                </label>
+                <input
+                  id="reset-code"
+                  type="text"
+                  placeholder="Enter 6-digit code"
+                  value={confirmationCode}
+                  onChange={(e) => setConfirmationCode(e.target.value)}
+                  maxLength={6}
+                  style={{ ...inputStyle, textAlign: 'center', letterSpacing: '0.3em', fontFamily: 'monospace' }}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="new-password" style={labelStyle}>
+                  New password
+                </label>
+                <input
+                  id="new-password"
+                  type="password"
+                  placeholder="Enter new password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  style={inputStyle}
+                />
+              </div>
+
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  style={{
+                    fontSize: '14px',
+                    color: buttercup,
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    border: '1px solid rgba(245, 158, 11, 0.2)',
+                    borderRadius: '10px',
+                    padding: '12px 16px',
+                    lineHeight: 1.5,
+                    fontFamily: 'Inter, system-ui, sans-serif',
+                  }}
+                >
+                  {error}
+                </motion.div>
+              )}
+
+              <button
+                type="button"
+                onClick={handleResetPassword}
+                disabled={loading || !confirmationCode.trim() || !newPassword.trim()}
+                style={{
+                  width: '100%',
+                  height: '54px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor:
+                    loading || !confirmationCode.trim() || !newPassword.trim() ? 'rgba(245, 158, 11, 0.3)' : buttercup,
+                  color: spectra,
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontSize: '16px',
+                  fontWeight: 600,
+                  cursor: loading || !confirmationCode.trim() || !newPassword.trim() ? 'default' : 'pointer',
+                  fontFamily: 'Inter, system-ui, sans-serif',
+                  transition: 'background-color 200ms ease',
+                }}
+              >
+                {loading ? 'Resetting...' : 'Reset password'}
+              </button>
+            </div>
+          </>
+        )}
       </motion.div>
+
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        input::placeholder { color: rgba(153, 204, 206, 0.35); }
+        input:focus { border-color: rgba(153, 204, 206, 0.5) !important; }
+      `}</style>
     </div>
   );
 }
