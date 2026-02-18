@@ -7,6 +7,7 @@ import { MediaCapture } from '../../services/multimodal/baseline/mediaCapture';
 import { CheckinEnrichmentService } from '../../services/multimodal/checkin/enrichmentService';
 import { ConversationScreen } from './ConversationScreen';
 import { CheckInFailedModal } from './CheckInFailedModal';
+import { ProcessingScreen } from './ProcessingScreen';
 import type { CapturedMediaResult } from '../../types/assessment';
 
 /** When false (default), no insert into assessment_sessions in check-in. Ensures no /api/database/insert for assessment_sessions in production. */
@@ -521,122 +522,9 @@ export function CheckinAssessmentSDK({ onBack, onComplete }: CheckinAssessmentSD
   if (showConversation) {
     return (
       <>
-        {/* Processing Overlay - EXACT COPY FROM BASELINE */}
         {isSaving && (
-          <div className="fixed inset-0 z-[9999] min-h-screen relative overflow-hidden flex items-center justify-center">
-            {/* Animated gradient background - CSS animation (runs on compositor, won't freeze) */}
-            <div
-              className="absolute inset-0 processing-gradient-bg"
-              style={{
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                animation: 'gradientShift 6s ease-in-out infinite',
-              }}
-            />
-
-            {/* Subtle overlay */}
-            <div className="absolute inset-0 bg-black/5" />
-
-            {/* Floating orbs - CSS animations (won't freeze during heavy computation) */}
-            <div
-              className="absolute top-1/4 left-1/4 w-32 h-32 bg-white/10 rounded-full blur-2xl processing-orb-1"
-              style={{
-                animation: 'floatOrb1 4s ease-in-out infinite',
-              }}
-            />
-            <div
-              className="absolute bottom-1/4 right-1/4 w-24 h-24 bg-white/8 rounded-full blur-xl processing-orb-2"
-              style={{
-                animation: 'floatOrb2 3s ease-in-out infinite 1s',
-              }}
-            />
-
-            {/* Content */}
-            <div
-              className="relative z-10 flex flex-col items-center text-center px-8 processing-content"
-              style={{
-                animation: 'fadeIn 0.8s ease-out',
-              }}
-            >
-              {/* Logo - CSS animation (continuous pulse) */}
-              <div
-                className="mb-6 processing-logo"
-                style={{
-                  animation: 'pulseLogo 2.5s ease-in-out infinite',
-                }}
-              >
-                <div className="w-32 h-32 p-4 bg-white/20 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20">
-                  <img src={mindMeasureLogo} alt="Mind Measure" className="w-full h-full object-contain" />
-                </div>
-              </div>
-
-              {/* Processing messages with phase transitions */}
-              <div className="processing-title">
-                <h1 className="text-4xl font-semibold text-white mb-3">
-                  {processingPhase === 'extracting' && 'Processing Your Check-in'}
-                  {processingPhase === 'analyzing' && 'Analysing Multimodal Data'}
-                  {processingPhase === 'saving' && 'Finalising Your Check-in'}
-                </h1>
-              </div>
-
-              <div className="processing-message">
-                <p className="text-white/90 text-lg font-medium mb-8">{processingMessage}</p>
-              </div>
-
-              {/* Progress bar - CSS animation (continuous, won't freeze) */}
-              <div
-                className="mt-8 w-48 h-1 bg-white/30 rounded-full overflow-hidden"
-                style={{
-                  animation: 'fadeIn 0.6s ease-out 0.4s both',
-                }}
-              >
-                <div
-                  className="h-full bg-white/60 rounded-full processing-progress-bar"
-                  style={{
-                    width: '50%',
-                    animation: 'progressBar 2s linear infinite',
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* CSS Animations - defined inline to ensure they're always active */}
-            <style>{`
-              @keyframes gradientShift {
-                0%, 100% { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-                33% { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-                66% { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-              }
-              
-              @keyframes floatOrb1 {
-                0%, 100% { transform: translate(0, 0) scale(1); }
-                50% { transform: translate(10px, -15px) scale(1.1); }
-              }
-              
-              @keyframes floatOrb2 {
-                0%, 100% { transform: translate(0, 0) scale(1); }
-                50% { transform: translate(-8px, 10px) scale(0.9); }
-              }
-              
-              @keyframes pulseLogo {
-                0%, 100% { transform: scale(1); }
-                50% { transform: scale(1.05); }
-              }
-              
-              @keyframes fadeIn {
-                from { opacity: 0; }
-                to { opacity: 1; }
-              }
-              
-              @keyframes progressBar {
-                0% { transform: translateX(-100%); }
-                100% { transform: translateX(400%); }
-              }
-              
-              @keyframes spin {
-                from { transform: rotate(0deg); }
-                to { transform: rotate(360deg); }
-              }
-            `}</style>
+          <div className="fixed inset-0 z-[9999]">
+            <ProcessingScreen mode="baseline" />
           </div>
         )}
 

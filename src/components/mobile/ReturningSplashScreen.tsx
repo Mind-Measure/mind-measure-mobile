@@ -1,152 +1,123 @@
-import { useEffect } from 'react';
-import { motion } from 'motion/react';
-const mindMeasureLogo = '/images/mind-measure-logo.png';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+
+const MM_LOGO_WHITE = '/images/mind-measure-logo-white.png';
+
+const colours = ['#2D4C4C', '#99CCCE', '#F59E0B', '#DDD6FE', '#FF6B6B'];
+const finalColour = '#FF6B6B';
+const cycleInterval = 200;
+const cycleEnd = 2000;
+const totalDuration = 6500;
+
 interface ReturningSplashScreenProps {
   onComplete: () => void;
 }
+
 export function ReturningSplashScreen({ onComplete }: ReturningSplashScreenProps) {
-  // Auto-redirect after 5 seconds
+  const [bgIndex, setBgIndex] = useState(0);
+  const [settled, setSettled] = useState(false);
+  const [showWords, setShowWords] = useState(false);
+  const [wordIndex, setWordIndex] = useState(0);
+  const [showBrand, setShowBrand] = useState(false);
+
   useEffect(() => {
-    const timer = setTimeout(() => {
+    const cycleId = setInterval(() => {
+      setBgIndex((prev) => (prev + 1) % colours.length);
+    }, cycleInterval);
+
+    const settleTimer = setTimeout(() => {
+      clearInterval(cycleId);
+      setSettled(true);
+    }, cycleEnd);
+
+    const wordsTimer = setTimeout(() => {
+      setShowWords(true);
+    }, cycleEnd + 300);
+
+    const word2Timer = setTimeout(() => setWordIndex(1), cycleEnd + 1000);
+    const word3Timer = setTimeout(() => setWordIndex(2), cycleEnd + 1700);
+    const brandTimer = setTimeout(() => setShowBrand(true), cycleEnd + 3000);
+
+    const completeTimer = setTimeout(() => {
       onComplete();
-    }, 5000);
-    return () => clearTimeout(timer);
+    }, totalDuration);
+
+    return () => {
+      clearInterval(cycleId);
+      clearTimeout(settleTimer);
+      clearTimeout(wordsTimer);
+      clearTimeout(word2Timer);
+      clearTimeout(word3Timer);
+      clearTimeout(brandTimer);
+      clearTimeout(completeTimer);
+    };
   }, [onComplete]);
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        duration: 0.8,
-        staggerChildren: 0.3,
-      },
-    },
-    exit: {
-      opacity: 0,
-      scale: 0.95,
-      transition: {
-        duration: 0.5,
-      },
-    },
-  };
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: {
-        duration: 0.6,
-        ease: 'easeOut',
-      },
-    },
-  };
-  const logoVariants = {
-    hidden: { scale: 0.8, opacity: 0 },
-    visible: {
-      scale: 1,
-      opacity: 1,
-      transition: {
-        duration: 0.8,
-        ease: 'easeOut',
-      },
-    },
-    pulse: {
-      scale: [1, 1.05, 1],
-      transition: {
-        duration: 2.5,
-        repeat: Infinity,
-        ease: 'easeInOut',
-      },
-    },
-  };
-  const gradientVariants = {
-    animate: {
-      background: [
-        'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-        'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-        'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      ],
-      transition: {
-        duration: 6,
-        repeat: Infinity,
-        ease: 'linear',
-      },
-    },
-  };
+
+  const bg = settled ? finalColour : colours[bgIndex];
+
   return (
-    <div className="min-h-screen relative overflow-hidden flex items-center justify-center">
-      {/* Animated gradient background */}
-      <motion.div
-        className="absolute inset-0"
-        variants={gradientVariants}
-        animate="animate"
-        style={{
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        }}
+    <div
+      style={{
+        minHeight: '100vh',
+        backgroundColor: bg,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+        transition: settled ? 'background-color 0.3s ease' : 'none',
+      }}
+    >
+      <img
+        src={MM_LOGO_WHITE}
+        alt="Mind Measure"
+        style={{ width: 120, height: 120, objectFit: 'contain' }}
       />
-      {/* Subtle overlay for depth */}
-      <div className="absolute inset-0 bg-black/5" />
-      {/* Floating orbs for liquid glass effect */}
-      <motion.div
-        className="absolute top-1/4 left-1/4 w-32 h-32 bg-white/10 rounded-full blur-2xl"
-        animate={{
-          y: [0, -15, 0],
-          x: [0, 10, 0],
-          scale: [1, 1.1, 1],
-        }}
-        transition={{
-          duration: 4,
-          repeat: Infinity,
-          ease: 'easeInOut',
-        }}
-      />
-      <motion.div
-        className="absolute bottom-1/4 right-1/4 w-24 h-24 bg-white/8 rounded-full blur-xl"
-        animate={{
-          y: [0, 10, 0],
-          x: [0, -8, 0],
-          scale: [1, 0.9, 1],
-        }}
-        transition={{
-          duration: 3,
-          repeat: Infinity,
-          ease: 'easeInOut',
-          delay: 1,
-        }}
-      />
-      {/* Content */}
-      <motion.div
-        className="relative z-10 flex flex-col items-center text-center px-8"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        exit="exit"
-      >
-        {/* Logo */}
-        <motion.div className="mb-6" variants={logoVariants} animate={['visible', 'pulse']}>
-          <div className="w-32 h-32 p-4 bg-white/20 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20">
-            <img src={mindMeasureLogo} alt="Mind Measure" className="w-full h-full object-contain" />
-          </div>
-        </motion.div>
-        {/* App Name */}
-        <motion.div variants={itemVariants}>
-          <h1 className="text-4xl font-semibold text-white mb-3">Mind Measure</h1>
-        </motion.div>
-        {/* Tagline */}
-        <motion.div variants={itemVariants}>
-          <p className="text-white/90 text-lg font-medium">Measure • Monitor • Manage</p>
-        </motion.div>
-        {/* Subtle loading indicator */}
-        <motion.div className="mt-8 w-12 h-1 bg-white/30 rounded-full overflow-hidden" variants={itemVariants}>
-          <motion.div
-            className="h-full bg-white/60 rounded-full"
-            initial={{ width: '0%' }}
-            animate={{ width: '100%' }}
-            transition={{ duration: 5, ease: 'easeInOut' }}
-          />
-        </motion.div>
-      </motion.div>
+
+      <div style={{ marginTop: 40, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <AnimatePresence mode="wait">
+          {showWords && !showBrand && (
+            <motion.p
+              key={wordIndex}
+              initial={{ opacity: 0, scale: 0.85 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 1.1 }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
+              style={{
+                fontSize: 26,
+                fontWeight: 700,
+                color: '#fff',
+                fontFamily: 'Lato, system-ui, sans-serif',
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                margin: 0,
+              }}
+            >
+              {['Measure', 'Monitor', 'Manage'][wordIndex]}
+            </motion.p>
+          )}
+          {showBrand && (
+            <motion.p
+              key="brand"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 1.0, ease: 'easeOut' }}
+              style={{
+                fontSize: 26,
+                fontWeight: 700,
+                color: '#fff',
+                fontFamily: 'Lato, system-ui, sans-serif',
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                margin: 0,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Mind Measure
+            </motion.p>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }

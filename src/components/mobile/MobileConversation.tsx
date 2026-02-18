@@ -566,7 +566,7 @@ export const MobileConversation: React.FC<MobileConversationProps> = ({
           {/* Widget container - fills entire space below header */}
           <div className="flex-1 relative p-0" style={{ minHeight: '60vh' }}>
             {conversationState === 'processing' ? (
-              <ProcessingScreen />
+              <ProcessingScreen mode="checkin" />
             ) : scriptLoaded ? (
               <div className="w-full h-full relative">
                 {/* ElevenLabs widget */}

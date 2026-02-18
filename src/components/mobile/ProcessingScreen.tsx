@@ -1,103 +1,185 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-const MM_LOGO = '/images/mind-measure-logo.png';
 
+const MM_LOGO_WHITE = '/images/mind-measure-logo-white.png';
 const spectra = '#2D4C4C';
-const sinbad = '#99CCCE';
-const pampas = '#FAF9F7';
+const bittersweet = '#FF6B6B';
 
-const statusMessages = [
-  'Analysing your conversation…',
-  'Building your insights…',
-  'Identifying key themes…',
-  'Nearly there…',
+const baselinePhrases = [
+  'Capturing voice signal',
+  'Measuring speech rhythm',
+  'Assessing vocal stability',
+  'Tracking facial cues',
+  'Mapping emotional valence',
+  'Parsing language patterns',
+  'Scoring PHQ-2',
+  'Scoring GAD-2',
+  'Integrating structured responses',
+  'Aligning multimodal signals',
+  'Normalising feature ranges',
+  'Applying fusion weights',
+  'Calibrating personal baseline',
+  'Computing equilibrium band',
+  'Finalising baseline score',
+];
+
+const checkinPhrases = [
+  'Capturing voice signal',
+  'Measuring pitch',
+  'Tracking speech rhythm',
+  'Analysing pause patterns',
+  'Assessing voice stability',
+  'Evaluating audio quality',
+  'Tracking facial cues',
+  'Monitoring eye contact',
+  'Measuring facial tension',
+  'Mapping emotional valence',
+  'Assessing blink rate',
+  'Validating visual signal',
+  'Parsing language tone',
+  'Detecting stress markers',
+  'Identifying coping signals',
+  'Tracking social references',
+  'Monitoring sleep mentions',
+  'Comparing to baseline',
+  'Measuring variance',
+  'Mapping energy shift',
+  'Calculating stress delta',
+  'Detecting behavioural drift',
+  'Aligning multimodal signals',
+  'Applying fusion weights',
+  'Updating rolling trend',
+  'Recalculating score',
+  'Finalising insight',
 ];
 
 interface ProcessingScreenProps {
-  /** Optional extra CSS class for the root container */
+  mode?: 'baseline' | 'checkin';
   className?: string;
 }
 
-/**
- * Full-viewport processing overlay shown while the backend analyses a conversation.
- *
- * - Spectra background with soft radial glow
- * - Animated SVG logo playing its drawing sequence
- * - Cycling status messages underneath
- */
-export function ProcessingScreen({ className }: ProcessingScreenProps) {
-  const [msgIndex, setMsgIndex] = useState(0);
+export function ProcessingScreen({ mode = 'checkin', className }: ProcessingScreenProps) {
+  const phrases = mode === 'baseline' ? baselinePhrases : checkinPhrases;
+  const interval = mode === 'baseline' ? 500 : 333;
+
+  const totalPhraseTime = phrases.length * interval;
+
+  const [phraseIndex, setPhraseIndex] = useState(0);
+  const [showBrand, setShowBrand] = useState(false);
+  const [done, setDone] = useState(false);
 
   useEffect(() => {
-    const id = setInterval(() => {
-      setMsgIndex((prev) => (prev + 1) % statusMessages.length);
-    }, 3000);
-    return () => clearInterval(id);
-  }, []);
+    if (done) return;
+
+    const phraseId = setInterval(() => {
+      setPhraseIndex((prev) => {
+        if (prev >= phrases.length - 1) {
+          clearInterval(phraseId);
+          return prev;
+        }
+        return prev + 1;
+      });
+    }, interval);
+
+    const brandTimer = setTimeout(() => {
+      setShowBrand(true);
+      setDone(true);
+    }, totalPhraseTime + 600);
+
+    return () => {
+      clearInterval(phraseId);
+      clearTimeout(brandTimer);
+    };
+  }, [done, phrases.length, interval]);
 
   return (
     <div
-      className={`absolute inset-0 flex items-center justify-center ${className ?? ''}`}
-      style={{ backgroundColor: spectra }}
+      className={className ?? ''}
+      style={{
+        position: 'absolute',
+        inset: 0,
+        backgroundColor: spectra,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
     >
-      {/* Soft glow */}
-      <div
-        className="absolute inset-0 opacity-15"
-        style={{
-          background: `radial-gradient(circle at 50% 42%, ${sinbad} 0%, transparent 55%)`,
-        }}
+      <img
+        src={MM_LOGO_WHITE}
+        alt="Mind Measure"
+        style={{ width: 120, height: 120, objectFit: 'contain' }}
       />
 
-      <motion.div
-        className="relative z-10 flex flex-col items-center text-center px-8"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
-      >
-        {/* Logo */}
-        <motion.div
-          className="mb-8"
-          animate={{ scale: [1, 1.04, 1] }}
-          transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-        >
-          <img src={MM_LOGO} alt="Mind Measure" style={{ width: 120, height: 120, objectFit: 'contain' }} />
-        </motion.div>
-
-        {/* Cycling status text */}
-        <div className="h-8 flex items-center justify-center">
-          <AnimatePresence mode="wait">
+      <div style={{ marginTop: 40, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <AnimatePresence mode="wait">
+          {!showBrand && (
             <motion.p
-              key={msgIndex}
-              className="text-base font-medium"
-              style={{ color: pampas }}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.35 }}
-            >
-              {statusMessages[msgIndex]}
-            </motion.p>
-          </AnimatePresence>
-        </div>
-
-        {/* Subtle loading dots */}
-        <div className="flex items-center gap-1.5 mt-6">
-          {[0, 1, 2].map((i) => (
-            <motion.div
-              key={i}
-              className="w-1.5 h-1.5 rounded-full"
-              style={{ backgroundColor: sinbad }}
-              animate={{ opacity: [0.3, 1, 0.3] }}
-              transition={{
-                duration: 1.2,
-                repeat: Infinity,
-                ease: 'easeInOut',
-                delay: i * 0.2,
+              key={phraseIndex}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.9 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: interval / 3000, ease: 'easeOut' }}
+              style={{
+                fontSize: 15,
+                fontWeight: 500,
+                color: '#fff',
+                fontFamily: 'Inter, system-ui, sans-serif',
+                letterSpacing: '0.02em',
+                margin: 0,
+                whiteSpace: 'nowrap',
               }}
-            />
-          ))}
-        </div>
-      </motion.div>
+            >
+              {phrases[phraseIndex]}
+            </motion.p>
+          )}
+          {showBrand && (
+            <motion.p
+              key="brand"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 1.0, ease: 'easeOut' }}
+              style={{
+                fontSize: 26,
+                fontWeight: 700,
+                color: '#fff',
+                fontFamily: 'Lato, system-ui, sans-serif',
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                margin: 0,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Mind Measure
+            </motion.p>
+          )}
+        </AnimatePresence>
+      </div>
+
+      <div
+        style={{
+          width: '60%',
+          height: 3,
+          borderRadius: 2,
+          backgroundColor: showBrand ? 'transparent' : 'rgba(255,255,255,0.15)',
+          overflow: 'hidden',
+          marginTop: 12,
+          transition: 'background-color 0.5s ease',
+        }}
+      >
+        {!showBrand && (
+          <motion.div
+            style={{
+              height: '100%',
+              borderRadius: 2,
+              backgroundColor: bittersweet,
+            }}
+            initial={{ width: '0%' }}
+            animate={{ width: '100%' }}
+            transition={{ duration: totalPhraseTime / 1000, ease: 'linear' }}
+          />
+        )}
+      </div>
     </div>
   );
 }
