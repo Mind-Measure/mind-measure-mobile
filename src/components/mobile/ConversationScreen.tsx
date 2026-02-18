@@ -377,35 +377,6 @@ export function ConversationScreen({
         </AnimatePresence>
       </div>
 
-      {/* Listening indicator — fixed position, detached from text flow */}
-      <AnimatePresence>
-        {isListening && currentMessage?.sender === 'ai' && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-            style={{
-              position: 'absolute',
-              bottom: 100,
-              left: 28,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 5,
-            }}
-          >
-            {[0, 1, 2].map((i) => (
-              <motion.div
-                key={i}
-                animate={{ height: ['12px', '24px', '12px'], backgroundColor: [sinbad, pampas, sinbad] }}
-                transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.15, ease: 'easeInOut' }}
-                style={{ width: 4, borderRadius: 2 }}
-              />
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Finish button */}
       {onFinish && (
         <div style={{ position: 'absolute', bottom: 40, right: 28, zIndex: 20 }}>
