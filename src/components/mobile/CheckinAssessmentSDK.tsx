@@ -302,40 +302,6 @@ export function CheckinAssessmentSDK({ onBack, onComplete }: CheckinAssessmentSD
         setIsCapturingMedia(false);
       }
 
-      // Clear any existing timeout/interval
-      if (messageTimeoutRef.current) {
-        clearInterval(messageTimeoutRef.current);
-        messageTimeoutRef.current = null;
-      }
-
-      // Set first message
-      setProcessingMessage(processingMessages[0].message);
-
-      // Calculate total duration for phase transitions (60 seconds total)
-      const totalDuration = processingMessages.reduce((sum, msg) => sum + msg.duration, 0);
-      const extractingDuration = totalDuration * 0.4; // First 40% is extracting
-      const analyzingDuration = totalDuration * 0.5; // Next 50% is analyzing
-
-      // Visual phase transitions
-      setTimeout(() => setProcessingPhase('analyzing'), extractingDuration);
-      setTimeout(() => setProcessingPhase('saving'), extractingDuration + analyzingDuration);
-
-      // Use setInterval for reliable message rotation every 6 seconds
-      messageTimeoutRef.current = setInterval(() => {
-        messageIndexRef.current++;
-        if (messageIndexRef.current < processingMessages.length) {
-          const currentMsg = processingMessages[messageIndexRef.current];
-          setProcessingMessage(currentMsg.message);
-        } else {
-          // Reached end of messages, stop interval
-          if (messageTimeoutRef.current) {
-            clearInterval(messageTimeoutRef.current);
-            messageTimeoutRef.current = null;
-          }
-        }
-      }, 6000); // 6 seconds
-
-      // Stop media capture
       let enrichmentResult = null;
 
       try {
@@ -470,38 +436,24 @@ export function CheckinAssessmentSDK({ onBack, onComplete }: CheckinAssessmentSD
         }
       }
 
-      // Processing animation runs for at least MIN_PROCESSING_MS regardless of backend speed
-      const MIN_PROCESSING_MS = 10_000;
+      const MIN_PROCESSING_MS = 16_000;
       const elapsed = Date.now() - endedAt;
       const remaining = Math.max(0, MIN_PROCESSING_MS - elapsed);
       if (remaining > 0) {
         await new Promise((resolve) => setTimeout(resolve, remaining));
       }
 
-      if (messageTimeoutRef.current) {
-        clearInterval(messageTimeoutRef.current);
-        messageTimeoutRef.current = null;
-      }
-
       setIsSaving(false);
-      if (onComplete) {
-        onComplete();
-      }
+      if (onComplete) onComplete();
     } catch (error: unknown) {
       const err = error instanceof Error ? error : new Error(String(error));
       console.error('[CheckinSDK] ❌ Failed to save check-in:', err.message);
 
-      // Still show processing screen for minimum time even on error
-      const MIN_PROCESSING_MS = 10_000;
+      const MIN_PROCESSING_MS = 16_000;
       const elapsed = Date.now() - endedAt;
       const remaining = Math.max(0, MIN_PROCESSING_MS - elapsed);
       if (remaining > 0) {
         await new Promise((resolve) => setTimeout(resolve, remaining));
-      }
-
-      if (messageTimeoutRef.current) {
-        clearInterval(messageTimeoutRef.current);
-        messageTimeoutRef.current = null;
       }
 
       setIsSaving(false);
