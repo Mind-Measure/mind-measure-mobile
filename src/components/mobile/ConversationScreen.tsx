@@ -1,10 +1,12 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 
 const spectra = '#2D4C4C';
 const pampas = '#FAF9F7';
 const sinbad = '#99CCCE';
 const buttercup = '#F59E0B';
+
+const USER_HOLD_MS = 2500;
 
 interface Message {
   id: string;
@@ -35,7 +37,7 @@ function renderEmphasis(text: string, baseFontSize: number, baseColour: string) 
             fontStyle: 'italic',
             fontWeight: 400,
             color: sinbad,
-            fontSize: baseFontSize + 6,
+            fontSize: baseFontSize,
             marginRight: needsMargin ? 2 : 0,
           }}
         >
@@ -43,7 +45,11 @@ function renderEmphasis(text: string, baseFontSize: number, baseColour: string) 
         </span>
       );
     }
-    return <span key={i} style={{ color: baseColour }}>{part}</span>;
+    return (
+      <span key={i} style={{ color: baseColour }}>
+        {part}
+      </span>
+    );
   });
 }
 
@@ -55,16 +61,50 @@ export function ConversationScreen({
   onBack,
 }: ConversationScreenProps) {
   const [visibleIndex, setVisibleIndex] = useState(0);
+  const userShownAt = useRef<number>(0);
+  const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isLastMessage = useMemo(
     () => messages.length > 0 && visibleIndex >= messages.length - 1,
     [visibleIndex, messages.length]
   );
 
+  const advanceTo = useCallback(
+    (idx: number) => {
+      if (holdTimer.current) clearTimeout(holdTimer.current);
+
+      const currentMsg = messages[visibleIndex];
+      if (currentMsg?.sender === 'user') {
+        const elapsed = Date.now() - userShownAt.current;
+        if (elapsed < USER_HOLD_MS) {
+          holdTimer.current = setTimeout(() => setVisibleIndex(idx), USER_HOLD_MS - elapsed);
+          return;
+        }
+      }
+      setVisibleIndex(idx);
+    },
+    [messages, visibleIndex]
+  );
+
   useEffect(() => {
     if (messages.length === 0) return;
-    setVisibleIndex(messages.length - 1);
+    const newIdx = messages.length - 1;
+    if (newIdx === visibleIndex) return;
+    advanceTo(newIdx);
   }, [messages.length]);
+
+  useEffect(() => {
+    const msg = messages[visibleIndex];
+    if (msg?.sender === 'user') {
+      userShownAt.current = Date.now();
+    }
+  }, [visibleIndex, messages]);
+
+  useEffect(() => {
+    return () => {
+      if (holdTimer.current) clearTimeout(holdTimer.current);
+    };
+  }, []);
 
   const currentMessage = messages[visibleIndex];
 
@@ -104,13 +144,12 @@ export function ConversationScreen({
         </button>
       )}
 
-      {/* One message at a time — centred */}
+      {/* One message at a time — left-aligned */}
       <div
         style={{
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
-          alignItems: 'center',
           justifyContent: 'center',
           padding: '80px 28px 140px',
         }}
@@ -124,19 +163,20 @@ export function ConversationScreen({
               exit={{ opacity: 0, y: -12 }}
               transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
               style={{
-                textAlign: 'center',
+                textAlign: 'left',
                 maxWidth: '100%',
               }}
             >
               {/* Speaker label */}
               <p
                 style={{
-                  fontSize: 11,
-                  fontWeight: 500,
+                  fontSize: 13,
+                  fontWeight: 600,
                   color: sinbad,
                   textTransform: 'uppercase',
-                  letterSpacing: '0.1em',
-                  margin: '0 0 16px',
+                  letterSpacing: '0.12em',
+                  margin: '0 0 14px',
+                  opacity: 0.6,
                   fontFamily: 'Inter, system-ui, sans-serif',
                 }}
               >
@@ -146,34 +186,32 @@ export function ConversationScreen({
               {/* Message text */}
               <div
                 style={{
-                  fontSize: currentMessage.sender === 'ai' ? 34 : 30,
-                  fontWeight: 300,
+                  fontSize: currentMessage.sender === 'ai' ? 40 : 32,
+                  fontWeight: currentMessage.sender === 'ai' ? 700 : 400,
                   color: currentMessage.sender === 'ai' ? pampas : sinbad,
-                  lineHeight: 1.25,
+                  lineHeight: 1.2,
                   whiteSpace: 'pre-line',
                   margin: 0,
                 }}
               >
-                {currentMessage.sender === 'ai'
-                  ? renderEmphasis(currentMessage.text, 34, pampas)
-                  : currentMessage.text}
+                {currentMessage.sender === 'ai' ? renderEmphasis(currentMessage.text, 40, pampas) : currentMessage.text}
               </div>
 
               {/* Baseline options — staggered write-on */}
               {type === 'baseline' && currentMessage.options && currentMessage.sender === 'ai' && (
-                <div style={{ marginTop: 28 }}>
+                <div style={{ marginTop: 32 }}>
                   {currentMessage.options.map((opt, i) => (
                     <motion.p
                       key={opt}
                       initial={{ opacity: 0 }}
-                      animate={{ opacity: 0.7 }}
+                      animate={{ opacity: 0.6 }}
                       transition={{ delay: 1.2 + i * 0.9, duration: 0.8 }}
                       style={{
                         fontSize: 20,
-                        fontWeight: 300,
+                        fontWeight: 400,
                         fontStyle: 'italic',
                         color: sinbad,
-                        margin: '8px 0',
+                        margin: '10px 0',
                       }}
                     >
                       {opt}
@@ -191,7 +229,6 @@ export function ConversationScreen({
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
                     gap: 5,
                     marginTop: 32,
                   }}
@@ -257,11 +294,29 @@ export function ConversationScreen({
           opacity: 0.3,
         }}
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={sinbad} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke={sinbad}
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
           <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
           <circle cx="12" cy="13" r="4" />
         </svg>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={sinbad} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke={sinbad}
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
           <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
           <path d="M19 10v2a7 7 0 01-14 0v-2" />
           <line x1="12" y1="19" x2="12" y2="23" />
