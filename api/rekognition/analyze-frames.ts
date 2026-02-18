@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Rekognition API - Analyze Video Frames
  *

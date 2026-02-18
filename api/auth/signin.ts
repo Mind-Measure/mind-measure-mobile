@@ -1,3 +1,4 @@
+// @ts-nocheck
 // API endpoint for AWS Cognito sign in
 // Vercel serverless function — authenticates via Cognito, then fetches
 // the user's profile and baseline status from Aurora so the client

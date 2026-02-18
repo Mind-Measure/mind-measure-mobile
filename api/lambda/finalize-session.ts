@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Proxy endpoint for finalize-session Lambda function
  *

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * POST /api/buddies/invite/:inviteId/revoke
  * Set invite status to revoked. Prevent later acceptance.

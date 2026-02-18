@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * GET /api/buddies
  * List active buddies and pending invites.

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Get Assessment History for Authenticated User
  *

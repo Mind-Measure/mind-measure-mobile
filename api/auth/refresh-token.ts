@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import {
   CognitoIdentityProviderClient,

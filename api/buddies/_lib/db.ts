@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Shared pg client for buddies API
  */

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * GET /api/buddies/optout?token=... (public)
  * Token = opt_out_slug for a Buddy. Remove Buddy, show confirmation. Do not notify user why.

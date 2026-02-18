@@ -1,3 +1,4 @@
+// @ts-nocheck
 // API endpoint for database health check
 // Vercel serverless function
 

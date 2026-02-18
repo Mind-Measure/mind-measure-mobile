@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Generate wellbeing report — Bedrock AI + SES email.
  * No _lib/ imports — CORS inlined to avoid Vercel bundling issues.

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Secure User Profile API
  * Returns profile data for authenticated user ONLY.

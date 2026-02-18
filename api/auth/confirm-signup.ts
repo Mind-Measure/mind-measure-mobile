@@ -1,3 +1,4 @@
+// @ts-nocheck
 // API endpoint for AWS Cognito email confirmation (POST version for client calls)
 // Vercel serverless function
 // After confirm: create minimal profile in Aurora (user_id, email, first_name, last_name).

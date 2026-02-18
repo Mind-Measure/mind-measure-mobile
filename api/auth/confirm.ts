@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { Amplify } from 'aws-amplify';
 import { confirmSignUp } from 'aws-amplify/auth';

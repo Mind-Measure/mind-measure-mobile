@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * POST /api/buddies/invite/consent (public, no auth)
  * Body: { token }

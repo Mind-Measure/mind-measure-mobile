@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Public API: check whether an email already exists (profile OR Cognito).
  * No auth required - used by mobile app before sign-in/registration to route

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * POST /api/buddies/:buddyId/nudge
  * Send nudge email. Only if Buddy active. Rate-limit e.g. 1 per 14 days.

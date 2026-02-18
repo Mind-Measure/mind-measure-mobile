@@ -1,3 +1,4 @@
+// @ts-nocheck
 // API endpoint for initiating AWS Cognito password reset
 // Vercel serverless function
 

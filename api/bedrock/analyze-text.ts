@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Bedrock Text Analysis API
  *

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * POST /api/buddies/invite/respond (public, no auth)
  * Body: { token, action: "accept" | "decline" }

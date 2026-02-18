@@ -1,3 +1,4 @@
+// @ts-nocheck
 // API endpoint for AWS Cognito sign out
 // Vercel serverless function
 

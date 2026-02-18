@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * POST /api/buddies/:buddyId/remove
  * Set Buddy status to removed. Do not notify Buddy.

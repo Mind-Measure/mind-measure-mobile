@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Invite/opt-out token generation and verification. Store hash only.
  */

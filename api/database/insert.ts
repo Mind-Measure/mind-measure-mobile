@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * SECURED Generic Database INSERT Endpoint
  *

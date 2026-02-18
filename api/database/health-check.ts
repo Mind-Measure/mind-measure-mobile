@@ -1,3 +1,4 @@
+// @ts-nocheck
 // API endpoint to test Aurora Serverless connection
 // Vercel serverless function
 

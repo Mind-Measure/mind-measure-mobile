@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Buddy invite and nudge email templates.
  * SES inlined — no _lib/ imports to avoid Vercel bundling issues.

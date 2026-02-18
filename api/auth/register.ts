@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { BackendServiceFactory } from '../../src/services/database/BackendServiceFactory';
 

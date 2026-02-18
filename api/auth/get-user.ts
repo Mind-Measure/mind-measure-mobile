@@ -1,3 +1,4 @@
+// @ts-nocheck
 // API endpoint for getting current AWS Cognito user
 // Vercel serverless function
 

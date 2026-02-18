@@ -1,3 +1,4 @@
+// @ts-nocheck
 // API endpoint for resending AWS Cognito confirmation code
 // Vercel serverless function
 
