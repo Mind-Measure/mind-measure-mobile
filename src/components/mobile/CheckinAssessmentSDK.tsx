@@ -265,50 +265,42 @@ export function CheckinAssessmentSDK({ onBack, onComplete }: CheckinAssessmentSD
   };
 
   const handleFinish = async () => {
-    // Prevent double-clicking
-    if (isSaving) {
+    if (isSaving) return;
+
+    const endedAt = Date.now();
+    const duration = startedAt ? (endedAt - startedAt) / 1000 : 0;
+    const transcriptTrimmed = transcript.trim();
+    const tooShort = duration < MIN_DURATION_SECONDS || transcriptTrimmed.length < MIN_TRANSCRIPT_LENGTH;
+
+    if (tooShort) {
+      setShowIncompleteModal(true);
       return;
     }
 
+    // Show processing screen IMMEDIATELY on tap
+    setIsSaving(true);
+    setProcessingPhase('extracting');
+    messageIndexRef.current = 0;
+
     try {
-      // Try haptics, but don't fail if not supported (web browsers)
       try {
-        await Haptics.impact({ style: ImpactStyle.Medium });
-      } catch (hapticsError: unknown) {
-        /* intentionally empty */
+        await Haptics.impact({ style: ImpactStyle.Heavy });
+      } catch {
+        /* web fallback */
       }
 
-      // End ElevenLabs session
+      // End ElevenLabs session (non-blocking timeout to prevent hanging)
       if (conversation.status === 'connected') {
-        await conversation.endSession();
+        await Promise.race([conversation.endSession(), new Promise((resolve) => setTimeout(resolve, 3000))]);
       }
 
-      const endedAt = Date.now();
-      const duration = startedAt ? (endedAt - startedAt) / 1000 : 0;
-
-      // Stop media capture FIRST (before setting up UI)
+      // Stop media capture
       let capturedMedia: CapturedMediaResult | null = null;
       if (mediaCaptureRef.current && !isStoppedRef.current) {
-        isStoppedRef.current = true; // Mark as stopped to prevent duplicate calls
+        isStoppedRef.current = true;
         capturedMedia = await mediaCaptureRef.current.stop();
         setIsCapturingMedia(false);
-      } else if (isStoppedRef.current) {
-        /* intentionally empty */
       }
-
-      const transcriptTrimmed = transcript.trim();
-      const tooShort = duration < MIN_DURATION_SECONDS || transcriptTrimmed.length < MIN_TRANSCRIPT_LENGTH;
-      if (tooShort) {
-        setShowIncompleteModal(true);
-        return;
-      }
-
-      // Show processing overlay BEFORE setting up messages
-      setIsSaving(true);
-
-      // NOW set up message rotation - messages change every 6 seconds evenly
-      setProcessingPhase('extracting');
-      messageIndexRef.current = 0;
 
       // Clear any existing timeout/interval
       if (messageTimeoutRef.current) {

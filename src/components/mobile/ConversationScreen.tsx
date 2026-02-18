@@ -1,16 +1,49 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
 
 const spectra = '#2D4C4C';
 const pampas = '#FAF9F7';
 const sinbad = '#99CCCE';
 const buttercup = '#F59E0B';
 
-const EMPHASIS_PATTERNS = [
-  /\b(last time)\b/gi,
-  /\b(manageable|overwhelm(?:ed|ing)?|stress(?:ed|ful)?|anxious|anxiety|worried|struggling|difficult|tough|challenging|exhausted|lonely|isolated|motivated|confident|hopeful|grateful|calm|relaxed|proud|happy|sad|angry|frustrated|scared|nervous)\b/gi,
-  /\b(\d+[\s/-]+(?:out of[\s/-]+)?\d+|\d+\/\d+)\b/g,
-  /\b(sleep|energy|mood|wellbeing|appetite|focus|concentration)\b/gi,
+const EMPHASIS_WORDS = [
+  'last time',
+  'manageable',
+  'overwhelmed',
+  'overwhelming',
+  'stressed',
+  'stressful',
+  'anxious',
+  'anxiety',
+  'worried',
+  'struggling',
+  'difficult',
+  'tough',
+  'challenging',
+  'exhausted',
+  'lonely',
+  'isolated',
+  'motivated',
+  'confident',
+  'hopeful',
+  'grateful',
+  'calm',
+  'relaxed',
+  'proud',
+  'happy',
+  'sad',
+  'angry',
+  'frustrated',
+  'scared',
+  'nervous',
+  'sleep',
+  'energy',
+  'mood',
+  'wellbeing',
+  'appetite',
+  'focus',
+  'concentration',
 ];
 
 interface Message {
@@ -30,61 +63,41 @@ interface ConversationScreenProps {
   userName?: string;
 }
 
-function renderEmphasis(text: string, baseFontSize: number, baseColour: string, userName?: string) {
-  // First handle explicit *asterisk* markup
-  const asteriskParts = text.split(/(\*[^*]+\*)/g);
-  if (asteriskParts.some((p) => p.startsWith('*') && p.endsWith('*'))) {
-    return asteriskParts.map((part, i) => {
-      if (part.startsWith('*') && part.endsWith('*')) {
-        return (
-          <span key={i} style={{ fontStyle: 'italic', fontWeight: 400, color: sinbad, fontSize: baseFontSize }}>
-            {part.slice(1, -1)}
-          </span>
-        );
-      }
-      return applyAutoEmphasis(part, i, baseFontSize, baseColour, userName);
-    });
-  }
-  return applyAutoEmphasis(text, 0, baseFontSize, baseColour, userName);
+function buildEmphasisRegex(userName?: string): RegExp {
+  const words = [...EMPHASIS_WORDS];
+  if (userName && userName.length > 1) words.push(userName);
+  const numberPattern = '\\d+\\s*(?:out of\\s*)?(?:/\\s*)?\\d+';
+  const wordPattern = words.map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+  return new RegExp(`(\\*[^*]+\\*|\\b(?:${wordPattern}|${numberPattern})\\b)`, 'gi');
 }
 
-function applyAutoEmphasis(
-  text: string,
-  keyBase: number,
-  baseFontSize: number,
-  baseColour: string,
-  userName?: string
-): React.ReactNode {
-  // Build a combined regex from all patterns + user's name
-  const patternSources = EMPHASIS_PATTERNS.map((r) => r.source);
-  if (userName && userName.length > 1) {
-    patternSources.push(`\\b(${userName})\\b`);
-  }
-  const combined = new RegExp(`(${patternSources.join('|')})`, 'gi');
+function renderEmphasis(text: string, baseFontSize: number, baseColour: string, userName?: string) {
+  const regex = buildEmphasisRegex(userName);
+  const parts = text.split(regex).filter(Boolean);
 
-  const parts = text.split(combined).filter((p) => p !== undefined && p !== '');
   if (parts.length <= 1) {
-    return (
-      <span key={keyBase} style={{ color: baseColour }}>
-        {text}
-      </span>
-    );
+    return <span style={{ color: baseColour }}>{text}</span>;
   }
 
   return parts.map((part, i) => {
-    if (combined.test(part)) {
-      combined.lastIndex = 0;
+    if (part.startsWith('*') && part.endsWith('*')) {
       return (
-        <span
-          key={`${keyBase}-${i}`}
-          style={{ fontStyle: 'italic', fontWeight: 400, color: sinbad, fontSize: baseFontSize }}
-        >
+        <span key={i} style={{ fontStyle: 'italic', fontWeight: 400, color: sinbad, fontSize: baseFontSize }}>
+          {part.slice(1, -1)}
+        </span>
+      );
+    }
+    regex.lastIndex = 0;
+    if (regex.test(part)) {
+      regex.lastIndex = 0;
+      return (
+        <span key={i} style={{ fontStyle: 'italic', fontWeight: 400, color: sinbad, fontSize: baseFontSize }}>
           {part}
         </span>
       );
     }
     return (
-      <span key={`${keyBase}-${i}`} style={{ color: baseColour }}>
+      <span key={i} style={{ color: baseColour }}>
         {part}
       </span>
     );
@@ -116,12 +129,11 @@ export function ConversationScreen({
     const currentMsg = messages[visibleIndex];
     const incomingMsg = messages[newIdx];
 
-    // If user message is showing and AI is arriving, keep user text visible briefly
     if (currentMsg?.sender === 'user' && incomingMsg?.sender === 'ai') {
       setPrevUserMsg(currentMsg);
       setVisibleIndex(newIdx);
       if (holdTimer.current) clearTimeout(holdTimer.current);
-      holdTimer.current = setTimeout(() => setPrevUserMsg(null), 2500);
+      holdTimer.current = setTimeout(() => setPrevUserMsg(null), 4000);
     } else {
       setVisibleIndex(newIdx);
     }
@@ -153,26 +165,40 @@ export function ConversationScreen({
       setRevealedCount(0);
       return;
     }
-    setRevealedCount(1);
 
-    if (aiSentences.length <= 1) return;
+    // If user's reply is still visible, show only the first sentence initially
+    const initialDelay = prevUserMsg ? 2000 : 0;
 
-    let idx = 1;
-    const scheduleNext = () => {
-      if (idx >= aiSentences.length) return;
-      const delay = Math.min(800 + aiSentences[idx - 1].length * 12, 2000);
+    if (initialDelay > 0) {
+      setRevealedCount(0);
       revealTimer.current = setTimeout(() => {
-        revealNext();
-        idx++;
-        scheduleNext();
-      }, delay);
-    };
-    scheduleNext();
+        setRevealedCount(1);
+        scheduleRemaining(1);
+      }, initialDelay);
+    } else {
+      setRevealedCount(1);
+      scheduleRemaining(1);
+    }
+
+    function scheduleRemaining(startIdx: number) {
+      if (startIdx >= aiSentences.length) return;
+      let idx = startIdx;
+      const tick = () => {
+        if (idx >= aiSentences.length) return;
+        const delay = Math.min(900 + aiSentences[idx - 1].length * 14, 2200);
+        revealTimer.current = setTimeout(() => {
+          revealNext();
+          idx++;
+          tick();
+        }, delay);
+      };
+      tick();
+    }
 
     return () => {
       if (revealTimer.current) clearTimeout(revealTimer.current);
     };
-  }, [currentMessage?.id, aiSentences.length]);
+  }, [currentMessage?.id, aiSentences.length, !!prevUserMsg]);
 
   return (
     <div
@@ -221,26 +247,26 @@ export function ConversationScreen({
           gap: 32,
         }}
       >
-        {/* Previous user message sliding up & fading out */}
+        {/* Previous user message — stays visible, fades gently */}
         <AnimatePresence>
           {prevUserMsg && (
             <motion.div
               key={`prev-${prevUserMsg.id}`}
-              initial={{ opacity: 0.7, y: 0 }}
-              animate={{ opacity: 0.35, y: -20 }}
-              exit={{ opacity: 0, y: -40 }}
-              transition={{ duration: 1.2, ease: 'easeOut' }}
+              initial={{ opacity: 1, y: 0 }}
+              animate={{ opacity: 0.55, y: 0 }}
+              exit={{ opacity: 0, y: -24 }}
+              transition={{ duration: 2, ease: 'easeOut' }}
               style={{ textAlign: 'left', maxWidth: '100%' }}
             >
               <p
                 style={{
-                  fontSize: 12,
+                  fontSize: 13,
                   fontWeight: 600,
                   color: sinbad,
                   textTransform: 'uppercase' as const,
                   letterSpacing: '0.12em',
-                  margin: '0 0 8px',
-                  opacity: 0.4,
+                  margin: '0 0 10px',
+                  opacity: 0.5,
                   fontFamily: 'Inter, system-ui, sans-serif',
                 }}
               >
@@ -248,12 +274,11 @@ export function ConversationScreen({
               </p>
               <div
                 style={{
-                  fontSize: 26,
+                  fontSize: 30,
                   fontWeight: 400,
                   color: sinbad,
-                  lineHeight: 1.2,
+                  lineHeight: 1.25,
                   whiteSpace: 'pre-line' as const,
-                  opacity: 0.5,
                 }}
               >
                 {prevUserMsg.text}
@@ -367,22 +392,32 @@ export function ConversationScreen({
       {onFinish && (
         <div style={{ position: 'absolute', bottom: 40, right: 28, zIndex: 20 }}>
           <motion.button
-            onClick={onFinish}
+            onClick={() => {
+              try {
+                Haptics.impact({ style: ImpactStyle.Heavy });
+              } catch {
+                /* web fallback */
+              }
+              onFinish();
+            }}
             animate={{
               backgroundColor: finishTriggered ? buttercup : 'transparent',
               color: finishTriggered ? spectra : sinbad,
               borderColor: finishTriggered ? buttercup : sinbad,
               boxShadow: finishTriggered ? '0 4px 20px rgba(245,158,11,0.35)' : '0 0 0 transparent',
+              scale: finishTriggered ? 1.05 : 1,
             }}
+            whileTap={{ scale: 0.92 }}
             transition={{ duration: 0.5 }}
             style={{
-              padding: '12px 28px',
+              padding: '14px 32px',
               border: '2px solid',
               borderRadius: 14,
-              fontSize: 15,
-              fontWeight: 600,
+              fontSize: 16,
+              fontWeight: 700,
               cursor: 'pointer',
               fontFamily: 'Inter, system-ui, sans-serif',
+              WebkitTapHighlightColor: 'transparent',
             }}
           >
             Finish
