@@ -40,11 +40,23 @@ interface DashboardData {
     driverPositive: string[];
     driverNegative: string[];
   } | null;
+  previousSession: {
+    id: string;
+    createdAt: string;
+    summary: string;
+    themes: string[];
+    moodScore: number;
+    driverPositive: string[];
+    driverNegative: string[];
+  } | null;
   recentActivity: Array<{
     type: 'checkin' | 'baseline';
     score: number;
     createdAt: string;
   }>;
+  moodHistory: Array<{ date: string; score: number; dayLabel: string }>;
+  checkinHistory: Array<{ date: string; score: number; dayLabel: string; dateLabel: string }>;
+  computedStreak: number;
   trendData: {
     last7CheckIns: Array<{ date: string; score: number }>;
     last7Days: Array<{ date: string; score: number }>;
@@ -71,7 +83,11 @@ export function useDashboardData(): DashboardData {
     },
     latestScore: null,
     latestSession: null,
+    previousSession: null,
     recentActivity: [],
+    moodHistory: [],
+    checkinHistory: [],
+    computedStreak: 0,
     trendData: {
       last7CheckIns: [],
       last7Days: [],
@@ -198,21 +214,33 @@ export function useDashboardData(): DashboardData {
         return analysisData.assessment_type === 'checkin';
       });
 
-      if (latestCheckIn) {
-        const checkInScore = latestCheckIn.final_score ?? latestCheckIn.score ?? 0;
+      const allCheckIns = (sessions || []).filter((s) => {
+        if (!(s.final_score || s.score)) return false;
+        const a = parseAnalysis(s.analysis);
+        return a.assessment_type === 'checkin';
+      });
 
-        // Parse analysis field
-        const analysisData = parseAnalysis(latestCheckIn.analysis);
-
-        latestSession = {
-          id: latestCheckIn.id,
-          createdAt: new Date(latestCheckIn.created_at).toLocaleDateString('en-GB'),
-          summary: analysisData.conversation_summary || 'Check-in completed.',
-          themes: analysisData.themes || [],
-          moodScore: analysisData.mood_score || Math.round(checkInScore / 10),
-          driverPositive: analysisData.driver_positive || analysisData.drivers_positive || [],
-          driverNegative: analysisData.driver_negative || analysisData.drivers_negative || [],
+      const buildSession = (s: FusionOutput) => {
+        const sc = s.final_score ?? s.score ?? 0;
+        const a = parseAnalysis(s.analysis);
+        return {
+          id: s.id,
+          createdAt: new Date(s.created_at).toLocaleDateString('en-GB'),
+          summary: a.conversation_summary || 'Check-in completed.',
+          themes: a.themes || [],
+          moodScore: a.mood_score || Math.round(sc / 10),
+          driverPositive: a.driver_positive || a.drivers_positive || [],
+          driverNegative: a.driver_negative || a.drivers_negative || [],
         };
+      };
+
+      if (allCheckIns.length > 0) {
+        latestSession = buildSession(allCheckIns[0]);
+      }
+
+      let previousSession = null;
+      if (allCheckIns.length > 1) {
+        previousSession = buildSession(allCheckIns[1]);
       }
 
       // Recent activity from all sessions (parse analysis to get assessment_type)
@@ -229,6 +257,66 @@ export function useDashboardData(): DashboardData {
       // Calculate trend data for charts
       const trendData = calculateTrendData(sessions || []);
 
+      // Extract mood history from recent check-ins (last 7 that have mood data)
+      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const checkInSessions = (sessions || []).filter((s) => {
+        const a = parseAnalysis(s.analysis);
+        return a.assessment_type === 'checkin';
+      });
+      const moodHistory = checkInSessions
+        .slice(0, 7)
+        .map((s) => {
+          const a = parseAnalysis(s.analysis);
+          const d = new Date(s.created_at);
+          return {
+            date: s.created_at,
+            score: a.mood_score || Math.round((s.final_score || s.score || 0) / 10),
+            dayLabel: dayNames[d.getDay()],
+          };
+        })
+        .reverse();
+
+      // Compute streak from actual check-in dates (consecutive days with at least one check-in)
+      const checkinDates = new Set<string>();
+      checkInSessions.forEach((s) => {
+        const d = new Date(s.created_at);
+        checkinDates.add(
+          `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+        );
+      });
+
+      let computedStreak = 0;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      for (let i = 0; i < 365; i++) {
+        const checkDate = new Date(today);
+        checkDate.setDate(checkDate.getDate() - i);
+        const key = `${checkDate.getFullYear()}-${String(checkDate.getMonth() + 1).padStart(2, '0')}-${String(checkDate.getDate()).padStart(2, '0')}`;
+        if (checkinDates.has(key)) {
+          computedStreak++;
+        } else if (i === 0) {
+          // Today might not have a check-in yet — allow skipping today
+          continue;
+        } else {
+          break;
+        }
+      }
+
+      // Build check-in history for the streak detail panel (last 7 check-ins)
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const checkinHistory = checkInSessions
+        .slice(0, 7)
+        .map((s) => {
+          const d = new Date(s.created_at);
+          return {
+            date: s.created_at,
+            score: s.final_score || s.score || 0,
+            dayLabel: dayNames[d.getDay()],
+            dateLabel: `${d.getDate()} ${monthNames[d.getMonth()]}`,
+          };
+        })
+        .reverse();
+
       const hasData = sessions && sessions.length > 0;
 
       setData({
@@ -240,14 +328,18 @@ export function useDashboardData(): DashboardData {
             (profileData.last_name || '').charAt(0).toUpperCase() +
             (profileData.last_name || '').slice(1).toLowerCase(),
           displayName: profileData.display_name || 'User',
-          streakCount: profileData.streak_count || 0,
+          streakCount: computedStreak,
           baselineEstablished: profileData.baseline_established || !!(sessions && sessions.length > 0),
           createdAt: profileData.created_at, // Account creation date
           university_id: profileData.university_id, // University ID for nudges/content
         },
         latestScore,
         latestSession,
+        previousSession,
         recentActivity,
+        moodHistory,
+        checkinHistory,
+        computedStreak,
         trendData,
         hasData: !!hasData,
         loading: false,
