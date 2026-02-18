@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 
 declare module 'react-dom/client';
+declare module 'pg';
 
 declare module '*.png' {
   const src: string;
