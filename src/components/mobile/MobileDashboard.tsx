@@ -1212,16 +1212,8 @@ export function DashboardScreen({ onNeedHelp, onCheckIn, onRetakeBaseline }: Das
         style={{
           minHeight: '100vh',
           backgroundColor: C.sinbad,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
         }}
-      >
-        <div style={{ textAlign: 'center' }}>
-          <Loader2 size={32} style={{ animation: 'spin 1s linear infinite', color: C.spectra, marginBottom: '16px' }} />
-          <p style={{ color: C.spectra, opacity: 0.7 }}>Loading your dashboard...</p>
-        </div>
-      </div>
+      />
     );
   }
 
