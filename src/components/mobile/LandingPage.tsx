@@ -4,12 +4,12 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 const MM_LOGO = '/images/mind-measure-logo.png';
 
-const student1 = 'https://app.mindmeasure.co.uk/images/student1.png';
-const student2 = 'https://app.mindmeasure.co.uk/images/student2.png';
-const student3 = 'https://app.mindmeasure.co.uk/images/student3.png';
-const student4 = 'https://app.mindmeasure.co.uk/images/student4.png';
-const student5 = 'https://app.mindmeasure.co.uk/images/student5.png';
-const student6 = 'https://app.mindmeasure.co.uk/images/student6.png';
+const student1 = '/images/student1.png';
+const student2 = '/images/student2.png';
+const student3 = '/images/student3.png';
+const student4 = '/images/student4.png';
+const student5 = '/images/student5.png';
+const student6 = '/images/student6.png';
 
 const spectra = '#2D4C4C';
 const sinbad = '#99CCCE';
@@ -60,11 +60,15 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
 
   return (
     <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: pampas }}>
-      {/* Subtle accent gradient at top */}
+      {/* Warm branded gradient background */}
       <div
-        className="absolute top-0 left-0 right-0 h-72 opacity-30"
+        className="absolute inset-0"
         style={{
-          background: `radial-gradient(ellipse at 50% -20%, ${sinbad} 0%, transparent 70%)`,
+          background: `
+            radial-gradient(ellipse at 50% 0%, rgba(153,204,206,0.25) 0%, transparent 50%),
+            radial-gradient(ellipse at 80% 100%, rgba(245,158,11,0.08) 0%, transparent 40%),
+            radial-gradient(ellipse at 20% 80%, rgba(153,204,206,0.10) 0%, transparent 40%)
+          `,
         }}
       />
 
