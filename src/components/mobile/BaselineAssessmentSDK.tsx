@@ -1,9 +1,11 @@
 import { useBaselineAssessment } from '../../hooks/useBaselineAssessment';
+import { useAuth } from '../../contexts/AuthContext';
 import { ConversationScreen } from './ConversationScreen';
 import { WelcomeScreen, ProcessingOverlay, ErrorModal } from './baselineAssessment';
 import type { BaselineAssessmentSDKProps } from './baselineAssessment';
 
 export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessmentSDKProps) {
+  const { user } = useAuth();
   const {
     showConversation,
     requestingPermissions,
@@ -32,6 +34,7 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
           isListening={conversationStatus === 'connected'}
           onFinish={handleFinish}
           onBack={onBack}
+          userName={user?.user_metadata?.first_name || user?.user_metadata?.given_name}
         />
       </>
     );

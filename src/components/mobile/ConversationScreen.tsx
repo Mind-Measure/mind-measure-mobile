@@ -6,7 +6,12 @@ const pampas = '#FAF9F7';
 const sinbad = '#99CCCE';
 const buttercup = '#F59E0B';
 
-const USER_HOLD_MS = 2500;
+const EMPHASIS_PATTERNS = [
+  /\b(last time)\b/gi,
+  /\b(manageable|overwhelm(?:ed|ing)?|stress(?:ed|ful)?|anxious|anxiety|worried|struggling|difficult|tough|challenging|exhausted|lonely|isolated|motivated|confident|hopeful|grateful|calm|relaxed|proud|happy|sad|angry|frustrated|scared|nervous)\b/gi,
+  /\b(\d+[\s/-]+(?:out of[\s/-]+)?\d+|\d+\/\d+)\b/g,
+  /\b(sleep|energy|mood|wellbeing|appetite|focus|concentration)\b/gi,
+];
 
 interface Message {
   id: string;
@@ -22,31 +27,64 @@ interface ConversationScreenProps {
   isListening?: boolean;
   onFinish?: () => void;
   onBack?: () => void;
+  userName?: string;
 }
 
-function renderEmphasis(text: string, baseFontSize: number, baseColour: string) {
-  const parts = text.split(/(\*[^*]+\*)/g);
+function renderEmphasis(text: string, baseFontSize: number, baseColour: string, userName?: string) {
+  // First handle explicit *asterisk* markup
+  const asteriskParts = text.split(/(\*[^*]+\*)/g);
+  if (asteriskParts.some((p) => p.startsWith('*') && p.endsWith('*'))) {
+    return asteriskParts.map((part, i) => {
+      if (part.startsWith('*') && part.endsWith('*')) {
+        return (
+          <span key={i} style={{ fontStyle: 'italic', fontWeight: 400, color: sinbad, fontSize: baseFontSize }}>
+            {part.slice(1, -1)}
+          </span>
+        );
+      }
+      return applyAutoEmphasis(part, i, baseFontSize, baseColour, userName);
+    });
+  }
+  return applyAutoEmphasis(text, 0, baseFontSize, baseColour, userName);
+}
+
+function applyAutoEmphasis(
+  text: string,
+  keyBase: number,
+  baseFontSize: number,
+  baseColour: string,
+  userName?: string
+): React.ReactNode {
+  // Build a combined regex from all patterns + user's name
+  const patternSources = EMPHASIS_PATTERNS.map((r) => r.source);
+  if (userName && userName.length > 1) {
+    patternSources.push(`\\b(${userName})\\b`);
+  }
+  const combined = new RegExp(`(${patternSources.join('|')})`, 'gi');
+
+  const parts = text.split(combined).filter((p) => p !== undefined && p !== '');
+  if (parts.length <= 1) {
+    return (
+      <span key={keyBase} style={{ color: baseColour }}>
+        {text}
+      </span>
+    );
+  }
+
   return parts.map((part, i) => {
-    if (part.startsWith('*') && part.endsWith('*')) {
-      const word = part.slice(1, -1);
-      const needsMargin = i + 1 < parts.length && /^[.,!?;:]/.test(parts[i + 1]);
+    if (combined.test(part)) {
+      combined.lastIndex = 0;
       return (
         <span
-          key={i}
-          style={{
-            fontStyle: 'italic',
-            fontWeight: 400,
-            color: sinbad,
-            fontSize: baseFontSize,
-            marginRight: needsMargin ? 2 : 0,
-          }}
+          key={`${keyBase}-${i}`}
+          style={{ fontStyle: 'italic', fontWeight: 400, color: sinbad, fontSize: baseFontSize }}
         >
-          {word}
+          {part}
         </span>
       );
     }
     return (
-      <span key={i} style={{ color: baseColour }}>
+      <span key={`${keyBase}-${i}`} style={{ color: baseColour }}>
         {part}
       </span>
     );
@@ -59,46 +97,35 @@ export function ConversationScreen({
   isListening = false,
   onFinish,
   onBack,
+  userName,
 }: ConversationScreenProps) {
   const [visibleIndex, setVisibleIndex] = useState(0);
-  const userShownAt = useRef<number>(0);
+  const [prevUserMsg, setPrevUserMsg] = useState<Message | null>(null);
   const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const isLastMessage = useMemo(
-    () => messages.length > 0 && visibleIndex >= messages.length - 1,
-    [visibleIndex, messages.length]
-  );
-
-  const advanceTo = useCallback(
-    (idx: number) => {
-      if (holdTimer.current) clearTimeout(holdTimer.current);
-
-      const currentMsg = messages[visibleIndex];
-      if (currentMsg?.sender === 'user') {
-        const elapsed = Date.now() - userShownAt.current;
-        if (elapsed < USER_HOLD_MS) {
-          holdTimer.current = setTimeout(() => setVisibleIndex(idx), USER_HOLD_MS - elapsed);
-          return;
-        }
-      }
-      setVisibleIndex(idx);
-    },
-    [messages, visibleIndex]
+  const finishTriggered = useMemo(
+    () => messages.some((m) => m.sender === 'ai' && /finish button/i.test(m.text)),
+    [messages]
   );
 
   useEffect(() => {
     if (messages.length === 0) return;
     const newIdx = messages.length - 1;
-    if (newIdx === visibleIndex) return;
-    advanceTo(newIdx);
-  }, [messages.length]);
+    if (newIdx <= visibleIndex) return;
 
-  useEffect(() => {
-    const msg = messages[visibleIndex];
-    if (msg?.sender === 'user') {
-      userShownAt.current = Date.now();
+    const currentMsg = messages[visibleIndex];
+    const incomingMsg = messages[newIdx];
+
+    // If user message is showing and AI is arriving, keep user text visible briefly
+    if (currentMsg?.sender === 'user' && incomingMsg?.sender === 'ai') {
+      setPrevUserMsg(currentMsg);
+      setVisibleIndex(newIdx);
+      if (holdTimer.current) clearTimeout(holdTimer.current);
+      holdTimer.current = setTimeout(() => setPrevUserMsg(null), 2500);
+    } else {
+      setVisibleIndex(newIdx);
     }
-  }, [visibleIndex, messages]);
+  }, [messages.length]);
 
   useEffect(() => {
     return () => {
@@ -107,6 +134,45 @@ export function ConversationScreen({
   }, []);
 
   const currentMessage = messages[visibleIndex];
+
+  const aiSentences = useMemo(() => {
+    if (!currentMessage || currentMessage.sender !== 'ai') return [];
+    return currentMessage.text.split(/(?<=[.!?])\s+/).filter((s) => s.trim().length > 0);
+  }, [currentMessage]);
+
+  const [revealedCount, setRevealedCount] = useState(0);
+  const revealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const revealNext = useCallback(() => {
+    setRevealedCount((c) => c + 1);
+  }, []);
+
+  useEffect(() => {
+    if (revealTimer.current) clearTimeout(revealTimer.current);
+    if (!currentMessage || currentMessage.sender !== 'ai') {
+      setRevealedCount(0);
+      return;
+    }
+    setRevealedCount(1);
+
+    if (aiSentences.length <= 1) return;
+
+    let idx = 1;
+    const scheduleNext = () => {
+      if (idx >= aiSentences.length) return;
+      const delay = Math.min(800 + aiSentences[idx - 1].length * 12, 2000);
+      revealTimer.current = setTimeout(() => {
+        revealNext();
+        idx++;
+        scheduleNext();
+      }, delay);
+    };
+    scheduleNext();
+
+    return () => {
+      if (revealTimer.current) clearTimeout(revealTimer.current);
+    };
+  }, [currentMessage?.id, aiSentences.length]);
 
   return (
     <div
@@ -144,36 +210,75 @@ export function ConversationScreen({
         </button>
       )}
 
-      {/* One message at a time — left-aligned */}
+      {/* Conversation — user reply persists briefly, slides up as Jodie arrives */}
       <div
         style={{
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'center',
+          justifyContent: 'flex-end',
           padding: '80px 28px 140px',
+          gap: 32,
         }}
       >
+        {/* Previous user message sliding up & fading out */}
+        <AnimatePresence>
+          {prevUserMsg && (
+            <motion.div
+              key={`prev-${prevUserMsg.id}`}
+              initial={{ opacity: 0.7, y: 0 }}
+              animate={{ opacity: 0.35, y: -20 }}
+              exit={{ opacity: 0, y: -40 }}
+              transition={{ duration: 1.2, ease: 'easeOut' }}
+              style={{ textAlign: 'left', maxWidth: '100%' }}
+            >
+              <p
+                style={{
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: sinbad,
+                  textTransform: 'uppercase' as const,
+                  letterSpacing: '0.12em',
+                  margin: '0 0 8px',
+                  opacity: 0.4,
+                  fontFamily: 'Inter, system-ui, sans-serif',
+                }}
+              >
+                YOU
+              </p>
+              <div
+                style={{
+                  fontSize: 26,
+                  fontWeight: 400,
+                  color: sinbad,
+                  lineHeight: 1.2,
+                  whiteSpace: 'pre-line' as const,
+                  opacity: 0.5,
+                }}
+              >
+                {prevUserMsg.text}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Current message */}
         <AnimatePresence mode="wait">
           {currentMessage && (
             <motion.div
               key={currentMessage.id}
-              initial={{ opacity: 0, y: 16 }}
+              initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -12 }}
               transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-              style={{
-                textAlign: 'left',
-                maxWidth: '100%',
-              }}
+              style={{ textAlign: 'left', maxWidth: '100%' }}
             >
-              {/* Speaker label */}
               <p
                 style={{
                   fontSize: 13,
                   fontWeight: 600,
                   color: sinbad,
-                  textTransform: 'uppercase',
+                  textTransform: 'uppercase' as const,
                   letterSpacing: '0.12em',
                   margin: '0 0 14px',
                   opacity: 0.6,
@@ -183,21 +288,42 @@ export function ConversationScreen({
                 {currentMessage.sender === 'ai' ? 'JODIE' : 'YOU'}
               </p>
 
-              {/* Message text */}
-              <div
-                style={{
-                  fontSize: currentMessage.sender === 'ai' ? 40 : 32,
-                  fontWeight: currentMessage.sender === 'ai' ? 700 : 400,
-                  color: currentMessage.sender === 'ai' ? pampas : sinbad,
-                  lineHeight: 1.2,
-                  whiteSpace: 'pre-line',
-                  margin: 0,
-                }}
-              >
-                {currentMessage.sender === 'ai' ? renderEmphasis(currentMessage.text, 40, pampas) : currentMessage.text}
-              </div>
+              {currentMessage.sender === 'ai' ? (
+                <div style={{ lineHeight: 1.2, margin: 0 }}>
+                  {aiSentences.slice(0, revealedCount).map((sentence, si) => (
+                    <motion.span
+                      key={`${currentMessage.id}-s${si}`}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.5 }}
+                      style={{
+                        display: 'inline',
+                        fontSize: 40,
+                        fontWeight: 700,
+                        color: pampas,
+                      }}
+                    >
+                      {si > 0 ? ' ' : ''}
+                      {renderEmphasis(sentence, 40, pampas, userName)}
+                    </motion.span>
+                  ))}
+                </div>
+              ) : (
+                <div
+                  style={{
+                    fontSize: 32,
+                    fontWeight: 400,
+                    color: sinbad,
+                    lineHeight: 1.2,
+                    whiteSpace: 'pre-line' as const,
+                    margin: 0,
+                  }}
+                >
+                  {currentMessage.text}
+                </div>
+              )}
 
-              {/* Baseline options — staggered write-on */}
+              {/* Baseline options */}
               {type === 'baseline' && currentMessage.options && currentMessage.sender === 'ai' && (
                 <div style={{ marginTop: 32 }}>
                   {currentMessage.options.map((opt, i) => (
@@ -206,13 +332,7 @@ export function ConversationScreen({
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 0.6 }}
                       transition={{ delay: 1.2 + i * 0.9, duration: 0.8 }}
-                      style={{
-                        fontSize: 20,
-                        fontWeight: 400,
-                        fontStyle: 'italic',
-                        color: sinbad,
-                        margin: '10px 0',
-                      }}
+                      style={{ fontSize: 20, fontWeight: 400, fontStyle: 'italic', color: sinbad, margin: '10px 0' }}
                     >
                       {opt}
                     </motion.p>
@@ -226,26 +346,13 @@ export function ConversationScreen({
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.8, duration: 0.5 }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 5,
-                    marginTop: 32,
-                  }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 32 }}
                 >
                   {[0, 1, 2].map((i) => (
                     <motion.div
                       key={i}
-                      animate={{
-                        height: ['12px', '24px', '12px'],
-                        backgroundColor: [sinbad, pampas, sinbad],
-                      }}
-                      transition={{
-                        duration: 1.2,
-                        repeat: Infinity,
-                        delay: i * 0.15,
-                        ease: 'easeInOut',
-                      }}
+                      animate={{ height: ['12px', '24px', '12px'], backgroundColor: [sinbad, pampas, sinbad] }}
+                      transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.15, ease: 'easeInOut' }}
                       style={{ width: 4, borderRadius: 2 }}
                     />
                   ))}
@@ -256,16 +363,16 @@ export function ConversationScreen({
         </AnimatePresence>
       </div>
 
-      {/* Finish button — bottom-right, changes to Buttercup on last message */}
+      {/* Finish button — hollow until Jodie mentions "finish button", then solid Buttercup */}
       {onFinish && (
         <div style={{ position: 'absolute', bottom: 40, right: 28, zIndex: 20 }}>
           <motion.button
             onClick={onFinish}
             animate={{
-              backgroundColor: isLastMessage ? buttercup : 'transparent',
-              color: isLastMessage ? spectra : sinbad,
-              borderColor: isLastMessage ? buttercup : sinbad,
-              boxShadow: isLastMessage ? '0 4px 20px rgba(245,158,11,0.35)' : '0 0 0 transparent',
+              backgroundColor: finishTriggered ? buttercup : 'transparent',
+              color: finishTriggered ? spectra : sinbad,
+              borderColor: finishTriggered ? buttercup : sinbad,
+              boxShadow: finishTriggered ? '0 4px 20px rgba(245,158,11,0.35)' : '0 0 0 transparent',
             }}
             transition={{ duration: 0.5 }}
             style={{

@@ -610,6 +610,7 @@ export function CheckinAssessmentSDK({ onBack, onComplete }: CheckinAssessmentSD
           isListening={conversation.status === 'connected'}
           onFinish={handleFinish}
           onBack={onBack}
+          userName={user?.user_metadata?.first_name || user?.user_metadata?.given_name}
         />
       </>
     );
