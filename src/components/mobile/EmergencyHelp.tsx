@@ -92,7 +92,7 @@ export const EmergencyHelp: React.FC<EmergencyHelpProps> = ({ onBack }) => {
                         className={`w-12 h-12 rounded-full flex items-center justify-center ${
                           isHighPriority
                             ? 'bg-gradient-to-r from-red-500 to-orange-500'
-                            : 'bg-gradient-to-r from-blue-500 to-indigo-500'
+                            : 'bg-[#2D4C4C]'
                         }`}
                       >
                         <Icon className="w-6 h-6 text-white" />
@@ -138,7 +138,7 @@ export const EmergencyHelp: React.FC<EmergencyHelpProps> = ({ onBack }) => {
             <div className="grid grid-cols-1 gap-3">
               <Button variant="outline" className="justify-start h-auto p-4 border-gray-200 hover:bg-gray-50">
                 <div className="flex items-center space-x-3">
-                  <Heart className="w-5 h-5 text-pink-500" />
+                  <Heart className="w-5 h-5 text-[#F59E0B]" />
                   <div className="text-left">
                     <p className="font-medium text-gray-900">Self-Care Techniques</p>
                     <p className="text-sm text-gray-600">Breathing exercises and grounding techniques</p>

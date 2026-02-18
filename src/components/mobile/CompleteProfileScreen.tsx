@@ -51,7 +51,7 @@ export function CompleteProfileScreen({ onComplete }: CompleteProfileScreenProps
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 overflow-y-auto">
+    <div className="min-h-screen bg-[#FAF9F7] overflow-y-auto">
       <div className="bg-white border-b border-gray-100" style={{ paddingTop: 'max(3rem, env(safe-area-inset-top))' }}>
         <div className="flex items-center justify-center px-6 py-4">
           <h1 className="text-lg font-semibold text-gray-900">Complete your profile</h1>
@@ -81,7 +81,7 @@ export function CompleteProfileScreen({ onComplete }: CompleteProfileScreenProps
                 id="year"
                 value={yearOfStudy}
                 onChange={(e) => setYearOfStudy(e.target.value)}
-                className="w-full h-14 px-4 text-base border-2 border-gray-200 rounded-xl focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all bg-white"
+                className="w-full h-14 px-4 text-base border-2 border-gray-200 rounded-xl focus:border-[#2D4C4C] focus:ring-4 focus:ring-[#99CCCE]/25 transition-all bg-white"
                 disabled={isLoading}
               >
                 <option value="">Select year</option>
@@ -102,7 +102,7 @@ export function CompleteProfileScreen({ onComplete }: CompleteProfileScreenProps
                 value={course}
                 onChange={(e) => setCourse(e.target.value)}
                 placeholder="e.g. Psychology, Computer Science"
-                className="w-full h-14 px-4 text-base border-2 border-gray-200 rounded-xl focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all"
+                className="w-full h-14 px-4 text-base border-2 border-gray-200 rounded-xl focus:border-[#2D4C4C] focus:ring-4 focus:ring-[#99CCCE]/25 transition-all"
                 disabled={isLoading}
                 autoComplete="off"
               />
@@ -113,7 +113,7 @@ export function CompleteProfileScreen({ onComplete }: CompleteProfileScreenProps
             <button
               type="submit"
               disabled={!canSubmit || isLoading}
-              className="w-full h-14 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold text-lg rounded-xl shadow-lg disabled:opacity-50 disabled:cursor-not-allowed hover:from-purple-700 hover:to-blue-700 transition-all flex items-center justify-center gap-2"
+              className="w-full h-14 bg-[#2D4C4C] text-white font-bold text-lg rounded-xl shadow-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#1F3636] transition-all flex items-center justify-center gap-2"
             >
               {isLoading ? (
                 <>

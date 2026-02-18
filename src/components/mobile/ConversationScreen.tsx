@@ -49,14 +49,14 @@ export function ConversationScreen({
         style={{
           height: '60px',
           flexShrink: 0,
-          backgroundColor: '#7C3AED',
+          backgroundColor: '#2D4C4C',
         }}
       />
 
-      {/* Header - Vibrant purple matching swipe dots */}
+      {/* Header */}
       <div
         style={{
-          backgroundColor: '#7C3AED',
+          backgroundColor: '#2D4C4C',
           textAlign: 'center',
           padding: '20px 0',
           flexShrink: 0,
@@ -174,8 +174,8 @@ export function ConversationScreen({
                           <motion.div
                             key={i}
                             animate={{
-                              height: ['16px', '32px', '16px'],
-                              backgroundColor: ['#E0E7FF', '#8B5CF6', '#E0E7FF'],
+                            height: ['16px', '32px', '16px'],
+                            backgroundColor: ['#99CCCE', '#2D4C4C', '#99CCCE'],
                             }}
                             transition={{
                               duration: 1.2,
@@ -193,7 +193,7 @@ export function ConversationScreen({
                       <span
                         style={{
                           fontSize: '16px',
-                          color: '#8B5CF6',
+                          color: '#2D4C4C',
                           fontWeight: '500',
                           letterSpacing: '0.5px',
                         }}
@@ -257,10 +257,7 @@ export function ConversationScreen({
                     style={{
                       fontSize: '36px',
                       fontWeight: '700',
-                      background: 'linear-gradient(135deg, #8B5CF6, #A78BFA)',
-                      WebkitBackgroundClip: 'text',
-                      WebkitTextFillColor: 'transparent',
-                      backgroundClip: 'text',
+                      color: '#2D4C4C',
                       margin: 0,
                       lineHeight: '1.2',
                       letterSpacing: '-1px',
@@ -278,10 +275,10 @@ export function ConversationScreen({
         <div ref={contentEndRef} />
       </div>
 
-      {/* Bottom Bar - Vibrant purple matching swipe dots */}
+      {/* Bottom Bar */}
       <div
         style={{
-          backgroundColor: '#7C3AED',
+          backgroundColor: '#2D4C4C',
           padding: '20px 24px',
           display: 'flex',
           justifyContent: 'space-between',

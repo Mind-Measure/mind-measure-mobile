@@ -36,7 +36,7 @@ export function VerifyStep({ flow }: VerifyStepProps) {
         style={{
           background: 'none',
           border: 'none',
-          color: '#8B5CF6',
+          color: '#2D4C4C',
           fontSize: '15px',
           fontWeight: 600,
           cursor: 'pointer',
@@ -126,7 +126,7 @@ export function VerifyStep({ flow }: VerifyStepProps) {
                 fontFamily: 'inherit',
               }}
               onFocus={(e) => {
-                e.currentTarget.style.borderColor = '#8B5CF6';
+                e.currentTarget.style.borderColor = '#2D4C4C';
                 e.currentTarget.select();
               }}
               onBlur={(e) => {
@@ -163,7 +163,7 @@ export function VerifyStep({ flow }: VerifyStepProps) {
           style={{
             background: 'none',
             border: 'none',
-            color: '#8B5CF6',
+            color: '#2D4C4C',
             fontSize: '15px',
             fontWeight: 600,
             cursor: isResending ? 'not-allowed' : 'pointer',
@@ -177,7 +177,7 @@ export function VerifyStep({ flow }: VerifyStepProps) {
 
       <div
         style={{
-          background: '#EEF2FF',
+          background: '#FAF9F7',
           borderRadius: '12px',
           padding: '16px',
           display: 'flex',
@@ -190,7 +190,7 @@ export function VerifyStep({ flow }: VerifyStepProps) {
           height="20"
           viewBox="0 0 24 24"
           fill="none"
-          stroke="#8B5CF6"
+          stroke="#99CCCE"
           strokeWidth="2"
           style={{ flexShrink: 0, marginTop: 2 }}
         >
@@ -198,7 +198,7 @@ export function VerifyStep({ flow }: VerifyStepProps) {
           <path d="M12 16v-4" />
           <path d="M12 8h.01" />
         </svg>
-        <p style={{ fontSize: '13px', color: '#5B21B6', margin: 0, lineHeight: 1.5 }}>
+        <p style={{ fontSize: '13px', color: '#2D4C4C', margin: 0, lineHeight: 1.5 }}>
           <strong>Note:</strong> The verification email may take a few minutes to arrive. Check your spam folder if you
           don't see it.
         </p>

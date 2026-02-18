@@ -104,7 +104,7 @@ export function EmailVerificationScreen({ email, onVerified, onBack }: EmailVeri
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50">
+    <div className="flex flex-col min-h-screen bg-[#FAF9F7]">
       {/* Header with proper iOS safe area padding */}
       <div className="bg-white border-b border-gray-100" style={{ paddingTop: 'max(3rem, env(safe-area-inset-top))' }}>
         <div className="flex items-center justify-between px-6 py-4">
@@ -129,8 +129,8 @@ export function EmailVerificationScreen({ email, onVerified, onBack }: EmailVeri
         <div className="max-w-md mx-auto">
           {/* Icon */}
           <div className="flex justify-center mb-6">
-            <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center">
-              <Mail className="w-10 h-10 text-purple-600" />
+            <div className="w-20 h-20 bg-[#99CCCE]/15 rounded-full flex items-center justify-center">
+              <Mail className="w-10 h-10 text-[#2D4C4C]" />
             </div>
           </div>
 
@@ -158,7 +158,7 @@ export function EmailVerificationScreen({ email, onVerified, onBack }: EmailVeri
               onChange={(e) => handleCodeChange(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="000000"
-              className="w-full h-14 px-4 text-2xl text-center font-mono tracking-widest border-2 border-gray-200 rounded-xl focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all"
+              className="w-full h-14 px-4 text-2xl text-center font-mono tracking-widest border-2 border-gray-200 rounded-xl focus:border-[#99CCCE]/60 focus:ring-4 focus:ring-[#99CCCE]/15 transition-all"
               disabled={isLoading}
               autoComplete="off"
               autoFocus
@@ -184,7 +184,7 @@ export function EmailVerificationScreen({ email, onVerified, onBack }: EmailVeri
             onClick={handleVerify}
             disabled={code.length !== 6 || isLoading}
             style={{
-              background: code.length !== 6 || isLoading ? '#d1d5db' : 'linear-gradient(to right, #9333ea, #2563eb)',
+              background: code.length !== 6 || isLoading ? '#d1d5db' : '#2D4C4C',
               color: 'white',
               width: '100%',
               height: '3.5rem',
@@ -218,7 +218,7 @@ export function EmailVerificationScreen({ email, onVerified, onBack }: EmailVeri
             <button
               onClick={handleResend}
               disabled={isResending || resendCooldown > 0}
-              className="w-full h-12 bg-purple-100 text-purple-700 font-semibold rounded-xl hover:bg-purple-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full h-12 bg-[#99CCCE]/15 text-[#2D4C4C]/70 font-semibold rounded-xl hover:bg-[#99CCCE]/25 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isResending ? (
                 <>
@@ -234,8 +234,8 @@ export function EmailVerificationScreen({ email, onVerified, onBack }: EmailVeri
           </div>
 
           {/* Help Text */}
-          <div className="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-100">
-            <p className="text-sm text-blue-900">
+          <div className="mt-8 p-4 bg-[#99CCCE]/10 rounded-lg border border-[#99CCCE]/20">
+            <p className="text-sm text-[#2D4C4C]">
               <strong>Note:</strong> The verification email may take a few minutes to arrive. Check your spam folder if
               you don't see it.
             </p>

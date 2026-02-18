@@ -18,14 +18,14 @@ export const cardStyle: React.CSSProperties = {
 export const buttonPrimaryStyle: React.CSSProperties = {
   width: '100%',
   padding: '16px',
-  background: 'linear-gradient(135deg, #8B5CF6, #A78BFA)',
+  background: '#2D4C4C',
   color: 'white',
   border: 'none',
   borderRadius: '12px',
   fontSize: '16px',
   fontWeight: 600,
   cursor: 'pointer',
-  boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)',
+  boxShadow: '0 4px 12px rgba(45, 76, 76, 0.3)',
   transition: 'all 0.2s',
 };
 

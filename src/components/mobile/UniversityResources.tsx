@@ -16,7 +16,7 @@ export const UniversityResources: React.FC<UniversityResourcesProps> = ({ onBack
     {
       title: 'Mental Health Services',
       icon: Heart,
-      color: 'from-pink-500 to-rose-500',
+      color: 'from-[#F59E0B] to-[#F59E0B]',
       resources: [
         {
           name: 'Student Counseling Center',
@@ -41,7 +41,7 @@ export const UniversityResources: React.FC<UniversityResourcesProps> = ({ onBack
     {
       title: 'Academic Support',
       icon: BookOpen,
-      color: 'from-blue-500 to-indigo-500',
+      color: 'from-[#2D4C4C] to-[#99CCCE]',
       resources: [
         {
           name: 'Learning Support Services',
@@ -91,7 +91,7 @@ export const UniversityResources: React.FC<UniversityResourcesProps> = ({ onBack
     {
       title: 'Health & Safety',
       icon: Shield,
-      color: 'from-purple-500 to-violet-500',
+      color: 'from-[#2D4C4C] to-[#2D4C4C]',
       resources: [
         {
           name: 'Student Health Center',
@@ -125,11 +125,11 @@ export const UniversityResources: React.FC<UniversityResourcesProps> = ({ onBack
     window.open(universityInfo.website, '_blank');
   };
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 relative overflow-hidden">
+    <div className="min-h-screen bg-[#FAF9F7] relative overflow-hidden">
       {/* Background Elements */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-20 right-20 w-80 h-80 bg-gradient-to-br from-blue-200/20 to-indigo-200/15 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-32 left-12 w-96 h-96 bg-gradient-to-br from-purple-200/15 to-pink-200/10 rounded-full blur-3xl"></div>
+        <div className="absolute top-20 right-20 w-80 h-80 bg-gradient-to-br from-[#99CCCE]/15 to-[#2D4C4C]/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-32 left-12 w-96 h-96 bg-gradient-to-br from-[#99CCCE]/15 to-[#99CCCE]/10 rounded-full blur-3xl"></div>
       </div>
       {/* Main Content */}
       <div className="relative z-10 p-4 space-y-6">
@@ -215,17 +215,17 @@ export const UniversityResources: React.FC<UniversityResourcesProps> = ({ onBack
           })}
         </div>
         {/* Quick Actions */}
-        <Card className="border-0 shadow-lg backdrop-blur-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white p-6">
+        <Card className="border-0 shadow-lg backdrop-blur-xl bg-[#2D4C4C] text-white p-6">
           <div className="text-center space-y-4">
             <GraduationCap className="w-12 h-12 mx-auto" />
             <h3 className="text-xl font-bold">Need Something Else?</h3>
-            <p className="text-purple-100">
+            <p className="text-white/80">
               Can't find what you're looking for? Contact the Student Services Hub for personalized assistance.
             </p>
             <Button
               onClick={() => handleContact('+44 1905 855000', 'phone')}
               variant="secondary"
-              className="bg-white text-purple-600 hover:bg-gray-100"
+              className="bg-white text-[#2D4C4C] hover:bg-gray-100"
             >
               <Phone className="w-4 h-4 mr-2" />
               Contact Student Services

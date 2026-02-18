@@ -57,7 +57,7 @@ export function PrivacyOverlay({ isOpen, onClose }: PrivacyOverlayProps) {
         {/* Header */}
         <div
           style={{
-            background: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)',
+            background: '#2D4C4C',
             padding: '32px 24px 24px',
             position: 'relative',
             flexShrink: 0,
@@ -135,7 +135,7 @@ export function PrivacyOverlay({ isOpen, onClose }: PrivacyOverlayProps) {
               height="32"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="#8B5CF6"
+              stroke="#2D4C4C"
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -247,7 +247,7 @@ export function PrivacyOverlay({ isOpen, onClose }: PrivacyOverlayProps) {
                 rel="noopener noreferrer"
                 style={{
                   fontSize: '13px',
-                  color: '#8B5CF6',
+                  color: '#2D4C4C',
                   textDecoration: 'none',
                   fontWeight: 600,
                   display: 'flex',
@@ -278,7 +278,7 @@ export function PrivacyOverlay({ isOpen, onClose }: PrivacyOverlayProps) {
                 rel="noopener noreferrer"
                 style={{
                   fontSize: '13px',
-                  color: '#8B5CF6',
+                  color: '#2D4C4C',
                   textDecoration: 'none',
                   fontWeight: 600,
                   display: 'flex',
@@ -311,7 +311,7 @@ export function PrivacyOverlay({ isOpen, onClose }: PrivacyOverlayProps) {
             style={{
               width: '100%',
               padding: '16px',
-              background: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)',
+              background: '#2D4C4C',
               border: 'none',
               borderRadius: '12px',
               fontSize: '16px',
@@ -320,15 +320,15 @@ export function PrivacyOverlay({ isOpen, onClose }: PrivacyOverlayProps) {
               cursor: 'pointer',
               marginTop: '20px',
               transition: 'transform 200ms ease, box-shadow 200ms ease',
-              boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)',
+              boxShadow: '0 4px 12px rgba(45, 76, 76, 0.3)',
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 6px 16px rgba(139, 92, 246, 0.4)';
+              e.currentTarget.style.boxShadow = '0 6px 16px rgba(45, 76, 76, 0.4)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(139, 92, 246, 0.3)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(45, 76, 76, 0.3)';
             }}
           >
             Got it

@@ -307,12 +307,12 @@ export function RegistrationScreen({ onBack, onComplete, onUserExists }: Registr
     },
   };
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 relative overflow-y-auto">
+    <div className="min-h-screen bg-[#FAF9F7] relative overflow-y-auto">
       {/* Background effects */}
-      <div className="absolute inset-0 bg-gradient-to-br from-purple-100/30 via-blue-100/20 to-pink-100/30 pointer-events-none" />
-      <div className="absolute top-20 left-10 w-72 h-72 bg-purple-300/20 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-32 right-10 w-64 h-64 bg-blue-300/20 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute top-60 right-20 w-48 h-48 bg-pink-300/20 rounded-full blur-2xl pointer-events-none" />
+      <div className="absolute inset-0 bg-[#99CCCE]/5 pointer-events-none" />
+      <div className="absolute top-20 left-10 w-72 h-72 bg-[#99CCCE]/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-32 right-10 w-64 h-64 bg-[#99CCCE]/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-60 right-20 w-48 h-48 bg-[#F59E0B]/10 rounded-full blur-2xl pointer-events-none" />
       <motion.div
         className="relative z-10 min-h-screen flex flex-col"
         variants={containerVariants}
@@ -353,7 +353,7 @@ export function RegistrationScreen({ onBack, onComplete, onUserExists }: Registr
               {/* Step Header */}
               <div className="text-center mb-8">
                 <motion.div
-                  className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg"
+                  className="w-16 h-16 mx-auto mb-4 bg-[#2D4C4C] rounded-2xl flex items-center justify-center shadow-lg"
                   whileHover={{ scale: 1.05 }}
                 >
                   {step === 1 && <User className="w-8 h-8 text-white" />}
@@ -376,7 +376,7 @@ export function RegistrationScreen({ onBack, onComplete, onUserExists }: Registr
                         value={formData.firstName}
                         onChange={(e) => updateFormData('firstName', e.target.value)}
                         placeholder="Enter first name"
-                        className="bg-white/60 border-gray-200 focus:border-purple-400 focus:ring-purple-400/20"
+                        className="bg-white/60 border-gray-200 focus:border-[#99CCCE]/60 focus:ring-[#99CCCE]/20"
                       />
                     </div>
                     <div className="space-y-2">
@@ -388,7 +388,7 @@ export function RegistrationScreen({ onBack, onComplete, onUserExists }: Registr
                         value={formData.lastName}
                         onChange={(e) => updateFormData('lastName', e.target.value)}
                         placeholder="Enter last name"
-                        className="bg-white/60 border-gray-200 focus:border-purple-400 focus:ring-purple-400/20"
+                        className="bg-white/60 border-gray-200 focus:border-[#99CCCE]/60 focus:ring-[#99CCCE]/20"
                       />
                     </div>
                   </div>
@@ -407,10 +407,10 @@ export function RegistrationScreen({ onBack, onComplete, onUserExists }: Registr
                       value={formData.email}
                       onChange={(e) => updateFormData('email', e.target.value)}
                       placeholder="your.email@university.ac.uk"
-                      className="bg-white/60 border-gray-200 focus:border-purple-400 focus:ring-purple-400/20"
+                      className="bg-white/60 border-gray-200 focus:border-[#99CCCE]/60 focus:ring-[#99CCCE]/20"
                     />
                     <div className="flex items-center gap-2 mt-2">
-                      <GraduationCap className="w-4 h-4 text-blue-500" />
+                      <GraduationCap className="w-4 h-4 text-[#2D4C4C]" />
                       <p className="text-xs text-gray-600">
                         We'll automatically detect your university and local support services
                       </p>
@@ -422,45 +422,45 @@ export function RegistrationScreen({ onBack, onComplete, onUserExists }: Registr
               {step === 3 && (
                 <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
                   {/* Password Requirements - Always show for new password creation */}
-                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                    <h3 className="text-sm font-semibold text-blue-900 mb-3">Password Requirements:</h3>
+                  <div className="bg-[#99CCCE]/10 border border-[#99CCCE]/30 rounded-xl p-4">
+                    <h3 className="text-sm font-semibold text-[#2D4C4C] mb-3">Password Requirements:</h3>
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         <CheckCircle
-                          className={`w-4 h-4 ${formData.password.length >= 8 ? 'text-green-500' : 'text-gray-300'}`}
+                          className={`w-4 h-4 ${formData.password.length >= 8 ? 'text-[#2D4C4C]' : 'text-gray-300'}`}
                         />
                         <span
-                          className={`text-xs ${formData.password.length >= 8 ? 'text-green-700' : 'text-gray-500'}`}
+                          className={`text-xs ${formData.password.length >= 8 ? 'text-[#2D4C4C]/70' : 'text-gray-500'}`}
                         >
                           At least 8 characters
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
                         <CheckCircle
-                          className={`w-4 h-4 ${/[A-Z]/.test(formData.password) ? 'text-green-500' : 'text-gray-300'}`}
+                          className={`w-4 h-4 ${/[A-Z]/.test(formData.password) ? 'text-[#2D4C4C]' : 'text-gray-300'}`}
                         />
                         <span
-                          className={`text-xs ${/[A-Z]/.test(formData.password) ? 'text-green-700' : 'text-gray-500'}`}
+                          className={`text-xs ${/[A-Z]/.test(formData.password) ? 'text-[#2D4C4C]/70' : 'text-gray-500'}`}
                         >
                           One uppercase letter (A-Z)
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
                         <CheckCircle
-                          className={`w-4 h-4 ${/[a-z]/.test(formData.password) ? 'text-green-500' : 'text-gray-300'}`}
+                          className={`w-4 h-4 ${/[a-z]/.test(formData.password) ? 'text-[#2D4C4C]' : 'text-gray-300'}`}
                         />
                         <span
-                          className={`text-xs ${/[a-z]/.test(formData.password) ? 'text-green-700' : 'text-gray-500'}`}
+                          className={`text-xs ${/[a-z]/.test(formData.password) ? 'text-[#2D4C4C]/70' : 'text-gray-500'}`}
                         >
                           One lowercase letter (a-z)
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
                         <CheckCircle
-                          className={`w-4 h-4 ${/[0-9]/.test(formData.password) ? 'text-green-500' : 'text-gray-300'}`}
+                          className={`w-4 h-4 ${/[0-9]/.test(formData.password) ? 'text-[#2D4C4C]' : 'text-gray-300'}`}
                         />
                         <span
-                          className={`text-xs ${/[0-9]/.test(formData.password) ? 'text-green-700' : 'text-gray-500'}`}
+                          className={`text-xs ${/[0-9]/.test(formData.password) ? 'text-[#2D4C4C]/70' : 'text-gray-500'}`}
                         >
                           One number (0-9)
                         </span>
@@ -468,10 +468,10 @@ export function RegistrationScreen({ onBack, onComplete, onUserExists }: Registr
                       {/* Removed special character requirement to match AWS Cognito default policy */}
                       <div className="flex items-center gap-2">
                         <CheckCircle
-                          className={`w-4 h-4 ${formData.password === formData.confirmPassword && formData.confirmPassword !== '' ? 'text-green-500' : 'text-gray-300'}`}
+                          className={`w-4 h-4 ${formData.password === formData.confirmPassword && formData.confirmPassword !== '' ? 'text-[#2D4C4C]' : 'text-gray-300'}`}
                         />
                         <span
-                          className={`text-xs ${formData.password === formData.confirmPassword && formData.confirmPassword !== '' ? 'text-green-700' : 'text-gray-500'}`}
+                          className={`text-xs ${formData.password === formData.confirmPassword && formData.confirmPassword !== '' ? 'text-[#2D4C4C]/70' : 'text-gray-500'}`}
                         >
                           Passwords match
                         </span>
@@ -491,7 +491,7 @@ export function RegistrationScreen({ onBack, onComplete, onUserExists }: Registr
                           value={formData.password}
                           onChange={(e) => updateFormData('password', e.target.value)}
                           placeholder="Create a secure password"
-                          className="bg-white/60 border-gray-200 focus:border-purple-400 focus:ring-purple-400/20 pr-10"
+                          className="bg-white/60 border-gray-200 focus:border-[#99CCCE]/60 focus:ring-[#99CCCE]/20 pr-10"
                         />
                         <button
                           type="button"
@@ -515,7 +515,7 @@ export function RegistrationScreen({ onBack, onComplete, onUserExists }: Registr
                           value={formData.confirmPassword}
                           onChange={(e) => updateFormData('confirmPassword', e.target.value)}
                           placeholder="Confirm your password"
-                          className="bg-white/60 border-gray-200 focus:border-purple-400 focus:ring-purple-400/20 pr-10"
+                          className="bg-white/60 border-gray-200 focus:border-[#99CCCE]/60 focus:ring-[#99CCCE]/20 pr-10"
                         />
                         <button
                           type="button"
@@ -540,7 +540,7 @@ export function RegistrationScreen({ onBack, onComplete, onUserExists }: Registr
                 <Button
                   onClick={handleNext}
                   disabled={!validateStep() || isLoading}
-                  className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white h-12 font-medium rounded-xl disabled:from-gray-300 disabled:to-gray-400"
+                  className="w-full bg-[#2D4C4C] hover:bg-[#2D4C4C]/90 text-white h-12 font-medium rounded-xl disabled:bg-gray-300"
                 >
                   {isLoading ? (
                     'Creating Account...'

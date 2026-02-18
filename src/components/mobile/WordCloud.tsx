@@ -10,7 +10,7 @@ interface WordCloudProps {
   colors?: string[];
 }
 
-export function WordCloud({ words, colors = ['#5B8FED', '#6BA3FF', '#7FB8FF', '#93CCFF', '#A7E0FF'] }: WordCloudProps) {
+export function WordCloud({ words, colors = ['#2D4C4C', '#99CCCE', '#F59E0B', '#FF6B6B', '#DDD6FE'] }: WordCloudProps) {
   const processedWords = useMemo(() => {
     // Sort by value to get consistent positioning
     const sorted = [...words].sort((a, b) => b.value - a.value);

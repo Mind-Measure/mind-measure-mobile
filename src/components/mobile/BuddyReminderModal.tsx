@@ -70,7 +70,7 @@ export function BuddyReminderModal({ isOpen, onChooseBuddy, onSkip }: BuddyRemin
       >
         <div
           style={{
-            background: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)',
+            background: '#2D4C4C',
             padding: '32px 24px 24px',
             position: 'relative',
           }}
@@ -241,7 +241,7 @@ export function BuddyReminderModal({ isOpen, onChooseBuddy, onSkip }: BuddyRemin
                   </ul>
                 </div>
 
-                <p style={{ marginTop: '16px', marginBottom: 0, fontStyle: 'italic', color: '#6366F1' }}>
+                <p style={{ marginTop: '16px', marginBottom: 0, fontStyle: 'italic', color: '#2D4C4C' }}>
                   Buddies are about staying connected, not monitoring or intervention.
                 </p>
               </div>
@@ -257,7 +257,7 @@ export function BuddyReminderModal({ isOpen, onChooseBuddy, onSkip }: BuddyRemin
                   borderRadius: '12px',
                   fontSize: '15px',
                   fontWeight: 600,
-                  color: '#6366F1',
+                  color: '#2D4C4C',
                   cursor: 'pointer',
                   transition: 'background 200ms ease',
                 }}
@@ -314,7 +314,7 @@ export function BuddyReminderModal({ isOpen, onChooseBuddy, onSkip }: BuddyRemin
                 style={{
                   width: '100%',
                   padding: '16px',
-                  background: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)',
+                  background: '#2D4C4C',
                   border: 'none',
                   borderRadius: '12px',
                   fontSize: '16px',
@@ -323,15 +323,15 @@ export function BuddyReminderModal({ isOpen, onChooseBuddy, onSkip }: BuddyRemin
                   cursor: 'pointer',
                   marginBottom: '12px',
                   transition: 'transform 200ms ease, box-shadow 200ms ease',
-                  boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)',
+                  boxShadow: '0 4px 12px rgba(45, 76, 76, 0.3)',
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(139, 92, 246, 0.4)';
+                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(45, 76, 76, 0.4)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(139, 92, 246, 0.3)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(45, 76, 76, 0.3)';
                 }}
               >
                 Choose a Buddy

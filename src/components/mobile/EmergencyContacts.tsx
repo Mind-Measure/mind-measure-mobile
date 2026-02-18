@@ -50,7 +50,7 @@ export function EmergencyContacts({ onCall }: EmergencyContactsProps) {
       case 'security':
         return 'text-orange-600 bg-orange-100';
       case 'mental-health':
-        return 'text-purple-600 bg-purple-100';
+        return 'text-[#2D4C4C] bg-[#99CCCE]/15';
       case 'support':
         return 'text-green-600 bg-green-100';
       default:

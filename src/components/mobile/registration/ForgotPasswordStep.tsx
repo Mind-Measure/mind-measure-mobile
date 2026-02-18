@@ -31,7 +31,7 @@ function EmailEntry({ flow }: { flow: UseRegistrationFlowReturn }) {
         style={{
           background: 'none',
           border: 'none',
-          color: '#8B5CF6',
+          color: '#2D4C4C',
           fontSize: '15px',
           fontWeight: 600,
           cursor: 'pointer',
@@ -98,7 +98,7 @@ function EmailEntry({ flow }: { flow: UseRegistrationFlowReturn }) {
           placeholder="Your university email"
           style={inputStyle}
           onFocus={(e) => {
-            e.currentTarget.style.borderColor = '#8B5CF6';
+            e.currentTarget.style.borderColor = '#2D4C4C';
           }}
           onBlur={(e) => {
             e.currentTarget.style.borderColor = '#E5E7EB';
@@ -157,7 +157,7 @@ function ResetVerify({ flow }: { flow: UseRegistrationFlowReturn }) {
         style={{
           background: 'none',
           border: 'none',
-          color: '#8B5CF6',
+          color: '#2D4C4C',
           fontSize: '15px',
           fontWeight: 600,
           cursor: 'pointer',
@@ -249,7 +249,7 @@ function ResetVerify({ flow }: { flow: UseRegistrationFlowReturn }) {
                 fontFamily: 'inherit',
               }}
               onFocus={(e) => {
-                e.currentTarget.style.borderColor = '#8B5CF6';
+                e.currentTarget.style.borderColor = '#2D4C4C';
                 e.currentTarget.select();
               }}
               onBlur={(e) => {
@@ -286,7 +286,7 @@ function ResetVerify({ flow }: { flow: UseRegistrationFlowReturn }) {
           style={{
             background: 'none',
             border: 'none',
-            color: '#8B5CF6',
+            color: '#2D4C4C',
             fontSize: '15px',
             fontWeight: 600,
             cursor: isResending ? 'not-allowed' : 'pointer',
@@ -298,8 +298,8 @@ function ResetVerify({ flow }: { flow: UseRegistrationFlowReturn }) {
         </button>
       </div>
 
-      <div style={{ background: '#EEF2FF', borderRadius: '12px', padding: '16px' }}>
-        <p style={{ fontSize: '13px', color: '#5B21B6', margin: 0, lineHeight: 1.5 }}>
+      <div style={{ background: '#FAF9F7', borderRadius: '12px', padding: '16px' }}>
+        <p style={{ fontSize: '13px', color: '#2D4C4C', margin: 0, lineHeight: 1.5 }}>
           {medium === 'SMS' ? (
             <>
               <strong>Note:</strong> The code may take a minute to arrive. Check your messages.
@@ -348,7 +348,7 @@ function ResetNewPassword({ flow }: { flow: UseRegistrationFlowReturn }) {
         style={{
           background: 'none',
           border: 'none',
-          color: '#8B5CF6',
+          color: '#2D4C4C',
           fontSize: '15px',
           fontWeight: 600,
           cursor: 'pointer',
@@ -407,7 +407,7 @@ function ResetNewPassword({ flow }: { flow: UseRegistrationFlowReturn }) {
               placeholder="Create a strong password"
               style={{ ...inputStyle, paddingRight: '48px' }}
               onFocus={(e) => {
-                e.currentTarget.style.borderColor = '#8B5CF6';
+                e.currentTarget.style.borderColor = '#2D4C4C';
               }}
               onBlur={(e) => {
                 e.currentTarget.style.borderColor = '#E5E7EB';
@@ -457,7 +457,7 @@ function ResetNewPassword({ flow }: { flow: UseRegistrationFlowReturn }) {
               placeholder="Re-enter your password"
               style={{ ...inputStyle, paddingRight: '48px' }}
               onFocus={(e) => {
-                e.currentTarget.style.borderColor = '#8B5CF6';
+                e.currentTarget.style.borderColor = '#2D4C4C';
               }}
               onBlur={(e) => {
                 e.currentTarget.style.borderColor = '#E5E7EB';
@@ -511,7 +511,7 @@ function ResetNewPassword({ flow }: { flow: UseRegistrationFlowReturn }) {
                   width: 18,
                   height: 18,
                   borderRadius: '50%',
-                  background: req.met ? '#8B5CF6' : '#E5E7EB',
+                  background: req.met ? '#2D4C4C' : '#E5E7EB',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',

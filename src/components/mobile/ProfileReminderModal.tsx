@@ -89,7 +89,7 @@ export function ProfileReminderModal({ isOpen, onComplete, onSkip }: ProfileRemi
         {/* Header with gradient */}
         <div
           style={{
-            background: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)',
+            background: '#2D4C4C',
             padding: '32px 24px',
             textAlign: 'center',
             position: 'relative',
@@ -228,7 +228,7 @@ export function ProfileReminderModal({ isOpen, onComplete, onSkip }: ProfileRemi
                 height="18"
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke="#8B5CF6"
+                stroke="#2D4C4C"
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -263,7 +263,7 @@ export function ProfileReminderModal({ isOpen, onComplete, onSkip }: ProfileRemi
                       fontSize: '20px',
                       width: '32px',
                       height: '32px',
-                      background: 'linear-gradient(135deg, #F3E8FF 0%, #E9D5FF 100%)',
+                      background: '#FAF9F7',
                       borderRadius: '8px',
                       display: 'flex',
                       alignItems: 'center',
@@ -285,7 +285,7 @@ export function ProfileReminderModal({ isOpen, onComplete, onSkip }: ProfileRemi
             style={{
               width: '100%',
               padding: '16px',
-              background: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)',
+              background: '#2D4C4C',
               border: 'none',
               borderRadius: '12px',
               color: 'white',
@@ -293,16 +293,16 @@ export function ProfileReminderModal({ isOpen, onComplete, onSkip }: ProfileRemi
               fontWeight: '600',
               cursor: 'pointer',
               transition: 'all 0.2s',
-              boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)',
+              boxShadow: '0 4px 12px rgba(45, 76, 76, 0.3)',
               marginBottom: '12px',
             }}
             onMouseOver={(e) => {
               e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 6px 16px rgba(139, 92, 246, 0.4)';
+              e.currentTarget.style.boxShadow = '0 6px 16px rgba(45, 76, 76, 0.4)';
             }}
             onMouseOut={(e) => {
               e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(139, 92, 246, 0.3)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(45, 76, 76, 0.3)';
             }}
           >
             Go to Profile

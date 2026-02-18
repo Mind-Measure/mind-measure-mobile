@@ -32,7 +32,7 @@ export function ThirtyDayViewCard({ baselineScore, monthData, averageScore }: Th
   // Get background gradient based on average score
   const getBackgroundGradient = (score: number) => {
     if (score >= 80) return 'linear-gradient(to bottom right, #10B981, #34D399)'; // Green
-    if (score >= 60) return 'linear-gradient(to bottom right, #5B8FED, #6BA3FF)'; // Blue
+    if (score >= 60) return 'linear-gradient(to bottom right, #2D4C4C, #99CCCE)'; // Teal
     if (score >= 40) return 'linear-gradient(to bottom right, #F59E0B, #FBBF24)'; // Amber
     return 'linear-gradient(to bottom right, #EF4444, #F87171)'; // Red
   };

@@ -249,7 +249,7 @@ export function TrendChart({ last7CheckIns, weeklyAverages, monthlyAverages }: T
               key={view.key}
               onClick={() => setActiveView(view.key)}
               className={`h-2 rounded-full transition-all ${
-                activeView === view.key ? 'w-6 bg-gradient-to-r from-purple-500 to-pink-500' : 'w-2 bg-gray-300'
+                activeView === view.key ? 'w-6 bg-[#2D4C4C]' : 'w-2 bg-gray-300'
               }`}
             />
           ))}

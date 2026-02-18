@@ -23,7 +23,7 @@ export function WelcomeStep({ flow }: WelcomeStepProps) {
         style={{
           background: 'none',
           border: 'none',
-          color: '#8B5CF6',
+          color: '#2D4C4C',
           fontSize: '15px',
           fontWeight: 600,
           cursor: 'pointer',
@@ -81,7 +81,7 @@ export function WelcomeStep({ flow }: WelcomeStepProps) {
             placeholder="e.g., Sarah"
             style={inputStyle}
             onFocus={(e) => {
-              e.currentTarget.style.borderColor = '#8B5CF6';
+              e.currentTarget.style.borderColor = '#2D4C4C';
             }}
             onBlur={(e) => {
               e.currentTarget.style.borderColor = '#E5E7EB';
@@ -99,7 +99,7 @@ export function WelcomeStep({ flow }: WelcomeStepProps) {
             placeholder="e.g., Johnson"
             style={inputStyle}
             onFocus={(e) => {
-              e.currentTarget.style.borderColor = '#8B5CF6';
+              e.currentTarget.style.borderColor = '#2D4C4C';
             }}
             onBlur={(e) => {
               e.currentTarget.style.borderColor = '#E5E7EB';
@@ -117,7 +117,7 @@ export function WelcomeStep({ flow }: WelcomeStepProps) {
             placeholder="e.g., sarah.j@student.ac.uk"
             style={inputStyle}
             onFocus={(e) => {
-              e.currentTarget.style.borderColor = '#8B5CF6';
+              e.currentTarget.style.borderColor = '#2D4C4C';
             }}
             onBlur={(e) => {
               e.currentTarget.style.borderColor = '#E5E7EB';

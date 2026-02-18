@@ -273,7 +273,7 @@ export function ArticleDetailPage({
             background: '#F9FAFB',
             borderRadius: '12px',
             marginBottom: '24px',
-            borderLeft: '4px solid #5B8FED',
+            borderLeft: '4px solid #2D4C4C',
           }}
         >
           <p
@@ -304,7 +304,7 @@ export function ArticleDetailPage({
           style={{
             marginTop: '40px',
             padding: '24px',
-            background: 'linear-gradient(135deg, #5B8FED, #7BA3F0)',
+            background: '#2D4C4C',
             borderRadius: '16px',
             textAlign: 'center',
           }}
@@ -337,7 +337,7 @@ export function ArticleDetailPage({
                 display: 'inline-block',
                 padding: '12px 24px',
                 background: 'white',
-                color: '#5B8FED',
+                color: '#2D4C4C',
                 border: 'none',
                 borderRadius: '12px',
                 fontSize: '15px',
@@ -363,7 +363,7 @@ export function ArticleDetailPage({
               style={{
                 padding: '12px 24px',
                 background: 'white',
-                color: '#5B8FED',
+                color: '#2D4C4C',
                 border: 'none',
                 borderRadius: '12px',
                 fontSize: '15px',

@@ -26,14 +26,14 @@ export function MessageCard({
   const getTypeStyles = (messageType: string) => {
     const styles = {
       nudge: {
-        gradient: 'linear-gradient(135deg, #5B8FED, #7BA3F0)',
-        iconColor: '#5B8FED',
-        bgLight: '#EFF6FF',
+        gradient: '#2D4C4C',
+        iconColor: '#2D4C4C',
+        bgLight: '#E6F0F0',
       },
       announcement: {
-        gradient: 'linear-gradient(135deg, #A855F7, #C084FC)',
-        iconColor: '#A855F7',
-        bgLight: '#FAF5FF',
+        gradient: '#2D4C4C',
+        iconColor: '#2D4C4C',
+        bgLight: '#FAF9F7',
       },
       reminder: {
         gradient: 'linear-gradient(135deg, #F59E0B, #FBBF24)',

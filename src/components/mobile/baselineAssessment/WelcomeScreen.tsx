@@ -125,14 +125,14 @@ export function WelcomeScreen({ requestingPermissions, onStart }: WelcomeScreenP
           style={{
             width: '100%',
             padding: '16px',
-            background: requestingPermissions ? '#cccccc' : 'linear-gradient(135deg, #8B5CF6, #A78BFA)',
+            background: requestingPermissions ? '#cccccc' : '#2D4C4C',
             color: 'white',
             border: 'none',
             borderRadius: '12px',
             fontSize: '16px',
             fontWeight: '600',
             cursor: requestingPermissions ? 'not-allowed' : 'pointer',
-            boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)',
+            boxShadow: '0 4px 12px rgba(45, 76, 76, 0.3)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -143,13 +143,13 @@ export function WelcomeScreen({ requestingPermissions, onStart }: WelcomeScreenP
           onMouseOver={(e) => {
             if (!requestingPermissions) {
               e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 6px 16px rgba(139, 92, 246, 0.4)';
+              e.currentTarget.style.boxShadow = '0 6px 16px rgba(45, 76, 76, 0.4)';
             }
           }}
           onMouseOut={(e) => {
             if (!requestingPermissions) {
               e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(139, 92, 246, 0.3)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(45, 76, 76, 0.3)';
             }
           }}
         >

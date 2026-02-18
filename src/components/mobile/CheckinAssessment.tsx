@@ -69,7 +69,7 @@ export function CheckinAssessment({ onBack }: CheckinAssessmentProps) {
         --card-foreground: #f9fafb !important;
         --border: #4b5563 !important;
         --input: #374151 !important;
-        --primary: #8b5cf6 !important;
+        --primary: #2D4C4C !important;
         --primary-foreground: #ffffff !important;
       }
     `;
@@ -84,7 +84,7 @@ export function CheckinAssessment({ onBack }: CheckinAssessmentProps) {
     };
   }, [scriptLoaded]);
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-purple-100 to-pink-50 px-6 py-8">
+    <div className="min-h-screen bg-[#FAF9F7] px-6 py-8">
       {/* Header */}
       <div className="flex items-center justify-center gap-3 pt-8 pb-4">
         <div className="w-14 h-14 flex items-center justify-center">
@@ -94,7 +94,7 @@ export function CheckinAssessment({ onBack }: CheckinAssessmentProps) {
             className="w-full h-full object-contain"
           />
         </div>
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
+        <h1 className="text-3xl font-bold text-[#2D4C4C]">
           Mind Measure
         </h1>
       </div>
@@ -116,7 +116,7 @@ export function CheckinAssessment({ onBack }: CheckinAssessmentProps) {
       <div className="flex-1 flex flex-col">
         {!scriptLoaded ? (
           <Card className="border-0 shadow-lg backdrop-blur-xl bg-white/80 p-8 text-center">
-            <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 bg-[#2D4C4C] rounded-full flex items-center justify-center mx-auto mb-4">
               <MessageCircle className="w-8 h-8 text-white" />
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Loading Check-in...</h3>
@@ -133,11 +133,11 @@ export function CheckinAssessment({ onBack }: CheckinAssessmentProps) {
         <h4 className="text-gray-900 mb-3 text-center">Your Wellness Check-in</h4>
         <div className="space-y-2">
           <div className="flex items-center gap-3 text-sm text-gray-700">
-            <Brain className="w-5 h-5 text-purple-600" />
+            <Brain className="w-5 h-5 text-[#2D4C4C]" />
             <span>Current mental state</span>
           </div>
           <div className="flex items-center gap-3 text-sm text-gray-700">
-            <Heart className="w-5 h-5 text-pink-600" />
+            <Heart className="w-5 h-5 text-[#F59E0B]" />
             <span>Emotional check-in</span>
           </div>
           <div className="flex items-center gap-3 text-sm text-gray-700">

@@ -104,7 +104,7 @@ export const UniversityRegistration: React.FC<UniversityRegistrationProps> = ({ 
           Your university has partnered with us to provide you with personalized mental health support and insights.
         </p>
       </div>
-      <Card className="bg-gradient-to-r from-blue-50 to-indigo-100 rounded-2xl p-6 border border-blue-200">
+      <Card className="bg-[#99CCCE]/10 rounded-2xl p-6 border border-[#99CCCE]/20">
         <div className="text-center space-y-4">
           <GraduationCap className="w-12 h-12 text-blue-600 mx-auto" />
           <h2 className="text-xl font-semibold text-blue-900">University Partnership</h2>
@@ -118,7 +118,7 @@ export const UniversityRegistration: React.FC<UniversityRegistrationProps> = ({ 
       </Card>
       <Button
         onClick={handleNext}
-        className="w-full h-14 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-lg font-semibold rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
+        className="w-full h-14 bg-[#2D4C4C] text-white text-lg font-semibold rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
       >
         Get Started
       </Button>
@@ -174,7 +174,7 @@ export const UniversityRegistration: React.FC<UniversityRegistrationProps> = ({ 
             id="university"
             value={formData.university}
             onChange={(e) => setFormData({ ...formData, university: e.target.value })}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2D4C4C] focus:border-transparent"
           >
             {universities.map((uni) => (
               <option key={uni} value={uni}>
@@ -236,10 +236,10 @@ export const UniversityRegistration: React.FC<UniversityRegistrationProps> = ({ 
               id="agreeToTerms"
               checked={formData.agreeToTerms}
               onChange={(e) => setFormData({ ...formData, agreeToTerms: e.target.checked })}
-              className="mt-1 w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+              className="mt-1 w-4 h-4 text-[#2D4C4C] border-gray-300 rounded focus:ring-[#2D4C4C]"
             />
             <Label htmlFor="agreeToTerms" className="text-sm text-gray-700">
-              I agree to the <span className="text-purple-600 underline">Terms of Service</span>
+              I agree to the <span className="text-[#2D4C4C] underline">Terms of Service</span>
             </Label>
           </div>
           {errors.terms && <p className="text-red-500 text-xs ml-7">{errors.terms}</p>}
@@ -249,10 +249,10 @@ export const UniversityRegistration: React.FC<UniversityRegistrationProps> = ({ 
               id="agreeToPrivacy"
               checked={formData.agreeToPrivacy}
               onChange={(e) => setFormData({ ...formData, agreeToPrivacy: e.target.checked })}
-              className="mt-1 w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+              className="mt-1 w-4 h-4 text-[#2D4C4C] border-gray-300 rounded focus:ring-[#2D4C4C]"
             />
             <Label htmlFor="agreeToPrivacy" className="text-sm text-gray-700">
-              I agree to the <span className="text-purple-600 underline">Privacy Policy</span>
+              I agree to the <span className="text-[#2D4C4C] underline">Privacy Policy</span>
             </Label>
           </div>
           {errors.privacy && <p className="text-red-500 text-xs ml-7">{errors.privacy}</p>}
@@ -261,7 +261,7 @@ export const UniversityRegistration: React.FC<UniversityRegistrationProps> = ({ 
       <div className="space-y-3">
         <Button
           onClick={handleNext}
-          className="w-full h-14 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-lg font-semibold rounded-2xl"
+          className="w-full h-14 bg-[#2D4C4C] text-white text-lg font-semibold rounded-2xl"
         >
           Continue
         </Button>
@@ -304,7 +304,7 @@ export const UniversityRegistration: React.FC<UniversityRegistrationProps> = ({ 
   );
   const renderBaselineSetup = () => (
     <div className="text-center space-y-6">
-      <div className="w-24 h-24 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto border-4 border-white shadow-2xl">
+      <div className="w-24 h-24 bg-[#2D4C4C] rounded-full flex items-center justify-center mx-auto border-4 border-white shadow-2xl">
         <Shield className="w-12 h-12 text-white" />
       </div>
       <div>
@@ -313,10 +313,10 @@ export const UniversityRegistration: React.FC<UniversityRegistrationProps> = ({ 
           Your account is now active. Let's set up your baseline assessment to personalize your experience.
         </p>
       </div>
-      <Card className="bg-gradient-to-r from-purple-50 to-pink-100 rounded-2xl p-6 border border-purple-200">
+      <Card className="bg-[#FAF9F7] rounded-2xl p-6 border border-[#99CCCE]">
         <div className="text-center space-y-4">
-          <h2 className="text-xl font-semibold text-purple-900">Baseline Assessment</h2>
-          <div className="space-y-2 text-sm text-purple-700">
+          <h2 className="text-xl font-semibold text-[#2D4C4C]">Baseline Assessment</h2>
+          <div className="space-y-2 text-sm text-[#2D4C4C]">
             <p>✓ Takes about 10-15 minutes</p>
             <p>✓ Helps us understand your current wellness</p>
             <p>✓ Will be repeated every 90 days</p>
@@ -327,7 +327,7 @@ export const UniversityRegistration: React.FC<UniversityRegistrationProps> = ({ 
       <div className="space-y-3">
         <Button
           onClick={handleComplete}
-          className="w-full h-14 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-lg font-semibold rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
+          className="w-full h-14 bg-[#2D4C4C] text-white text-lg font-semibold rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
         >
           Start Baseline Assessment
         </Button>
@@ -350,11 +350,11 @@ export const UniversityRegistration: React.FC<UniversityRegistrationProps> = ({ 
     }
   };
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-purple-50/30 to-pink-50/40 relative overflow-hidden">
+    <div className="min-h-screen bg-[#FAF9F7] relative overflow-hidden">
       {/* Background Elements */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-20 right-20 w-80 h-80 bg-gradient-to-br from-purple-200/20 via-pink-200/15 to-blue-200/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-32 left-12 w-96 h-96 bg-gradient-to-br from-blue-200/15 via-indigo-200/10 to-purple-200/15 rounded-full blur-3xl"></div>
+        <div className="absolute top-20 right-20 w-80 h-80 bg-gradient-to-br from-[#99CCCE]/20 to-[#99CCCE]/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-32 left-12 w-96 h-96 bg-gradient-to-br from-[#99CCCE]/15 to-[#99CCCE]/10 rounded-full blur-3xl"></div>
       </div>
       {/* Main Content */}
       <div className="relative z-10 p-4 space-y-6">
@@ -367,7 +367,7 @@ export const UniversityRegistration: React.FC<UniversityRegistrationProps> = ({ 
             <div className="flex-1">
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div
-                  className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-300"
+                  className="bg-[#2D4C4C] h-2 rounded-full transition-all duration-300"
                   style={{
                     width: `${((['welcome', 'registration', 'verification', 'baseline-setup'].indexOf(currentStep) + 1) / 4) * 100}%`,
                   }}

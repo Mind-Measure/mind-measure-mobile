@@ -147,7 +147,7 @@ export function WellnessTab({ userData, onExportData }: WellnessTabProps) {
             gap: '8px',
             width: '100%',
             padding: '14px 24px',
-            background: 'linear-gradient(135deg, #5B8FED, #6BA3FF)',
+            background: '#2D4C4C',
             color: 'white',
             border: 'none',
             borderRadius: '12px',

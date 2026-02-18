@@ -7,7 +7,7 @@ interface MobileCheckinProps {
 }
 export function CheckInScreen({ onNavigateToJodie }: MobileCheckinProps) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-purple-100 to-pink-50 px-6 py-8 space-y-8">
+    <div className="min-h-screen bg-[#FAF9F7] px-6 py-8 space-y-8">
       {/* Header */}
       <div className="text-center pt-8">
         <div className="w-24 h-24 mx-auto mb-6 flex items-center justify-center">
@@ -20,7 +20,7 @@ export function CheckInScreen({ onNavigateToJodie }: MobileCheckinProps) {
       <div className="text-center space-y-4">
         <Button
           onClick={onNavigateToJodie}
-          className="w-full h-16 bg-gradient-to-r from-purple-500 via-pink-500 to-purple-600 border-0 shadow-2xl text-lg backdrop-blur-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 rounded-2xl"
+          className="w-full h-16 bg-[#2D4C4C] text-white border-0 shadow-lg text-lg hover:shadow-xl transition-all duration-300 rounded-2xl"
         >
           <Play className="w-6 h-6 mr-3" />
           Start Check-in with Jodie
@@ -53,28 +53,28 @@ export function CheckInScreen({ onNavigateToJodie }: MobileCheckinProps) {
               </div>
             </div>
           </Card>
-          <Card className="border-0 shadow-lg backdrop-blur-xl bg-purple-50/70 p-5">
+          <Card className="border-0 shadow-lg bg-[#99CCCE]/15 p-5">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-purple-500/20 rounded-2xl flex items-center justify-center backdrop-blur-xl">
-                <MessageCircle className="w-6 h-6 text-purple-600" />
+              <div className="w-12 h-12 bg-[#99CCCE]/25 rounded-2xl flex items-center justify-center">
+                <MessageCircle className="w-6 h-6 text-[#2D4C4C]" />
               </div>
               <div className="flex-1">
-                <h4 className="text-purple-900 mb-1">Conversation</h4>
-                <p className="text-purple-700 text-sm">Natural dialogue with Jodie</p>
+                <h4 className="text-[#2D4C4C] mb-1">Conversation</h4>
+                <p className="text-[#2D4C4C]/70 text-sm">Natural dialogue with Jodie</p>
               </div>
             </div>
           </Card>
         </div>
       </div>
       {/* Private & Secure */}
-      <Card className="border-0 shadow-lg backdrop-blur-xl bg-indigo-50/70 p-6">
+      <Card className="border-0 shadow-lg bg-[#DDD6FE]/20 p-6">
         <div className="flex items-start gap-4">
-          <div className="w-12 h-12 bg-indigo-500/20 rounded-2xl flex items-center justify-center backdrop-blur-xl flex-shrink-0">
-            <Shield className="w-6 h-6 text-indigo-600" />
+          <div className="w-12 h-12 bg-[#DDD6FE]/30 rounded-2xl flex items-center justify-center flex-shrink-0">
+            <Shield className="w-6 h-6 text-[#2D4C4C]" />
           </div>
           <div>
-            <h4 className="text-indigo-900 mb-2">Private & Secure</h4>
-            <p className="text-indigo-700 text-sm leading-relaxed">
+            <h4 className="text-[#2D4C4C] mb-2">Private & Secure</h4>
+            <p className="text-[#2D4C4C]/70 text-sm leading-relaxed">
               Your data is encrypted and confidential. This takes about 3 minutes.
             </p>
           </div>

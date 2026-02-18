@@ -419,7 +419,7 @@ export function DetailsTab({
           style={{
             fontSize: '13px',
             fontWeight: '600',
-            color: '#5B8FED',
+            color: '#2D4C4C',
             marginBottom: '12px',
           }}
         >

@@ -89,7 +89,7 @@ export function MoodTrendChart({ data }: MoodTrendChartProps) {
             fontWeight: '500',
             cursor: 'pointer',
             transition: 'all 0.2s',
-            background: period === '7d' ? 'linear-gradient(135deg, #5B8FED, #6BA3FF)' : '#F5F5F5',
+            background: period === '7d' ? '#2D4C4C' : '#F5F5F5',
             color: period === '7d' ? 'white' : '#666666',
           }}
         >
@@ -106,7 +106,7 @@ export function MoodTrendChart({ data }: MoodTrendChartProps) {
             fontWeight: '500',
             cursor: 'pointer',
             transition: 'all 0.2s',
-            background: period === '30d' ? 'linear-gradient(135deg, #5B8FED, #6BA3FF)' : '#F5F5F5',
+            background: period === '30d' ? '#2D4C4C' : '#F5F5F5',
             color: period === '30d' ? 'white' : '#666666',
           }}
         >
@@ -123,7 +123,7 @@ export function MoodTrendChart({ data }: MoodTrendChartProps) {
             fontWeight: '500',
             cursor: 'pointer',
             transition: 'all 0.2s',
-            background: period === '90d' ? 'linear-gradient(135deg, #5B8FED, #6BA3FF)' : '#F5F5F5',
+            background: period === '90d' ? '#2D4C4C' : '#F5F5F5',
             color: period === '90d' ? 'white' : '#666666',
           }}
         >
@@ -173,18 +173,18 @@ export function MoodTrendChart({ data }: MoodTrendChartProps) {
         {chartData.map((d, i) => {
           const x = padding.left + (i / Math.max(chartData.length - 1, 1)) * chartWidth;
           const y = padding.top + ((maxScore - d.score) / (maxScore - minScore)) * chartHeight;
-          return <circle key={i} cx={x} cy={y} r="2" fill="#5B8FED" stroke="white" strokeWidth="1" />;
+          return <circle key={i} cx={x} cy={y} r="2" fill="#2D4C4C" stroke="white" strokeWidth="1" />;
         })}
 
         {/* Gradients */}
         <defs>
           <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#5B8FED" />
-            <stop offset="100%" stopColor="#6BA3FF" />
+            <stop offset="0%" stopColor="#2D4C4C" />
+            <stop offset="100%" stopColor="#99CCCE" />
           </linearGradient>
           <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#5B8FED" stopOpacity="0.2" />
-            <stop offset="100%" stopColor="#6BA3FF" stopOpacity="0.05" />
+            <stop offset="0%" stopColor="#2D4C4C" stopOpacity="0.2" />
+            <stop offset="100%" stopColor="#99CCCE" stopOpacity="0.05" />
           </linearGradient>
         </defs>
       </svg>

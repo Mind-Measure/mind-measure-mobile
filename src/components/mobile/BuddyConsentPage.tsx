@@ -192,14 +192,14 @@ export function BuddyConsentPage() {
             onClick={() => window.close()}
             style={{
               padding: '14px 32px',
-              background: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)',
+              background: '#2D4C4C',
               border: 'none',
               borderRadius: '10px',
               color: 'white',
               fontSize: '16px',
               fontWeight: '600',
               cursor: 'pointer',
-              boxShadow: '0 2px 8px rgba(139, 92, 246, 0.3)',
+              boxShadow: '0 2px 8px rgba(45, 76, 76, 0.3)',
             }}
           >
             Done
@@ -252,14 +252,14 @@ export function BuddyConsentPage() {
             onClick={() => window.close()}
             style={{
               padding: '14px 32px',
-              background: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)',
+              background: '#2D4C4C',
               border: 'none',
               borderRadius: '10px',
               color: 'white',
               fontSize: '16px',
               fontWeight: '600',
               cursor: 'pointer',
-              boxShadow: '0 2px 8px rgba(139, 92, 246, 0.3)',
+              boxShadow: '0 2px 8px rgba(45, 76, 76, 0.3)',
             }}
           >
             Done
@@ -302,7 +302,7 @@ export function BuddyConsentPage() {
         {/* Header */}
         <div
           style={{
-            background: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)',
+            background: '#2D4C4C',
             padding: '40px 32px',
             textAlign: 'center',
           }}
@@ -355,11 +355,11 @@ export function BuddyConsentPage() {
             link in any Buddy email.
           </p>
           <p style={{ fontSize: '14px', margin: '0 0 32px 0' }}>
-            <a href="#privacy" style={{ color: '#8B5CF6', textDecoration: 'none' }}>
+            <a href="#privacy" style={{ color: '#2D4C4C', textDecoration: 'none' }}>
               Privacy policy
             </a>{' '}
             •
-            <a href="#how-it-works" style={{ color: '#8B5CF6', textDecoration: 'none' }}>
+            <a href="#how-it-works" style={{ color: '#2D4C4C', textDecoration: 'none' }}>
               {' '}
               How Buddies work
             </a>
@@ -374,14 +374,14 @@ export function BuddyConsentPage() {
                 style={{
                   width: '100%',
                   padding: '15px',
-                  background: loading ? '#9CA3AF' : 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)',
+                  background: loading ? '#9CA3AF' : '#2D4C4C',
                   border: 'none',
                   borderRadius: '10px',
                   color: 'white',
                   fontSize: '16px',
                   fontWeight: '600',
                   cursor: loading ? 'not-allowed' : 'pointer',
-                  boxShadow: '0 2px 8px rgba(139, 92, 246, 0.3)',
+                  boxShadow: '0 2px 8px rgba(45, 76, 76, 0.3)',
                 }}
               >
                 {loading ? 'Processing...' : 'Accept and become a Buddy'}

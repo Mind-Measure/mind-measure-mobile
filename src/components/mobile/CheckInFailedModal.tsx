@@ -102,7 +102,7 @@ export function CheckInFailedModal({ isOpen, onReturnToDashboard }: CheckInFaile
             style={{
               width: '100%',
               padding: '16px',
-              background: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)',
+              background: '#2D4C4C',
               border: 'none',
               borderRadius: '12px',
               fontSize: '16px',
@@ -110,15 +110,15 @@ export function CheckInFailedModal({ isOpen, onReturnToDashboard }: CheckInFaile
               color: '#FFFFFF',
               cursor: 'pointer',
               transition: 'transform 200ms ease, box-shadow 200ms ease',
-              boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)',
+              boxShadow: '0 4px 12px rgba(45, 76, 76, 0.3)',
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 6px 16px rgba(139, 92, 246, 0.4)';
+              e.currentTarget.style.boxShadow = '0 6px 16px rgba(45, 76, 76, 0.4)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(139, 92, 246, 0.3)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(45, 76, 76, 0.3)';
             }}
           >
             Return to dashboard

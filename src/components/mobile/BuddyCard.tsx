@@ -94,7 +94,7 @@ export function BuddyCard({ buddy, onDelete, onMove, onAskCheckIn, index }: Budd
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
           <div
             style={{
-              backgroundColor: '#5B8FED',
+              backgroundColor: '#2D4C4C',
               color: 'white',
               width: '28px',
               height: '28px',
@@ -130,7 +130,7 @@ export function BuddyCard({ buddy, onDelete, onMove, onAskCheckIn, index }: Budd
         style={{
           width: '320px',
           padding: '14px 20px',
-          backgroundColor: '#5B8FED',
+          backgroundColor: '#2D4C4C',
           border: 'none',
           borderRadius: '12px',
           fontSize: '15px',
@@ -140,10 +140,10 @@ export function BuddyCard({ buddy, onDelete, onMove, onAskCheckIn, index }: Budd
           transition: 'all 0.2s',
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = '#4A7FDC';
+          e.currentTarget.style.backgroundColor = '#1F3636';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = '#5B8FED';
+          e.currentTarget.style.backgroundColor = '#2D4C4C';
         }}
       >
         Send a nudge

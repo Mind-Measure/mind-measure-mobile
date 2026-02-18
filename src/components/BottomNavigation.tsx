@@ -8,80 +8,26 @@ export function BottomNav({ activeView, onViewChange }: BottomNavProps) {
     {
       id: 'home' as const,
       label: 'Home',
-      icon: (_isActive: boolean) => (
-        <svg
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-          <polyline points="9 22 9 12 15 12 15 22" />
-        </svg>
-      ),
+      pathData: 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10',
     },
     {
       id: 'content' as const,
       label: 'Content',
-      icon: (_isActive: boolean) => (
-        <svg
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-        </svg>
-      ),
+      pathData:
+        'M4 19.5A2.5 2.5 0 0 1 6.5 17H20 M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z',
     },
     {
       id: 'buddies' as const,
       label: 'Buddies',
-      icon: (_isActive: boolean) => (
-        <svg
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-          <circle cx="9" cy="7" r="4" />
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-        </svg>
-      ),
+      pathData:
+        'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75',
+      circles: [{ cx: 9, cy: 7, r: 4 }],
     },
     {
       id: 'profile' as const,
       label: 'Profile',
-      icon: (_isActive: boolean) => (
-        <svg
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-          <circle cx="12" cy="7" r="4" />
-        </svg>
-      ),
+      pathData: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2',
+      circles: [{ cx: 12, cy: 7, r: 4 }],
     },
   ];
 
@@ -92,19 +38,19 @@ export function BottomNav({ activeView, onViewChange }: BottomNavProps) {
         bottom: 0,
         left: 0,
         right: 0,
-        background: 'white',
-        borderTop: '1px solid #F0F0F0',
-        padding: '8px 0 8px 0',
+        background: '#ffffff',
+        borderTop: '1px solid #E5E7EB',
+        padding: '8px 0',
         paddingBottom: 'max(8px, env(safe-area-inset-bottom))',
         display: 'flex',
         justifyContent: 'space-around',
         alignItems: 'center',
         zIndex: 100,
-        boxShadow: '0 -1px 3px rgba(0, 0, 0, 0.05)',
       }}
     >
       {navItems.map((item) => {
         const isActive = activeView === item.id;
+        const color = isActive ? '#F59E0B' : 'rgba(45,76,76,0.25)';
         return (
           <button
             key={item.id}
@@ -114,35 +60,38 @@ export function BottomNav({ activeView, onViewChange }: BottomNavProps) {
               flexDirection: 'column',
               alignItems: 'center',
               gap: '4px',
-              padding: '8px 16px',
+              padding: '6px 16px',
               background: 'transparent',
               border: 'none',
               cursor: 'pointer',
-              color: isActive ? '#EC4899' : '#999999',
-              transition: 'all 0.2s',
+              color,
               flex: 1,
               maxWidth: '100px',
             }}
           >
-            <div
-              style={{
-                width: '48px',
-                height: '32px',
-                borderRadius: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: isActive ? '#FCE7F3' : 'transparent',
-                transition: 'all 0.2s',
-              }}
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             >
-              {item.icon(isActive)}
-            </div>
+              {item.pathData.split(' M').map((seg, i) => (
+                <path key={i} d={i === 0 ? seg : `M${seg}`} />
+              ))}
+              {item.circles?.map((c, i) => (
+                <circle key={i} cx={c.cx} cy={c.cy} r={c.r} />
+              ))}
+            </svg>
             <span
               style={{
-                fontSize: '11px',
-                fontWeight: isActive ? '600' : '500',
-                transition: 'all 0.2s',
+                fontFamily: "'Inter', system-ui, sans-serif",
+                fontSize: '9px',
+                fontWeight: isActive ? 600 : 300,
+                letterSpacing: '0.05em',
               }}
             >
               {item.label}

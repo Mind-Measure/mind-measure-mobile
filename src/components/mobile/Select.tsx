@@ -125,7 +125,7 @@ export function Select({ value, onChange, options, disabled = false, placeholder
               }}
             >
               <span>{option}</span>
-              {value === option && <Check size={16} style={{ color: '#5B8FED' }} />}
+              {value === option && <Check size={16} style={{ color: '#2D4C4C' }} />}
             </button>
           ))}
         </div>

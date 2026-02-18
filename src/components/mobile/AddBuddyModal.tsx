@@ -125,7 +125,7 @@ export function AddBuddyModal({ isOpen, onClose, onAdd, currentBuddyCount }: Add
                   color: '#0F172A',
                 }}
                 onFocus={(e) => {
-                  e.currentTarget.style.borderColor = '#8B5CF6';
+                  e.currentTarget.style.borderColor = '#2D4C4C';
                 }}
                 onBlur={(e) => {
                   e.currentTarget.style.borderColor = '#E2E8F0';
@@ -163,7 +163,7 @@ export function AddBuddyModal({ isOpen, onClose, onAdd, currentBuddyCount }: Add
                   color: '#0F172A',
                 }}
                 onFocus={(e) => {
-                  e.currentTarget.style.borderColor = '#8B5CF6';
+                  e.currentTarget.style.borderColor = '#2D4C4C';
                 }}
                 onBlur={(e) => {
                   e.currentTarget.style.borderColor = '#E2E8F0';
@@ -201,7 +201,7 @@ export function AddBuddyModal({ isOpen, onClose, onAdd, currentBuddyCount }: Add
                   resize: 'vertical',
                 }}
                 onFocus={(e) => {
-                  e.currentTarget.style.borderColor = '#8B5CF6';
+                  e.currentTarget.style.borderColor = '#2D4C4C';
                 }}
                 onBlur={(e) => {
                   e.currentTarget.style.borderColor = '#E2E8F0';
@@ -239,7 +239,7 @@ export function AddBuddyModal({ isOpen, onClose, onAdd, currentBuddyCount }: Add
                 style={{
                   flex: 1,
                   padding: '14px 20px',
-                  background: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)',
+                  background: '#2D4C4C',
                   border: 'none',
                   borderRadius: '12px',
                   fontSize: '15px',
@@ -247,15 +247,15 @@ export function AddBuddyModal({ isOpen, onClose, onAdd, currentBuddyCount }: Add
                   color: 'white',
                   cursor: 'pointer',
                   transition: 'transform 0.2s, box-shadow 0.2s',
-                  boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)',
+                  boxShadow: '0 4px 12px rgba(45, 76, 76, 0.3)',
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(139, 92, 246, 0.4)';
+                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(45, 76, 76, 0.4)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(139, 92, 246, 0.3)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(45, 76, 76, 0.3)';
                 }}
               >
                 Send invite

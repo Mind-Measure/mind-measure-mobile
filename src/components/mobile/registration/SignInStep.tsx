@@ -34,7 +34,7 @@ export function SignInStep({ flow, onBack }: SignInStepProps) {
           style={{
             background: 'none',
             border: 'none',
-            color: '#8B5CF6',
+            color: '#2D4C4C',
             fontSize: '15px',
             fontWeight: 600,
             cursor: 'pointer',
@@ -94,7 +94,7 @@ export function SignInStep({ flow, onBack }: SignInStepProps) {
             placeholder="Your university email"
             style={inputStyle}
             onFocus={(e) => {
-              e.currentTarget.style.borderColor = '#8B5CF6';
+              e.currentTarget.style.borderColor = '#2D4C4C';
             }}
             onBlur={(e) => {
               e.currentTarget.style.borderColor = '#E5E7EB';
@@ -116,7 +116,7 @@ export function SignInStep({ flow, onBack }: SignInStepProps) {
               placeholder="Your password"
               style={{ ...inputStyle, paddingRight: '48px' }}
               onFocus={(e) => {
-                e.currentTarget.style.borderColor = '#8B5CF6';
+                e.currentTarget.style.borderColor = '#2D4C4C';
               }}
               onBlur={(e) => {
                 e.currentTarget.style.borderColor = '#E5E7EB';
@@ -174,7 +174,7 @@ export function SignInStep({ flow, onBack }: SignInStepProps) {
           style={{
             background: 'none',
             border: 'none',
-            color: '#8B5CF6',
+            color: '#2D4C4C',
             fontSize: '15px',
             fontWeight: 600,
             cursor: 'pointer',
@@ -192,8 +192,8 @@ export function SignInStep({ flow, onBack }: SignInStepProps) {
           onClick={() => goToStep('welcome')}
           style={{
             background: 'none',
-            border: '2px solid #8B5CF6',
-            color: '#8B5CF6',
+            border: '2px solid #2D4C4C',
+            color: '#2D4C4C',
             fontSize: '15px',
             fontWeight: 600,
             cursor: 'pointer',
