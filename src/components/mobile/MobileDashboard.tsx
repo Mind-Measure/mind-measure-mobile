@@ -857,27 +857,30 @@ function DetailPanel({
                         strokeLinejoin="round"
                         vectorEffect="non-scaling-stroke"
                       />
-                      {/* Dots */}
-                      {data.scoreHistory.map((e, i) => {
-                        const x =
-                          (i / Math.max(data.scoreHistory.length - 1, 1)) *
-                          Math.max((data.scoreHistory.length - 1) * 100, 100);
-                        const y = 100 - e.score;
-                        const isLatest = i === data.scoreHistory.length - 1;
-                        return (
-                          <circle
-                            key={e.date}
-                            cx={x}
-                            cy={y}
-                            r={isLatest ? '5' : '3'}
-                            fill={isLatest ? C.buttercup : C.pampas}
-                            stroke={isLatest ? C.buttercup : C.spectra}
-                            strokeWidth={isLatest ? '0' : '2'}
-                            vectorEffect="non-scaling-stroke"
-                          />
-                        );
-                      })}
                     </svg>
+                    {/* Dots rendered as HTML for perfect circles (SVG preserveAspectRatio="none" distorts them) */}
+                    {data.scoreHistory.map((e, i) => {
+                      const xPct = (i / Math.max(data.scoreHistory.length - 1, 1)) * 100;
+                      const yPct = 100 - e.score;
+                      const isLatest = i === data.scoreHistory.length - 1;
+                      const size = isLatest ? 10 : 7;
+                      return (
+                        <div
+                          key={e.date}
+                          style={{
+                            position: 'absolute',
+                            left: `${xPct}%`,
+                            top: `${yPct}%`,
+                            width: size,
+                            height: size,
+                            borderRadius: '50%',
+                            backgroundColor: isLatest ? C.buttercup : C.pampas,
+                            border: isLatest ? 'none' : `2px solid ${C.spectra}`,
+                            transform: 'translate(-50%, -50%)',
+                          }}
+                        />
+                      );
+                    })}
                   </div>
 
                   {/* Day labels below chart */}
