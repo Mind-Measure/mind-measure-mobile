@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 
 const MM_LOGO_WHITE = '/images/mind-measure-logo-white.png';
 
-const BEAT = 1500;
+const BEAT = 1000;
 
 const colors = ['#2D4C4C', '#F59E0B', '#99CCCE', '#FF6B6B'];
 const words = ['Measure', 'Monitor', 'Manage'];
@@ -26,7 +26,7 @@ export function ReturningSplashScreen({ onComplete }: ReturningSplashScreenProps
       });
     }, BEAT);
 
-    const completeTimer = setTimeout(onComplete, BEAT * 8 + 500);
+    const completeTimer = setTimeout(onComplete, BEAT * 7 + 2000);
 
     return () => {
       clearInterval(timer);
