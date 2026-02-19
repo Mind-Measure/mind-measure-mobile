@@ -40,14 +40,14 @@ const STEPS: Step[] = [
 ];
 
 const COLS = 7;
+const DOT_SIZE = 38;
+const DOT_GAP = 8;
 
-// Grid layout: 7x4 = 28 positions, 19 active, 9 empty
-// Row 1: _ _ _ _ _ ● ●   (2 audio, right-justified)
+// Row 1: _ _ _ _ _ ● ●   (2 audio, right)
 // Row 2: ● ● ● ● ● ● ●   (3 audio + 4 video)
 // Row 3: ● ● ● ● ● ● ●   (7 multimodal)
-// Row 4: ● ● ● _ _ _ _   (3 text, left-justified)
+// Row 4: ● ● ● _ _ _ _   (3 text, left)
 const GRID_MAP: (number | null)[] = [
-  // Row 1: positions 0-6, only last 2 active (step 0, 1)
   null,
   null,
   null,
@@ -55,7 +55,6 @@ const GRID_MAP: (number | null)[] = [
   null,
   0,
   1,
-  // Row 2: all active (steps 2-8)
   2,
   3,
   4,
@@ -63,7 +62,6 @@ const GRID_MAP: (number | null)[] = [
   6,
   7,
   8,
-  // Row 3: all active (steps 9-15)
   9,
   10,
   11,
@@ -71,7 +69,6 @@ const GRID_MAP: (number | null)[] = [
   13,
   14,
   15,
-  // Row 4: first 3 active (steps 16-18)
   16,
   17,
   18,
@@ -104,13 +101,10 @@ export function ProcessingScreen({
   const tweenRef = useRef<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Step through the processing sequence
   useEffect(() => {
     if (phase !== 'processing') return;
 
-    // Start first step immediately
     setStepIndex(0);
-
     let current = 0;
     const interval = setInterval(() => {
       current++;
@@ -124,7 +118,6 @@ export function ProcessingScreen({
     return () => clearInterval(interval);
   }, [phase]);
 
-  // Transition to score reveal after last step
   useEffect(() => {
     if (stepIndex < STEPS.length - 1) return;
     if (phase !== 'processing') return;
@@ -138,7 +131,6 @@ export function ProcessingScreen({
     };
   }, [stepIndex, phase]);
 
-  // Tween score from previous to new
   useEffect(() => {
     if (phase !== 'revealing') return;
 
@@ -172,7 +164,6 @@ export function ProcessingScreen({
     };
   }, [phase, newScore, previousScore]);
 
-  // Hold then call onScoreRevealed
   useEffect(() => {
     if (phase !== 'hold') return;
 
@@ -185,7 +176,6 @@ export function ProcessingScreen({
     };
   }, [phase, onScoreRevealed]);
 
-  // Cleanup
   useEffect(() => {
     return () => {
       if (tweenRef.current) cancelAnimationFrame(tweenRef.current);
@@ -193,7 +183,6 @@ export function ProcessingScreen({
     };
   }, []);
 
-  // Build rows from GRID_MAP
   const rows: (number | null)[][] = [];
   for (let i = 0; i < GRID_MAP.length; i += COLS) {
     rows.push(GRID_MAP.slice(i, i + COLS));
@@ -207,112 +196,120 @@ export function ProcessingScreen({
         backgroundColor: spectra,
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
         fontFamily: 'Lato, system-ui, sans-serif',
         zIndex: 9999,
+        padding: '0 28px',
       }}
     >
-      {/* "current score" label */}
-      <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 0.4 }}
-        transition={{ duration: 0.6, delay: 0.2 }}
-        style={{
-          fontSize: 13,
-          fontWeight: 600,
-          color: sinbad,
-          textTransform: 'uppercase',
-          letterSpacing: '0.18em',
-          margin: '0 0 8px',
-          fontFamily: 'Inter, system-ui, sans-serif',
-        }}
-      >
-        {phase === 'hold' && newScore !== null && newScore !== previousScore ? 'new score' : 'current score'}
-      </motion.p>
+      {/* Upper section: label + score + process word — positioned to match dashboard */}
+      <div style={{ paddingTop: '18vh' }}>
+        {/* "current score" label */}
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.4 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          style={{
+            fontSize: 13,
+            fontWeight: 600,
+            color: sinbad,
+            textTransform: 'uppercase',
+            letterSpacing: '0.18em',
+            margin: '0 0 4px',
+            fontFamily: 'Inter, system-ui, sans-serif',
+          }}
+        >
+          {phase === 'hold' && newScore !== null && newScore !== previousScore ? 'new score' : 'current score'}
+        </motion.p>
 
-      {/* Large score number — matches dashboard exactly */}
-      <div
-        style={{
-          fontSize: 285,
-          lineHeight: 1,
-          fontWeight: 900,
-          letterSpacing: '-0.05em',
-          color: pampas,
-          fontVariantNumeric: 'tabular-nums',
-          marginBottom: 36,
-        }}
-      >
-        {displayScore}
+        {/* Large score number — matches dashboard: 285px, 900 weight */}
+        <div
+          style={{
+            fontSize: 285,
+            lineHeight: 0.85,
+            fontWeight: 900,
+            letterSpacing: '-0.05em',
+            color: pampas,
+            fontVariantNumeric: 'tabular-nums',
+          }}
+        >
+          {displayScore}
+        </div>
+
+        {/* Process word — immediately below the number */}
+        <div style={{ height: 28, overflow: 'hidden', marginTop: 6 }}>
+          <AnimatePresence mode="wait">
+            {stepIndex >= 0 && stepIndex < STEPS.length && (
+              <motion.p
+                key={stepIndex}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 0.5, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2 }}
+                style={{
+                  fontSize: 15,
+                  fontWeight: 500,
+                  color: sinbad,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.12em',
+                  margin: 0,
+                  fontFamily: 'Inter, system-ui, sans-serif',
+                }}
+              >
+                {STEPS[stepIndex].label}
+              </motion.p>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
 
-      {/* Dot grid — 7x4, asymmetric fill */}
+      {/* Dot grid — lower portion, large dots */}
       <div
         style={{
+          flex: 1,
           display: 'flex',
           flexDirection: 'column',
-          alignItems: 'center',
-          gap: 10,
-          marginBottom: 28,
+          justifyContent: 'center',
+          alignItems: 'flex-start',
         }}
       >
-        {rows.map((row, ri) => (
-          <div key={ri} style={{ display: 'grid', gridTemplateColumns: `repeat(${COLS}, 22px)`, gap: 10 }}>
-            {row.map((stepIdx, ci) => {
-              if (stepIdx === null) {
-                return <div key={`${ri}-${ci}`} style={{ width: 22, height: 22 }} />;
-              }
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: DOT_GAP,
+          }}
+        >
+          {rows.map((row, ri) => (
+            <div key={ri} style={{ display: 'flex', gap: DOT_GAP }}>
+              {row.map((stepIdx, ci) => {
+                if (stepIdx === null) {
+                  return <div key={`${ri}-${ci}`} style={{ width: DOT_SIZE, height: DOT_SIZE }} />;
+                }
 
-              const isActive = stepIdx <= stepIndex;
-              const color = isActive ? STEPS[stepIdx].color : null;
+                const isActive = stepIdx <= stepIndex;
+                const color = isActive ? STEPS[stepIdx].color : null;
 
-              return (
-                <motion.div
-                  key={`${ri}-${ci}`}
-                  animate={{
-                    backgroundColor: color || 'transparent',
-                    borderColor: color || `${sinbad}25`,
-                    scale: isActive && stepIdx === stepIndex ? [1, 1.25, 1] : 1,
-                  }}
-                  transition={{ duration: 0.3, ease: 'easeOut' }}
-                  style={{
-                    width: 22,
-                    height: 22,
-                    borderRadius: '50%',
-                    border: `1.5px solid ${color || `${sinbad}25`}`,
-                  }}
-                />
-              );
-            })}
-          </div>
-        ))}
-      </div>
-
-      {/* Process word */}
-      <div style={{ height: 24, overflow: 'hidden' }}>
-        <AnimatePresence mode="wait">
-          {stepIndex >= 0 && stepIndex < STEPS.length && (
-            <motion.p
-              key={stepIndex}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 0.5, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2 }}
-              style={{
-                fontSize: 14,
-                fontWeight: 500,
-                color: sinbad,
-                textTransform: 'uppercase',
-                letterSpacing: '0.14em',
-                margin: 0,
-                fontFamily: 'Inter, system-ui, sans-serif',
-                textAlign: 'center',
-              }}
-            >
-              {STEPS[stepIndex].label}
-            </motion.p>
-          )}
-        </AnimatePresence>
+                return (
+                  <motion.div
+                    key={`${ri}-${ci}`}
+                    animate={{
+                      backgroundColor: color || 'transparent',
+                      borderColor: color || `${sinbad}20`,
+                      scale: isActive && stepIdx === stepIndex ? [1, 1.15, 1] : 1,
+                    }}
+                    transition={{ duration: 0.3, ease: 'easeOut' }}
+                    style={{
+                      width: DOT_SIZE,
+                      height: DOT_SIZE,
+                      borderRadius: '50%',
+                      border: `1.5px solid ${color || `${sinbad}20`}`,
+                    }}
+                  />
+                );
+              })}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
