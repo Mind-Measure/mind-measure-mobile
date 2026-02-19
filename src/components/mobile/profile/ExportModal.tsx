@@ -45,8 +45,9 @@ export function ExportModal({
           style={{
             fontSize: '18px',
             fontWeight: '600',
-            color: '#1a1a1a',
+            color: '#2D4C4C',
             margin: '0 0 16px 0',
+            fontFamily: 'Lato, Inter, system-ui, sans-serif',
           }}
         >
           Email Wellbeing Report
@@ -55,9 +56,10 @@ export function ExportModal({
         <p
           style={{
             fontSize: '14px',
-            color: '#666666',
+            color: 'rgba(45,76,76,0.6)',
             margin: '0 0 20px 0',
             lineHeight: '1.6',
+            fontFamily: 'Inter, system-ui, sans-serif',
           }}
         >
           We'll email a detailed wellbeing report to <strong>{userEmail}</strong> including your check-in history,
@@ -88,7 +90,7 @@ export function ExportModal({
                   border: `2px solid ${exportPeriod === period ? '#2D4C4C' : '#E0E0E0'}`,
                   borderRadius: '8px',
                   cursor: 'pointer',
-                  background: exportPeriod === period ? '#F0F7FF' : 'white',
+                  background: exportPeriod === period ? 'rgba(153,204,206,0.15)' : 'white',
                 }}
               >
                 <input
