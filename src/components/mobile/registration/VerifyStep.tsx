@@ -198,10 +198,23 @@ export function VerifyStep({ flow }: VerifyStepProps) {
           <path d="M12 16v-4" />
           <path d="M12 8h.01" />
         </svg>
-        <p style={{ fontSize: '13px', color: '#2D4C4C', margin: 0, lineHeight: 1.5 }}>
-          <strong>Note:</strong> The verification email may take a few minutes to arrive. Check your spam folder if you
-          don't see it.
-        </p>
+        <div style={{ fontSize: '13px', color: '#2D4C4C', margin: 0, lineHeight: 1.7 }}>
+          <p style={{ margin: '0 0 6px 0' }}>
+            <strong>Can't find the email?</strong>
+          </p>
+          <ul style={{ margin: 0, paddingLeft: '18px' }}>
+            <li>
+              Check your <strong>spam</strong> or <strong>junk</strong> folder
+            </li>
+            <li>
+              Check <strong>Promotions</strong> or <strong>Other</strong> tabs (Gmail)
+            </li>
+            <li>
+              The sender is <strong>no-reply@verificationemail.com</strong>
+            </li>
+            <li>It may take 1–2 minutes to arrive</li>
+          </ul>
+        </div>
       </div>
     </div>
   );

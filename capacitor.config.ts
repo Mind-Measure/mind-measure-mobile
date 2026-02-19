@@ -8,15 +8,15 @@ const config: CapacitorConfig = {
   // This ensures the app always has the latest code and can be updated without app store releases
   server: {
     url: 'https://mobile.mindmeasure.app',
-    cleartext: true
+    cleartext: true,
   },
   plugins: {
     Keyboard: {
-      resize: "none", // We'll handle keyboard layout manually
-      style: "dark",
-      resizeOnFullScreen: true
-    }
-  }
+      resize: 'body',
+      style: 'dark',
+      resizeOnFullScreen: true,
+    },
+  },
 };
 
 export default config;

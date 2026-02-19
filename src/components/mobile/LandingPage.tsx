@@ -59,15 +59,15 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: pampas }}>
+    <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: sinbad }}>
       {/* Warm branded gradient background */}
       <div
         className="absolute inset-0"
         style={{
           background: `
-            radial-gradient(ellipse at 50% 0%, rgba(153,204,206,0.25) 0%, transparent 50%),
-            radial-gradient(ellipse at 80% 100%, rgba(245,158,11,0.08) 0%, transparent 40%),
-            radial-gradient(ellipse at 20% 80%, rgba(153,204,206,0.10) 0%, transparent 40%)
+            radial-gradient(ellipse at 30% 20%, rgba(45,76,76,0.3) 0%, transparent 50%),
+            radial-gradient(ellipse at 70% 80%, rgba(245,158,11,0.15) 0%, transparent 40%),
+            radial-gradient(ellipse at 50% 50%, rgba(153,204,206,0.4) 0%, transparent 60%)
           `,
         }}
       />
@@ -85,7 +85,7 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
         </motion.div>
 
         {/* App Name */}
-        <motion.h1 variants={fadeUp} className="text-4xl font-bold mb-2" style={{ color: spectra }}>
+        <motion.h1 variants={fadeUp} className="text-4xl font-bold mb-2" style={{ color: '#ffffff' }}>
           Mind Measure
         </motion.h1>
 
@@ -97,7 +97,7 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
                 <motion.span
                   className="transition-all duration-400"
                   style={{
-                    color: idx === currentTaglineIndex ? spectra : sinbad,
+                    color: idx === currentTaglineIndex ? '#ffffff' : 'rgba(255,255,255,0.6)',
                     fontWeight: idx === currentTaglineIndex ? 600 : 400,
                   }}
                   animate={idx === currentTaglineIndex ? { y: [-1, 0, -1] } : { y: 0 }}
@@ -106,7 +106,7 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
                   {word}
                 </motion.span>
                 {idx < taglineWords.length - 1 && (
-                  <span className="mx-2" style={{ color: sinbad }}>
+                  <span className="mx-2" style={{ color: 'rgba(255,255,255,0.4)' }}>
                     &bull;
                   </span>
                 )}
@@ -119,7 +119,7 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
         <motion.div variants={fadeUp} className="mb-8 relative">
           <div
             className="w-48 h-64 rounded-3xl overflow-hidden shadow-xl relative"
-            style={{ border: `3px solid ${sinbad}` }}
+            style={{ border: '3px solid rgba(255,255,255,0.3)' }}
           >
             {studentImages.map((image, idx) => (
               <motion.div
@@ -144,7 +144,7 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
                 key={idx}
                 className="w-2 h-2 rounded-full transition-all duration-300"
                 style={{
-                  backgroundColor: idx === currentImageIndex ? spectra : sinbad,
+                  backgroundColor: idx === currentImageIndex ? '#ffffff' : 'rgba(255,255,255,0.4)',
                 }}
                 animate={{ scale: idx === currentImageIndex ? 1.2 : 1 }}
               />
@@ -154,10 +154,10 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
 
         {/* Main Heading */}
         <motion.div variants={fadeUp} className="mb-6 max-w-xs">
-          <h2 className="text-2xl font-semibold mb-3" style={{ color: spectra }}>
-            Empowering <span style={{ color: sinbad }}>every student&apos;s</span> mental wellness
+          <h2 className="text-2xl font-semibold mb-3" style={{ color: '#ffffff' }}>
+            Empowering <span style={{ color: '#F59E0B' }}>every student&apos;s</span> mental wellness
           </h2>
-          <p className="text-base leading-relaxed" style={{ color: `${spectra}AA` }}>
+          <p className="text-base leading-relaxed" style={{ color: 'rgba(255,255,255,0.75)' }}>
             Join thousands of students who use Mind Measure to understand and improve their wellbeing with just a few
             minutes each day.
           </p>
@@ -168,7 +168,7 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
           <Button
             onClick={onGetStarted}
             className="h-14 px-8 text-lg font-semibold rounded-2xl shadow-lg min-w-[280px]"
-            style={{ backgroundColor: spectra, color: pampas }}
+            style={{ backgroundColor: '#ffffff', color: spectra }}
           >
             Take Your First Check-In
             <motion.div animate={{ x: [0, 4, 0] }} transition={{ duration: 1.2, repeat: Infinity }}>

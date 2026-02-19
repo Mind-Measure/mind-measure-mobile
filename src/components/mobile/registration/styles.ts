@@ -1,10 +1,12 @@
 import type React from 'react';
 
 export const containerStyle: React.CSSProperties = {
-  minHeight: '100vh',
+  minHeight: '100dvh',
   backgroundColor: '#F5F5F5',
   padding: '20px',
-  paddingBottom: '40px',
+  paddingBottom: '120px',
+  overflowY: 'auto',
+  WebkitOverflowScrolling: 'touch',
 };
 
 export const cardStyle: React.CSSProperties = {
@@ -32,7 +34,7 @@ export const buttonPrimaryStyle: React.CSSProperties = {
 export const inputStyle: React.CSSProperties = {
   width: '100%',
   padding: '14px 16px',
-  fontSize: '15px',
+  fontSize: '16px',
   border: '2px solid #E5E7EB',
   borderRadius: '12px',
   outline: 'none',
