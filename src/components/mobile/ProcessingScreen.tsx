@@ -1,234 +1,273 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 
 const spectra = '#2D4C4C';
 const pampas = '#FAF9F7';
 const sinbad = '#99CCCE';
 const buttercup = '#F59E0B';
+const bittersweet = '#FF6B6B';
+const lilac = '#DDD6FE';
 
-interface Phrase {
-  text: string;
-  size: number;
-  weight: number;
-  color: string;
-  opacity: number;
-  indent?: number;
-  spacing?: string;
-}
+const DOT_COLORS = [spectra, sinbad, buttercup, bittersweet, lilac];
 
-const checkinSequence: Phrase[] = [
-  { text: 'Capturing', size: 13, weight: 500, color: sinbad, opacity: 0.4, spacing: '0.2em' },
-  { text: 'voice signal', size: 32, weight: 700, color: pampas, opacity: 1 },
-  { text: 'Measuring pitch', size: 15, weight: 400, color: sinbad, opacity: 0.45, indent: 40 },
-  { text: 'Tracking speech rhythm', size: 17, weight: 400, color: sinbad, opacity: 0.45, indent: 20 },
-  { text: 'Pause patterns', size: 28, weight: 700, color: pampas, opacity: 0.9 },
-  { text: 'Voice stability', size: 18, weight: 500, color: sinbad, opacity: 0.5, indent: 60 },
-  { text: '', size: 22, weight: 400, color: 'transparent', opacity: 0 },
-  { text: 'Tracking', size: 13, weight: 500, color: sinbad, opacity: 0.4, spacing: '0.2em' },
-  { text: 'facial cues', size: 36, weight: 700, color: pampas, opacity: 1 },
-  { text: 'Eye contact', size: 15, weight: 400, color: sinbad, opacity: 0.4, indent: 30 },
-  { text: 'Facial tension', size: 17, weight: 400, color: sinbad, opacity: 0.45, indent: 50 },
-  { text: 'Emotional valence', size: 24, weight: 700, color: buttercup, opacity: 0.85 },
-  { text: 'Blink rate', size: 13, weight: 400, color: sinbad, opacity: 0.35, indent: 40 },
-  { text: '', size: 18, weight: 400, color: 'transparent', opacity: 0 },
-  { text: 'Parsing', size: 13, weight: 500, color: sinbad, opacity: 0.4, spacing: '0.2em' },
-  { text: 'language', size: 40, weight: 700, color: pampas, opacity: 1 },
-  { text: 'Stress markers', size: 18, weight: 500, color: sinbad, opacity: 0.5, indent: 20 },
-  { text: 'Coping signals', size: 16, weight: 400, color: sinbad, opacity: 0.45, indent: 50 },
-  { text: 'Social references', size: 15, weight: 400, color: sinbad, opacity: 0.4, indent: 30 },
-  { text: 'Sleep mentions', size: 13, weight: 400, color: sinbad, opacity: 0.35, indent: 60 },
-  { text: '', size: 14, weight: 400, color: 'transparent', opacity: 0 },
-  { text: 'Comparing to', size: 13, weight: 500, color: sinbad, opacity: 0.4, spacing: '0.15em' },
-  { text: 'baseline', size: 34, weight: 700, color: pampas, opacity: 1 },
-  { text: 'Measuring variance', size: 15, weight: 400, color: sinbad, opacity: 0.4, indent: 40 },
-  { text: 'Energy shift', size: 20, weight: 600, color: sinbad, opacity: 0.6, indent: 20 },
-  { text: 'Stress delta', size: 16, weight: 400, color: sinbad, opacity: 0.45, indent: 50 },
-  { text: 'Behavioural drift', size: 18, weight: 500, color: buttercup, opacity: 0.7 },
-  { text: '', size: 22, weight: 400, color: 'transparent', opacity: 0 },
-  { text: 'Aligning', size: 13, weight: 500, color: sinbad, opacity: 0.4, spacing: '0.2em' },
-  { text: 'multimodal', size: 38, weight: 700, color: pampas, opacity: 1 },
-  { text: 'signals', size: 38, weight: 300, color: pampas, opacity: 0.65 },
-  { text: 'Fusion weights', size: 15, weight: 400, color: sinbad, opacity: 0.4, indent: 40 },
-  { text: 'Rolling trend', size: 16, weight: 400, color: sinbad, opacity: 0.45, indent: 20 },
-  { text: '', size: 28, weight: 400, color: 'transparent', opacity: 0 },
-  { text: 'Recalculating', size: 15, weight: 500, color: sinbad, opacity: 0.45, spacing: '0.15em' },
-  { text: 'score', size: 48, weight: 700, color: buttercup, opacity: 1 },
-  { text: '', size: 36, weight: 400, color: 'transparent', opacity: 0 },
-  { text: 'Finalising', size: 13, weight: 500, color: sinbad, opacity: 0.4, spacing: '0.2em' },
-  { text: 'insight', size: 52, weight: 700, color: pampas, opacity: 1 },
+const STEPS = [
+  'Capturing voice signal',
+  'Measuring pitch',
+  'Tracking speech rhythm',
+  'Pause patterns',
+  'Voice stability',
+  'Tracking facial cues',
+  'Eye contact',
+  'Facial tension',
+  'Emotional valence',
+  'Parsing language',
+  'Stress markers',
+  'Coping signals',
+  'Comparing to baseline',
+  'Measuring variance',
+  'Energy shift',
+  'Aligning multimodal signals',
+  'Fusion weights',
+  'Recalculating score',
+  'Finalising insight',
 ];
 
-const baselineSequence: Phrase[] = [
-  { text: 'Capturing', size: 13, weight: 500, color: sinbad, opacity: 0.4, spacing: '0.2em' },
-  { text: 'voice signal', size: 32, weight: 700, color: pampas, opacity: 1 },
-  { text: 'Speech rhythm', size: 17, weight: 400, color: sinbad, opacity: 0.45, indent: 20 },
-  { text: 'Vocal stability', size: 18, weight: 500, color: sinbad, opacity: 0.5, indent: 40 },
-  { text: '', size: 18, weight: 400, color: 'transparent', opacity: 0 },
-  { text: 'Tracking', size: 13, weight: 500, color: sinbad, opacity: 0.4, spacing: '0.2em' },
-  { text: 'facial cues', size: 36, weight: 700, color: pampas, opacity: 1 },
-  { text: 'Emotional valence', size: 22, weight: 600, color: buttercup, opacity: 0.8 },
-  { text: '', size: 18, weight: 400, color: 'transparent', opacity: 0 },
-  { text: 'Parsing', size: 13, weight: 500, color: sinbad, opacity: 0.4, spacing: '0.2em' },
-  { text: 'language', size: 40, weight: 700, color: pampas, opacity: 1 },
-  { text: 'Scoring PHQ-2', size: 15, weight: 400, color: sinbad, opacity: 0.45, indent: 30 },
-  { text: 'Scoring GAD-2', size: 15, weight: 400, color: sinbad, opacity: 0.45, indent: 50 },
-  { text: '', size: 22, weight: 400, color: 'transparent', opacity: 0 },
-  { text: 'Integrating', size: 13, weight: 500, color: sinbad, opacity: 0.4, spacing: '0.15em' },
-  { text: 'structured', size: 34, weight: 700, color: pampas, opacity: 1 },
-  { text: 'responses', size: 34, weight: 300, color: pampas, opacity: 0.65 },
-  { text: 'Fusion weights', size: 15, weight: 400, color: sinbad, opacity: 0.4, indent: 40 },
-  { text: '', size: 28, weight: 400, color: 'transparent', opacity: 0 },
-  { text: 'Calibrating', size: 15, weight: 500, color: sinbad, opacity: 0.45, spacing: '0.15em' },
-  { text: 'personal baseline', size: 44, weight: 700, color: buttercup, opacity: 1 },
-  { text: '', size: 36, weight: 400, color: 'transparent', opacity: 0 },
-  { text: 'Computing', size: 13, weight: 500, color: sinbad, opacity: 0.4, spacing: '0.2em' },
-  { text: 'equilibrium', size: 48, weight: 700, color: pampas, opacity: 1 },
-];
-
-const SCROLL_DURATION = 12;
-const BRAND_HOLD = 2.5;
+const STEP_INTERVAL = 750;
+const SCORE_TWEEN_MS = 1500;
+const SCORE_HOLD_MS = 2500;
 
 interface ProcessingScreenProps {
   mode?: 'baseline' | 'checkin';
-  className?: string;
+  previousScore?: number;
+  newScore?: number | null;
+  onScoreRevealed?: () => void;
 }
 
-export function ProcessingScreen({ mode = 'checkin', className }: ProcessingScreenProps) {
-  const sequence = mode === 'baseline' ? baselineSequence : checkinSequence;
-  const [phase, setPhase] = useState<'scroll' | 'brand'>('scroll');
+function pickRandomColor(exclude?: string): string {
+  const pool = exclude ? DOT_COLORS.filter((c) => c !== exclude) : DOT_COLORS;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+export function ProcessingScreen({
+  mode = 'checkin',
+  previousScore = 50,
+  newScore = null,
+  onScoreRevealed,
+}: ProcessingScreenProps) {
+  const [stepIndex, setStepIndex] = useState(0);
+  const [dotColors, setDotColors] = useState<(string | null)[]>(() => STEPS.map(() => null));
+  const [phase, setPhase] = useState<'processing' | 'revealing' | 'hold'>('processing');
+  const [displayScore, setDisplayScore] = useState(previousScore);
+  const tweenRef = useRef<number | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    const brandTimer = setTimeout(() => setPhase('brand'), (SCROLL_DURATION + 0.3) * 1000);
-    return () => clearTimeout(brandTimer);
+    if (phase !== 'processing') return;
+
+    const interval = setInterval(() => {
+      setStepIndex((prev) => {
+        const next = prev + 1;
+        if (next >= STEPS.length) {
+          clearInterval(interval);
+          return prev;
+        }
+        setDotColors((colors) => {
+          const updated = [...colors];
+          const prevColor = next > 0 ? updated[next - 1] : null;
+          updated[next] = pickRandomColor(prevColor ?? undefined);
+          return updated;
+        });
+        return next;
+      });
+    }, STEP_INTERVAL);
+
+    setDotColors((colors) => {
+      const updated = [...colors];
+      updated[0] = pickRandomColor();
+      return updated;
+    });
+
+    return () => clearInterval(interval);
+  }, [phase]);
+
+  useEffect(() => {
+    if (stepIndex < STEPS.length - 1) return;
+    if (phase !== 'processing') return;
+
+    timerRef.current = setTimeout(() => {
+      setPhase('revealing');
+    }, STEP_INTERVAL);
+
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [stepIndex, phase]);
+
+  useEffect(() => {
+    if (phase !== 'revealing') return;
+
+    const target = newScore ?? previousScore;
+    const start = previousScore;
+    const diff = target - start;
+
+    if (diff === 0) {
+      setPhase('hold');
+      return;
+    }
+
+    const startTime = performance.now();
+    const animate = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / SCORE_TWEEN_MS, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setDisplayScore(Math.round(start + diff * eased));
+
+      if (progress < 1) {
+        tweenRef.current = requestAnimationFrame(animate);
+      } else {
+        setPhase('hold');
+      }
+    };
+
+    tweenRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (tweenRef.current) cancelAnimationFrame(tweenRef.current);
+    };
+  }, [phase, newScore, previousScore]);
+
+  useEffect(() => {
+    if (phase !== 'hold') return;
+
+    timerRef.current = setTimeout(() => {
+      onScoreRevealed?.();
+    }, SCORE_HOLD_MS);
+
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [phase, onScoreRevealed]);
+
+  useEffect(() => {
+    return () => {
+      if (tweenRef.current) cancelAnimationFrame(tweenRef.current);
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
   }, []);
+
+  const dotsPerRow = 7;
+  const rows: (string | null)[][] = [];
+  for (let i = 0; i < dotColors.length; i += dotsPerRow) {
+    rows.push(dotColors.slice(i, i + dotsPerRow));
+  }
 
   return (
     <div
-      className={className ?? ''}
       style={{
-        position: 'absolute',
+        position: 'fixed',
         inset: 0,
         backgroundColor: spectra,
-        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
         fontFamily: 'Lato, system-ui, sans-serif',
+        zIndex: 9999,
       }}
     >
-      {/* Top gradient mask */}
+      {/* "current score" label */}
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.4 }}
+        transition={{ duration: 0.6, delay: 0.2 }}
+        style={{
+          fontSize: 13,
+          fontWeight: 600,
+          color: sinbad,
+          textTransform: 'uppercase',
+          letterSpacing: '0.18em',
+          margin: '0 0 8px',
+          fontFamily: 'Inter, system-ui, sans-serif',
+        }}
+      >
+        {phase === 'hold' && newScore !== null && newScore !== previousScore ? 'new score' : 'current score'}
+      </motion.p>
+
+      {/* Large score number — matches dashboard exactly */}
       <div
         style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: '22%',
-          background: `linear-gradient(to bottom, ${spectra} 25%, transparent)`,
-          zIndex: 10,
-          pointerEvents: 'none',
+          fontSize: 285,
+          lineHeight: 1,
+          fontWeight: 900,
+          letterSpacing: '-0.05em',
+          color: pampas,
+          fontVariantNumeric: 'tabular-nums',
+          marginBottom: 32,
         }}
-      />
+      >
+        {displayScore}
+      </div>
 
-      {/* Bottom gradient mask */}
+      {/* Dot grid */}
       <div
         style={{
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: '28%',
-          background: `linear-gradient(to top, ${spectra} 35%, transparent)`,
-          zIndex: 10,
-          pointerEvents: 'none',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 8,
+          marginBottom: 28,
         }}
-      />
-
-      <AnimatePresence mode="wait">
-        {phase === 'scroll' && (
-          <motion.div
-            key="scroll"
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.8 }}
-            style={{ position: 'absolute', inset: 0 }}
-          >
-            {/* Scrolling typographic cascade */}
-            <motion.div
-              initial={{ y: '85vh' }}
-              animate={{ y: '-100%' }}
-              transition={{
-                duration: SCROLL_DURATION,
-                ease: [0.22, 0.03, 0.26, 1.0],
-              }}
-              style={{
-                position: 'absolute',
-                left: 0,
-                right: 0,
-                padding: '0 32px',
-              }}
-            >
-              {sequence.map((phrase, i) => (
-                <div
-                  key={i}
-                  style={{
-                    fontSize: phrase.size,
-                    fontWeight: phrase.weight,
-                    color: phrase.color,
-                    opacity: phrase.opacity,
-                    lineHeight: 1.35,
-                    marginBottom: 5,
-                    paddingLeft: phrase.indent || 0,
-                    letterSpacing: phrase.spacing || '-0.01em',
-                    minHeight: phrase.text ? undefined : phrase.size * 0.5,
+      >
+        {rows.map((row, ri) => (
+          <div key={ri} style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+            {row.map((color, ci) => {
+              const idx = ri * dotsPerRow + ci;
+              return (
+                <motion.div
+                  key={idx}
+                  animate={{
+                    backgroundColor: color || 'transparent',
+                    borderColor: color || `${sinbad}40`,
+                    scale: color ? [1, 1.2, 1] : 1,
                   }}
-                >
-                  {phrase.text}
-                </div>
-              ))}
-            </motion.div>
-          </motion.div>
-        )}
+                  transition={{ duration: 0.3, ease: 'easeOut' }}
+                  style={{
+                    width: 18,
+                    height: 18,
+                    borderRadius: '50%',
+                    border: `1.5px solid ${color || `${sinbad}40`}`,
+                  }}
+                />
+              );
+            })}
+          </div>
+        ))}
+      </div>
 
-        {phase === 'brand' && (
-          <motion.div
-            key="brand"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 1.2, ease: 'easeOut' }}
+      {/* Process word */}
+      <div style={{ height: 24, overflow: 'hidden' }}>
+        <AnimatePresence mode="wait">
+          <motion.p
+            key={stepIndex}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 0.5, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2 }}
             style={{
-              position: 'absolute',
-              inset: 0,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 16,
+              fontSize: 14,
+              fontWeight: 500,
+              color: sinbad,
+              textTransform: 'uppercase',
+              letterSpacing: '0.14em',
+              margin: 0,
+              fontFamily: 'Inter, system-ui, sans-serif',
+              textAlign: 'center',
             }}
           >
-            <motion.img
-              src="/images/mind-measure-logo-white.png"
-              alt="Mind Measure"
-              initial={{ scale: 0.85, opacity: 0 }}
-              animate={{ scale: 1, opacity: 0.85 }}
-              transition={{ duration: 1.0, ease: [0.22, 1, 0.36, 1] }}
-              style={{ width: 72, height: 72, objectFit: 'contain' }}
-            />
-            <motion.p
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 0.4, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.4, ease: 'easeOut' }}
-              style={{
-                fontSize: 13,
-                fontWeight: 600,
-                color: pampas,
-                letterSpacing: '0.2em',
-                textTransform: 'uppercase',
-                fontFamily: 'Inter, system-ui, sans-serif',
-                margin: 0,
-              }}
-            >
-              Mind Measure
-            </motion.p>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            {STEPS[stepIndex]}
+          </motion.p>
+        </AnimatePresence>
+      </div>
     </div>
   );
 }

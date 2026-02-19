@@ -42,6 +42,8 @@ export function CheckinAssessmentSDK({ onBack, onComplete }: CheckinAssessmentSD
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [showIncompleteModal, setShowIncompleteModal] = useState(false);
+  const [previousScore, setPreviousScore] = useState(50);
+  const [newScore, setNewScore] = useState<number | null>(null);
 
   // Processing messages for check-ins - covers ~60 seconds with pauses
   // Format: { message: string, duration: number } where duration is in milliseconds
@@ -110,6 +112,28 @@ export function CheckinAssessmentSDK({ onBack, onComplete }: CheckinAssessmentSD
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Fetch previous score for the processing screen
+  useEffect(() => {
+    (async () => {
+      if (!user?.id) return;
+      try {
+        const { BackendServiceFactory } = await import('../../services/database/BackendServiceFactory');
+        const backendService = BackendServiceFactory.createService(BackendServiceFactory.getEnvironmentConfig());
+        const { data: sessions } = await backendService.database.select('fusion_outputs', {
+          columns: ['score'],
+          filters: { user_id: user.id },
+          orderBy: [{ column: 'created_at', ascending: false }],
+        });
+        if (sessions && sessions.length > 0) {
+          const latest = sessions[0] as { score: number };
+          if (typeof latest.score === 'number') setPreviousScore(latest.score);
+        }
+      } catch {
+        /* fallback to default 50 */
+      }
+    })();
+  }, [user?.id]);
 
   // Fetch previous check-in context for Phase 2
   const fetchPreviousContext = async (): Promise<{
@@ -371,6 +395,7 @@ export function CheckinAssessmentSDK({ onBack, onComplete }: CheckinAssessmentSD
 
       // Step 4: Calculate final score
       const finalScore = Math.round(enrichmentResult?.finalScore ?? enrichmentResult?.mind_measure_score ?? 50);
+      setNewScore(finalScore);
 
       // Step 5: Stringify analysis
       let analysisJson: string;
@@ -436,25 +461,10 @@ export function CheckinAssessmentSDK({ onBack, onComplete }: CheckinAssessmentSD
         }
       }
 
-      const MIN_PROCESSING_MS = 16_000;
-      const elapsed = Date.now() - endedAt;
-      const remaining = Math.max(0, MIN_PROCESSING_MS - elapsed);
-      if (remaining > 0) {
-        await new Promise((resolve) => setTimeout(resolve, remaining));
-      }
-
-      setIsSaving(false);
-      if (onComplete) onComplete();
+      // Processing screen animation handles the timing via onScoreRevealed
     } catch (error: unknown) {
       const err = error instanceof Error ? error : new Error(String(error));
       console.error('[CheckinSDK] ❌ Failed to save check-in:', err.message);
-
-      const MIN_PROCESSING_MS = 16_000;
-      const elapsed = Date.now() - endedAt;
-      const remaining = Math.max(0, MIN_PROCESSING_MS - elapsed);
-      if (remaining > 0) {
-        await new Promise((resolve) => setTimeout(resolve, remaining));
-      }
 
       setIsSaving(false);
       setErrorMessage('Failed to save your check-in. Please try again.');
@@ -467,9 +477,15 @@ export function CheckinAssessmentSDK({ onBack, onComplete }: CheckinAssessmentSD
     return (
       <>
         {isSaving && (
-          <div className="fixed inset-0 z-[9999]">
-            <ProcessingScreen mode="checkin" />
-          </div>
+          <ProcessingScreen
+            mode="checkin"
+            previousScore={previousScore}
+            newScore={newScore}
+            onScoreRevealed={() => {
+              setIsSaving(false);
+              if (onComplete) onComplete();
+            }}
+          />
         )}
 
         <CheckInFailedModal
