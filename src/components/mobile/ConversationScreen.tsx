@@ -104,6 +104,9 @@ function renderEmphasis(text: string, baseFontSize: number, baseColour: string, 
   });
 }
 
+const USER_HOLD_MS = 3000;
+const USER_FADE_MS = 3000;
+
 export function ConversationScreen({
   type = 'checkin',
   messages = [],
@@ -112,45 +115,84 @@ export function ConversationScreen({
   onBack,
   userName,
 }: ConversationScreenProps) {
-  const [visibleIndex, setVisibleIndex] = useState(0);
-  const [prevUserMsg, setPrevUserMsg] = useState<Message | null>(null);
-  const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [displayedAiIdx, setDisplayedAiIdx] = useState(-1);
+  const [fadingUserMsg, setFadingUserMsg] = useState<Message | null>(null);
+  const [userFading, setUserFading] = useState(false);
+  const userShownAtRef = useRef<number>(0);
+  const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const finishTriggered = useMemo(
     () => messages.some((m) => m.sender === 'ai' && /finish button/i.test(m.text)),
     [messages]
   );
 
-  useEffect(() => {
-    if (messages.length === 0) return;
-    const newIdx = messages.length - 1;
-    if (newIdx <= visibleIndex) return;
-
-    const currentMsg = messages[visibleIndex];
-    const incomingMsg = messages[newIdx];
-
-    if (currentMsg?.sender === 'user' && incomingMsg?.sender === 'ai') {
-      setPrevUserMsg(currentMsg);
-      setVisibleIndex(newIdx);
-      if (holdTimer.current) clearTimeout(holdTimer.current);
-      holdTimer.current = setTimeout(() => setPrevUserMsg(null), 4000);
-    } else {
-      setVisibleIndex(newIdx);
+  const latestUserMsg = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].sender === 'user') return messages[i];
     }
-  }, [messages.length]);
+    return null;
+  }, [messages]);
+
+  const latestAiMsg = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].sender === 'ai') return messages[i];
+    }
+    return null;
+  }, [messages]);
+
+  const latestAiIdx = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].sender === 'ai') return i;
+    }
+    return -1;
+  }, [messages]);
+
+  useEffect(() => {
+    if (!latestUserMsg) return;
+    userShownAtRef.current = Date.now();
+    setFadingUserMsg(latestUserMsg);
+    setUserFading(false);
+  }, [latestUserMsg?.id]);
+
+  useEffect(() => {
+    if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
+    if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current);
+
+    if (latestAiIdx <= displayedAiIdx) return;
+    if (latestAiIdx < 0) return;
+
+    const elapsed = Date.now() - userShownAtRef.current;
+    const waitMore = Math.max(0, USER_HOLD_MS - elapsed);
+
+    holdTimerRef.current = setTimeout(() => {
+      setDisplayedAiIdx(latestAiIdx);
+      setUserFading(true);
+      fadeTimerRef.current = setTimeout(() => {
+        setFadingUserMsg(null);
+        setUserFading(false);
+      }, USER_FADE_MS);
+    }, waitMore);
+
+    return () => {
+      if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
+      if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current);
+    };
+  }, [latestAiIdx]);
 
   useEffect(() => {
     return () => {
-      if (holdTimer.current) clearTimeout(holdTimer.current);
+      if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
+      if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current);
     };
   }, []);
 
-  const currentMessage = messages[visibleIndex];
+  const showingAiMsg = displayedAiIdx >= 0 ? messages[displayedAiIdx] : null;
 
   const aiSentences = useMemo(() => {
-    if (!currentMessage || currentMessage.sender !== 'ai') return [];
-    return currentMessage.text.split(/(?<=[.!?])\s+/).filter((s) => s.trim().length > 0);
-  }, [currentMessage]);
+    if (!showingAiMsg || showingAiMsg.sender !== 'ai') return [];
+    return showingAiMsg.text.split(/(?<=[.!?])\s+/).filter((s) => s.trim().length > 0);
+  }, [showingAiMsg]);
 
   const [revealedCount, setRevealedCount] = useState(0);
   const revealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -161,43 +203,36 @@ export function ConversationScreen({
 
   useEffect(() => {
     if (revealTimer.current) clearTimeout(revealTimer.current);
-    if (!currentMessage || currentMessage.sender !== 'ai') {
+    if (!showingAiMsg) {
       setRevealedCount(0);
       return;
     }
 
-    const initialDelay = prevUserMsg ? 2000 : 0;
+    setRevealedCount(1);
 
-    if (initialDelay > 0) {
-      setRevealedCount(0);
+    let idx = 1;
+    const tick = () => {
+      if (idx >= aiSentences.length) return;
+      const delay = Math.min(1000 + aiSentences[idx - 1].length * 13, 2400);
       revealTimer.current = setTimeout(() => {
-        setRevealedCount(1);
-        scheduleRemaining(1);
-      }, initialDelay);
-    } else {
-      setRevealedCount(1);
-      scheduleRemaining(1);
-    }
-
-    function scheduleRemaining(startIdx: number) {
-      if (startIdx >= aiSentences.length) return;
-      let idx = startIdx;
-      const tick = () => {
-        if (idx >= aiSentences.length) return;
-        const delay = Math.min(900 + aiSentences[idx - 1].length * 14, 2200);
-        revealTimer.current = setTimeout(() => {
-          revealNext();
-          idx++;
-          tick();
-        }, delay);
-      };
-      tick();
-    }
+        revealNext();
+        idx++;
+        tick();
+      }, delay);
+    };
+    tick();
 
     return () => {
       if (revealTimer.current) clearTimeout(revealTimer.current);
     };
-  }, [currentMessage?.id, aiSentences.length, !!prevUserMsg]);
+  }, [showingAiMsg?.id, aiSentences.length]);
+
+  const showUserOnly = !showingAiMsg && latestUserMsg;
+  const currentSoloMsg = showUserOnly
+    ? latestUserMsg
+    : !fadingUserMsg && !showingAiMsg
+      ? latestAiMsg || messages[messages.length - 1]
+      : null;
 
   return (
     <div
@@ -218,7 +253,7 @@ export function ConversationScreen({
           top: 0,
           left: 0,
           right: 0,
-          height: '20vh',
+          height: '22vh',
           background: `linear-gradient(to bottom, ${spectra}, transparent)`,
           zIndex: 10,
           pointerEvents: 'none',
@@ -249,26 +284,76 @@ export function ConversationScreen({
         </button>
       )}
 
-      {/* Message area — centered vertically with breathing room */}
+      {/* Message area — bottom-anchored, grows upward */}
       <div
         style={{
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'center',
-          padding: '20vh 28px 25vh',
-          gap: 28,
+          justifyContent: 'flex-end',
+          padding: '0 28px 26vh',
+          gap: 32,
         }}
       >
-        {/* Previous user message */}
+        {/* Solo message display (only user, or only AI with no stacked pair) */}
         <AnimatePresence>
-          {prevUserMsg && (
+          {currentSoloMsg && !fadingUserMsg && !showingAiMsg && (
             <motion.div
-              key={`prev-${prevUserMsg.id}`}
+              key={`solo-${currentSoloMsg.id}`}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+              style={{ textAlign: 'left', maxWidth: '100%' }}
+            >
+              <p
+                style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: sinbad,
+                  textTransform: 'uppercase' as const,
+                  letterSpacing: '0.12em',
+                  margin: '0 0 14px',
+                  opacity: 0.6,
+                  fontFamily: 'Inter, system-ui, sans-serif',
+                }}
+              >
+                {currentSoloMsg.sender === 'ai' ? 'JODIE' : 'YOU'}
+              </p>
+              {currentSoloMsg.sender === 'ai' ? (
+                <div style={{ lineHeight: 1.2, margin: 0 }}>
+                  {renderEmphasis(currentSoloMsg.text, 40, pampas, userName)}
+                </div>
+              ) : (
+                <div
+                  style={{
+                    fontSize: 32,
+                    fontWeight: 400,
+                    color: sinbad,
+                    lineHeight: 1.25,
+                    whiteSpace: 'pre-line' as const,
+                    margin: 0,
+                  }}
+                >
+                  {currentSoloMsg.text}
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Stacked: user text (fading) above, Jodie text (building) below */}
+        <AnimatePresence>
+          {fadingUserMsg && (
+            <motion.div
+              key={`held-${fadingUserMsg.id}`}
               initial={{ opacity: 1, y: 0 }}
-              animate={{ opacity: 0.55, y: 0 }}
-              exit={{ opacity: 0, y: -24 }}
-              transition={{ duration: 2, ease: 'easeOut' }}
+              animate={{
+                opacity: userFading ? 0 : 1,
+                y: userFading ? -30 : 0,
+              }}
+              exit={{ opacity: 0, y: -30 }}
+              transition={{ duration: userFading ? USER_FADE_MS / 1000 : 0.4, ease: 'easeOut' }}
               style={{ textAlign: 'left', maxWidth: '100%' }}
             >
               <p
@@ -279,7 +364,7 @@ export function ConversationScreen({
                   textTransform: 'uppercase' as const,
                   letterSpacing: '0.12em',
                   margin: '0 0 10px',
-                  opacity: 0.5,
+                  opacity: 0.6,
                   fontFamily: 'Inter, system-ui, sans-serif',
                 }}
               >
@@ -287,25 +372,24 @@ export function ConversationScreen({
               </p>
               <div
                 style={{
-                  fontSize: 30,
+                  fontSize: 32,
                   fontWeight: 400,
                   color: sinbad,
                   lineHeight: 1.25,
                   whiteSpace: 'pre-line' as const,
                 }}
               >
-                {prevUserMsg.text}
+                {fadingUserMsg.text}
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Current message */}
-        <AnimatePresence mode="wait">
-          {currentMessage && (
+        <AnimatePresence>
+          {showingAiMsg && (
             <motion.div
-              key={currentMessage.id}
-              initial={{ opacity: 0, y: 20 }}
+              key={`ai-${showingAiMsg.id}`}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -16 }}
               transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
@@ -323,43 +407,28 @@ export function ConversationScreen({
                   fontFamily: 'Inter, system-ui, sans-serif',
                 }}
               >
-                {currentMessage.sender === 'ai' ? 'JODIE' : 'YOU'}
+                JODIE
               </p>
 
-              {currentMessage.sender === 'ai' ? (
-                <div style={{ lineHeight: 1.2, margin: 0 }}>
-                  {aiSentences.slice(0, revealedCount).map((sentence, si) => (
-                    <motion.span
-                      key={`${currentMessage.id}-s${si}`}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ duration: 0.5 }}
-                      style={{ display: 'inline', fontSize: 40, fontWeight: 700, color: pampas }}
-                    >
-                      {si > 0 ? ' ' : ''}
-                      {renderEmphasis(sentence, 40, pampas, userName)}
-                    </motion.span>
-                  ))}
-                </div>
-              ) : (
-                <div
-                  style={{
-                    fontSize: 32,
-                    fontWeight: 400,
-                    color: sinbad,
-                    lineHeight: 1.2,
-                    whiteSpace: 'pre-line' as const,
-                    margin: 0,
-                  }}
-                >
-                  {currentMessage.text}
-                </div>
-              )}
+              <div style={{ lineHeight: 1.2, margin: 0 }}>
+                {aiSentences.slice(0, revealedCount).map((sentence, si) => (
+                  <motion.span
+                    key={`${showingAiMsg.id}-s${si}`}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.5 }}
+                    style={{ display: 'inline', fontSize: 40, fontWeight: 700, color: pampas }}
+                  >
+                    {si > 0 ? ' ' : ''}
+                    {renderEmphasis(sentence, 40, pampas, userName)}
+                  </motion.span>
+                ))}
+              </div>
 
               {/* Baseline options */}
-              {type === 'baseline' && currentMessage.options && currentMessage.sender === 'ai' && (
+              {type === 'baseline' && showingAiMsg.options && (
                 <div style={{ marginTop: 32 }}>
-                  {currentMessage.options.map((opt, i) => (
+                  {showingAiMsg.options.map((opt, i) => (
                     <motion.p
                       key={opt}
                       initial={{ opacity: 0 }}
