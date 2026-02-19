@@ -1087,28 +1087,48 @@ function DetailPanel({
 }
 
 // ── Nudge Carousel ─────────────────────────────────────
-function NudgeCarousel({ pinned, rotated }: { pinned: unknown; rotated: unknown }) {
-  const nudges: Array<{ id: string; title: string; body: string; bg: string; text: string }> = [];
+const CATEGORY_STYLES: Record<string, { bg: string; text: string; accent: string }> = {
+  urgent: { bg: C.bittersweet, text: '#ffffff', accent: 'rgba(255,255,255,0.3)' },
+  social: { bg: C.sinbad, text: C.spectra, accent: 'rgba(45,76,76,0.15)' },
+  educational: { bg: C.buttercup, text: C.spectra, accent: 'rgba(45,76,76,0.15)' },
+};
+const DEFAULT_CAT_STYLE = { bg: C.sinbad, text: C.spectra, accent: 'rgba(45,76,76,0.15)' };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const mapNudge = (n: any) => {
-    if (!n) return null;
-    return {
-      id: n.id || String(Math.random()),
-      title: n.title || '',
-      body: n.body || n.content || '',
-      bg: n.bg_color || n.background_color || C.sinbad,
-      text: n.text_color || (n.bg_color === '#FF6B6B' ? '#ffffff' : '#1a2e2e'),
-    };
+function NudgeCarousel({
+  nudges,
+}: {
+  nudges: Array<{
+    id: string;
+    title: string;
+    description: string;
+    category: string;
+    eventDate?: string | null;
+    linkUrl: string;
+  }>;
+}) {
+  const [active, setActive] = useState(0);
+  if (nudges.length === 0) return null;
+
+  const nudge = nudges[active % nudges.length];
+  const style = CATEGORY_STYLES[nudge.category] || DEFAULT_CAT_STYLE;
+
+  const handleTap = () => {
+    if (nudge.linkUrl) {
+      window.open(nudge.linkUrl, '_blank');
+    } else if (nudges.length > 1) {
+      setActive((i) => (i + 1) % nudges.length);
+    }
   };
 
-  if (pinned) nudges.push(mapNudge(pinned)!);
-  if (rotated) nudges.push(mapNudge(rotated)!);
-  const validNudges = nudges.filter(Boolean);
+  const handleSwipe = () => {
+    if (nudges.length > 1) {
+      setActive((i) => (i + 1) % nudges.length);
+    }
+  };
 
-  const [active, setActive] = useState(0);
-  if (validNudges.length === 0) return null;
-  const nudge = validNudges[active % validNudges.length];
+  const formattedDate = nudge.eventDate
+    ? new Date(nudge.eventDate).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
+    : null;
 
   return (
     <div style={{ position: 'relative' }}>
@@ -1119,31 +1139,59 @@ function NudgeCarousel({ pinned, rotated }: { pinned: unknown; rotated: unknown 
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -30 }}
           transition={{ duration: 0.2 }}
+          drag={nudges.length > 1 ? 'x' : false}
+          dragConstraints={{ left: 0, right: 0 }}
+          dragElastic={0.2}
+          onDragEnd={(_e, info) => {
+            if (Math.abs(info.offset.x) > 50) handleSwipe();
+          }}
+          onClick={handleTap}
           style={{
-            backgroundColor: nudge.bg,
+            backgroundColor: style.bg,
             borderRadius: '16px',
             padding: '22px 20px',
-            color: nudge.text,
-            cursor: validNudges.length > 1 ? 'pointer' : 'default',
+            color: style.text,
+            cursor: 'pointer',
           }}
-          onClick={() => validNudges.length > 1 && setActive((i) => (i + 1) % validNudges.length)}
         >
-          <h4 style={{ fontSize: '18px', fontWeight: 700, margin: '0 0 8px', lineHeight: 1.2 }}>{nudge.title}</h4>
-          <p style={{ fontSize: '14px', lineHeight: 1.5, margin: 0, opacity: 0.85 }}>{nudge.body}</p>
+          {nudge.category === 'urgent' && (
+            <div
+              style={{
+                fontSize: '10px',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                opacity: 0.85,
+                marginBottom: '6px',
+              }}
+            >
+              Urgent
+            </div>
+          )}
+          <h4 style={{ fontSize: '17px', fontWeight: 700, margin: '0 0 6px', lineHeight: 1.25 }}>{nudge.title}</h4>
+          <p style={{ fontSize: '13.5px', lineHeight: 1.5, margin: 0, opacity: 0.85 }}>{nudge.description}</p>
+          {formattedDate && (
+            <div style={{ fontSize: '12px', marginTop: '10px', opacity: 0.7, fontWeight: 500 }}>{formattedDate}</div>
+          )}
+          {nudge.linkUrl && (
+            <div style={{ fontSize: '12px', marginTop: formattedDate ? '4px' : '10px', opacity: 0.7, fontWeight: 600 }}>
+              Tap to find out more →
+            </div>
+          )}
         </motion.div>
       </AnimatePresence>
 
-      {validNudges.length > 1 && (
+      {nudges.length > 1 && (
         <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginTop: '12px' }}>
-          {validNudges.map((_, i) => (
+          {nudges.map((_, i) => (
             <button
               key={i}
               onClick={() => setActive(i)}
               style={{
-                width: i === active % validNudges.length ? '20px' : '6px',
+                width: i === active % nudges.length ? '20px' : '6px',
                 height: '6px',
                 borderRadius: '3px',
-                backgroundColor: i === active % validNudges.length ? C.spectra : 'rgba(45,76,76,0.15)',
+                backgroundColor: i === active % nudges.length ? C.spectra : 'rgba(45,76,76,0.15)',
                 border: 'none',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
@@ -1183,7 +1231,7 @@ export function DashboardScreen({ onNeedHelp, onCheckIn, onRetakeBaseline }: Das
 
   useEffect(() => {}, [profile]);
 
-  const { pinned, rotated, loading: nudgesLoading } = useActiveNudges(profile?.university_id);
+  const { nudges: activeNudges, loading: nudgesLoading } = useActiveNudges(profile?.university_id);
 
   const [openPanel, setOpenPanel] = useState<PanelId>(null);
 
@@ -1736,7 +1784,7 @@ export function DashboardScreen({ onNeedHelp, onCheckIn, onRetakeBaseline }: Das
           })()}
 
         {/* Nudges */}
-        {!nudgesLoading && (pinned || rotated) && (
+        {!nudgesLoading && activeNudges.length > 0 && (
           <div>
             <div
               style={{
@@ -1751,7 +1799,7 @@ export function DashboardScreen({ onNeedHelp, onCheckIn, onRetakeBaseline }: Das
             >
               What's Happening
             </div>
-            <NudgeCarousel pinned={pinned} rotated={rotated} />
+            <NudgeCarousel nudges={activeNudges} />
           </div>
         )}
       </div>

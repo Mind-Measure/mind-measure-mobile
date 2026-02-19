@@ -1,32 +1,17 @@
 import { useState, useEffect } from 'react';
 
-interface Nudge {
+export interface HubNudge {
   id: string;
-  template: 'event' | 'service' | 'tip';
-  isPinned: boolean;
-
-  // Event fields
-  eventTitle?: string;
-  eventDescription?: string;
-  eventLocation?: string;
-  eventDateTime?: string;
-  eventButtonText?: string;
-  eventButtonLink?: string;
-
-  // Service fields
-  serviceTitle?: string;
-  serviceDescription?: string;
-  serviceAccess?: string;
-  serviceLink?: string;
-
-  // Tip fields
-  tipText?: string;
-  tipArticleLink?: string;
+  title: string;
+  description: string;
+  category: 'urgent' | 'social' | 'educational';
+  eventDate?: string | null;
+  linkUrl: string;
+  status: string;
 }
 
 export function useActiveNudges(universityId: string | null | undefined) {
-  const [pinned, setPinned] = useState<Nudge | null>(null);
-  const [rotated, setRotated] = useState<Nudge | null>(null);
+  const [nudges, setNudges] = useState<HubNudge[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -48,9 +33,7 @@ export function useActiveNudges(universityId: string | null | undefined) {
         }
 
         const data = await response.json();
-
-        setPinned(data.pinned || null);
-        setRotated(data.rotated || null);
+        setNudges(data.nudges || []);
       } catch (err) {
         console.error('[useActiveNudges] Error fetching nudges:', err);
         setError(err instanceof Error ? err.message : 'Failed to fetch nudges');
@@ -62,5 +45,5 @@ export function useActiveNudges(universityId: string | null | undefined) {
     fetchNudges();
   }, [universityId]);
 
-  return { pinned, rotated, loading, error };
+  return { nudges, loading, error };
 }

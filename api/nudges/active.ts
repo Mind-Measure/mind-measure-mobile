@@ -1,13 +1,21 @@
-// @ts-nocheck
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { Client } from 'pg';
 
-interface Nudge {
+interface HubNudge {
+  id: string;
+  title: string;
+  description: string;
+  category: 'urgent' | 'social' | 'educational';
+  eventDate?: string | null;
+  linkUrl: string;
   status: string;
-  expiryDate?: string;
-  isPinned?: boolean;
-  priority?: 'high' | 'low' | 'medium';
 }
+
+const CATEGORY_PRIORITY: Record<string, number> = {
+  urgent: 0,
+  educational: 1,
+  social: 2,
+};
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   let auroraClient: Client | null = null;
@@ -19,7 +27,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'universityId is required' });
     }
 
-    // Connect to Aurora using same pattern as working endpoints
     auroraClient = new Client({
       host: process.env.AWS_AURORA_HOST,
       port: parseInt(process.env.AWS_AURORA_PORT || '5432'),
@@ -31,41 +38,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     await auroraClient.connect();
 
-    // Fetch university nudges
     const result = await auroraClient.query(`SELECT nudges FROM universities WHERE id = $1`, [universityId]);
 
     if (result.rows.length === 0) {
       return res.status(200).json({ nudges: [] });
     }
 
-    const allNudges = result.rows[0].nudges || [];
+    const allNudges: HubNudge[] = result.rows[0].nudges || [];
 
-    // Filter active, non-expired nudges
-    const now = new Date();
-    const activeNudges = allNudges.filter((nudge: Nudge) => {
-      if (nudge.status !== 'active') return false;
-      if (nudge.expiryDate && new Date(nudge.expiryDate) < now) return false;
-      return true;
-    });
-
-    // Separate pinned and rotation
-    const pinned = activeNudges.find((n: Nudge) => n.isPinned) || null;
-    const rotation = activeNudges.filter((n: Nudge) => !n.isPinned);
-
-    // Weight rotation by priority
-    const weightedRotation = rotation.flatMap((nudge: Nudge) => {
-      const weight = nudge.priority === 'high' ? 3 : nudge.priority === 'low' ? 0.5 : 1;
-      return Array(Math.ceil(weight)).fill(nudge);
-    });
-
-    // Randomly select one from rotation
-    const rotated =
-      weightedRotation.length > 0 ? weightedRotation[Math.floor(Math.random() * weightedRotation.length)] : null;
+    const activeNudges = allNudges
+      .filter((n) => n.status === 'active')
+      .sort((a, b) => {
+        const wA = CATEGORY_PRIORITY[a.category] ?? 2;
+        const wB = CATEGORY_PRIORITY[b.category] ?? 2;
+        if (wA !== wB) return wA - wB;
+        const now = Date.now();
+        const dA = a.eventDate ? Math.abs(new Date(a.eventDate).getTime() - now) : Infinity;
+        const dB = b.eventDate ? Math.abs(new Date(b.eventDate).getTime() - now) : Infinity;
+        return dA - dB;
+      })
+      .slice(0, 5);
 
     return res.status(200).json({
       success: true,
-      pinned,
-      rotated,
+      nudges: activeNudges,
     });
   } catch (error: unknown) {
     console.error('Error fetching active nudges:', error);
