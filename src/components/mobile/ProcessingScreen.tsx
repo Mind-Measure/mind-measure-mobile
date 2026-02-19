@@ -8,28 +8,77 @@ const buttercup = '#F59E0B';
 const bittersweet = '#FF6B6B';
 const lilac = '#DDD6FE';
 
-const DOT_COLORS = [spectra, sinbad, buttercup, bittersweet, lilac];
+interface Step {
+  label: string;
+  color: string;
+}
 
-const STEPS = [
-  'Capturing voice signal',
-  'Measuring pitch',
-  'Tracking speech rhythm',
-  'Pause patterns',
-  'Voice stability',
-  'Tracking facial cues',
-  'Eye contact',
-  'Facial tension',
-  'Emotional valence',
-  'Parsing language',
-  'Stress markers',
-  'Coping signals',
-  'Comparing to baseline',
-  'Measuring variance',
-  'Energy shift',
-  'Aligning multimodal signals',
-  'Fusion weights',
-  'Recalculating score',
-  'Finalising insight',
+const STEPS: Step[] = [
+  // Audio — bittersweet (5)
+  { label: 'Capturing voice signal', color: bittersweet },
+  { label: 'Measuring pitch', color: bittersweet },
+  { label: 'Tracking speech rhythm', color: bittersweet },
+  { label: 'Pause patterns', color: bittersweet },
+  { label: 'Voice stability', color: bittersweet },
+  // Video — buttercup (4)
+  { label: 'Tracking facial cues', color: buttercup },
+  { label: 'Eye contact', color: buttercup },
+  { label: 'Facial tension', color: buttercup },
+  { label: 'Emotional valence', color: buttercup },
+  // Multimodal — lilac (7)
+  { label: 'Comparing to baseline', color: lilac },
+  { label: 'Measuring variance', color: lilac },
+  { label: 'Energy shift', color: lilac },
+  { label: 'Aligning multimodal signals', color: lilac },
+  { label: 'Fusion weights', color: lilac },
+  { label: 'Recalculating score', color: lilac },
+  { label: 'Finalising insight', color: lilac },
+  // Text — sinbad (3)
+  { label: 'Parsing language', color: sinbad },
+  { label: 'Stress markers', color: sinbad },
+  { label: 'Coping signals', color: sinbad },
+];
+
+const COLS = 7;
+
+// Grid layout: 7x4 = 28 positions, 19 active, 9 empty
+// Row 1: _ _ _ _ _ ● ●   (2 audio, right-justified)
+// Row 2: ● ● ● ● ● ● ●   (3 audio + 4 video)
+// Row 3: ● ● ● ● ● ● ●   (7 multimodal)
+// Row 4: ● ● ● _ _ _ _   (3 text, left-justified)
+const GRID_MAP: (number | null)[] = [
+  // Row 1: positions 0-6, only last 2 active (step 0, 1)
+  null,
+  null,
+  null,
+  null,
+  null,
+  0,
+  1,
+  // Row 2: all active (steps 2-8)
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  // Row 3: all active (steps 9-15)
+  9,
+  10,
+  11,
+  12,
+  13,
+  14,
+  15,
+  // Row 4: first 3 active (steps 16-18)
+  16,
+  17,
+  18,
+  null,
+  null,
+  null,
+  null,
 ];
 
 const STEP_INTERVAL = 750;
@@ -43,53 +92,39 @@ interface ProcessingScreenProps {
   onScoreRevealed?: () => void;
 }
 
-function pickRandomColor(exclude?: string): string {
-  const pool = exclude ? DOT_COLORS.filter((c) => c !== exclude) : DOT_COLORS;
-  return pool[Math.floor(Math.random() * pool.length)];
-}
-
 export function ProcessingScreen({
   mode = 'checkin',
   previousScore = 50,
   newScore = null,
   onScoreRevealed,
 }: ProcessingScreenProps) {
-  const [stepIndex, setStepIndex] = useState(0);
-  const [dotColors, setDotColors] = useState<(string | null)[]>(() => STEPS.map(() => null));
+  const [stepIndex, setStepIndex] = useState(-1);
   const [phase, setPhase] = useState<'processing' | 'revealing' | 'hold'>('processing');
   const [displayScore, setDisplayScore] = useState(previousScore);
   const tweenRef = useRef<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Step through the processing sequence
   useEffect(() => {
     if (phase !== 'processing') return;
 
-    const interval = setInterval(() => {
-      setStepIndex((prev) => {
-        const next = prev + 1;
-        if (next >= STEPS.length) {
-          clearInterval(interval);
-          return prev;
-        }
-        setDotColors((colors) => {
-          const updated = [...colors];
-          const prevColor = next > 0 ? updated[next - 1] : null;
-          updated[next] = pickRandomColor(prevColor ?? undefined);
-          return updated;
-        });
-        return next;
-      });
-    }, STEP_INTERVAL);
+    // Start first step immediately
+    setStepIndex(0);
 
-    setDotColors((colors) => {
-      const updated = [...colors];
-      updated[0] = pickRandomColor();
-      return updated;
-    });
+    let current = 0;
+    const interval = setInterval(() => {
+      current++;
+      if (current >= STEPS.length) {
+        clearInterval(interval);
+        return;
+      }
+      setStepIndex(current);
+    }, STEP_INTERVAL);
 
     return () => clearInterval(interval);
   }, [phase]);
 
+  // Transition to score reveal after last step
   useEffect(() => {
     if (stepIndex < STEPS.length - 1) return;
     if (phase !== 'processing') return;
@@ -103,6 +138,7 @@ export function ProcessingScreen({
     };
   }, [stepIndex, phase]);
 
+  // Tween score from previous to new
   useEffect(() => {
     if (phase !== 'revealing') return;
 
@@ -136,6 +172,7 @@ export function ProcessingScreen({
     };
   }, [phase, newScore, previousScore]);
 
+  // Hold then call onScoreRevealed
   useEffect(() => {
     if (phase !== 'hold') return;
 
@@ -148,6 +185,7 @@ export function ProcessingScreen({
     };
   }, [phase, onScoreRevealed]);
 
+  // Cleanup
   useEffect(() => {
     return () => {
       if (tweenRef.current) cancelAnimationFrame(tweenRef.current);
@@ -155,10 +193,10 @@ export function ProcessingScreen({
     };
   }, []);
 
-  const dotsPerRow = 7;
-  const rows: (string | null)[][] = [];
-  for (let i = 0; i < dotColors.length; i += dotsPerRow) {
-    rows.push(dotColors.slice(i, i + dotsPerRow));
+  // Build rows from GRID_MAP
+  const rows: (number | null)[][] = [];
+  for (let i = 0; i < GRID_MAP.length; i += COLS) {
+    rows.push(GRID_MAP.slice(i, i + COLS));
   }
 
   return (
@@ -202,40 +240,46 @@ export function ProcessingScreen({
           letterSpacing: '-0.05em',
           color: pampas,
           fontVariantNumeric: 'tabular-nums',
-          marginBottom: 32,
+          marginBottom: 36,
         }}
       >
         {displayScore}
       </div>
 
-      {/* Dot grid */}
+      {/* Dot grid — 7x4, asymmetric fill */}
       <div
         style={{
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: 8,
+          gap: 10,
           marginBottom: 28,
         }}
       >
         {rows.map((row, ri) => (
-          <div key={ri} style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-            {row.map((color, ci) => {
-              const idx = ri * dotsPerRow + ci;
+          <div key={ri} style={{ display: 'grid', gridTemplateColumns: `repeat(${COLS}, 22px)`, gap: 10 }}>
+            {row.map((stepIdx, ci) => {
+              if (stepIdx === null) {
+                return <div key={`${ri}-${ci}`} style={{ width: 22, height: 22 }} />;
+              }
+
+              const isActive = stepIdx <= stepIndex;
+              const color = isActive ? STEPS[stepIdx].color : null;
+
               return (
                 <motion.div
-                  key={idx}
+                  key={`${ri}-${ci}`}
                   animate={{
                     backgroundColor: color || 'transparent',
-                    borderColor: color || `${sinbad}40`,
-                    scale: color ? [1, 1.2, 1] : 1,
+                    borderColor: color || `${sinbad}25`,
+                    scale: isActive && stepIdx === stepIndex ? [1, 1.25, 1] : 1,
                   }}
                   transition={{ duration: 0.3, ease: 'easeOut' }}
                   style={{
-                    width: 18,
-                    height: 18,
+                    width: 22,
+                    height: 22,
                     borderRadius: '50%',
-                    border: `1.5px solid ${color || `${sinbad}40`}`,
+                    border: `1.5px solid ${color || `${sinbad}25`}`,
                   }}
                 />
               );
@@ -247,25 +291,27 @@ export function ProcessingScreen({
       {/* Process word */}
       <div style={{ height: 24, overflow: 'hidden' }}>
         <AnimatePresence mode="wait">
-          <motion.p
-            key={stepIndex}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 0.5, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.2 }}
-            style={{
-              fontSize: 14,
-              fontWeight: 500,
-              color: sinbad,
-              textTransform: 'uppercase',
-              letterSpacing: '0.14em',
-              margin: 0,
-              fontFamily: 'Inter, system-ui, sans-serif',
-              textAlign: 'center',
-            }}
-          >
-            {STEPS[stepIndex]}
-          </motion.p>
+          {stepIndex >= 0 && stepIndex < STEPS.length && (
+            <motion.p
+              key={stepIndex}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 0.5, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+              style={{
+                fontSize: 14,
+                fontWeight: 500,
+                color: sinbad,
+                textTransform: 'uppercase',
+                letterSpacing: '0.14em',
+                margin: 0,
+                fontFamily: 'Inter, system-ui, sans-serif',
+                textAlign: 'center',
+              }}
+            >
+              {STEPS[stepIndex].label}
+            </motion.p>
+          )}
         </AnimatePresence>
       </div>
     </div>
