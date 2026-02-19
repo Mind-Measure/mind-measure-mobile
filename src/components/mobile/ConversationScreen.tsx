@@ -358,7 +358,7 @@ export function ConversationScreen({
           left: 28,
           display: 'flex',
           gap: 14,
-          opacity: 0.3,
+          alignItems: 'center',
         }}
       >
         <svg
@@ -370,11 +370,12 @@ export function ConversationScreen({
           strokeWidth="1.5"
           strokeLinecap="round"
           strokeLinejoin="round"
+          style={{ opacity: 0.3 }}
         >
           <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
           <circle cx="12" cy="13" r="4" />
         </svg>
-        <svg
+        <motion.svg
           width="18"
           height="18"
           viewBox="0 0 24 24"
@@ -383,12 +384,14 @@ export function ConversationScreen({
           strokeWidth="1.5"
           strokeLinecap="round"
           strokeLinejoin="round"
+          animate={{ opacity: isListening ? [0.3, 0.6, 0.3] : 0.3 }}
+          transition={isListening ? { duration: 2, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.3 }}
         >
           <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
           <path d="M19 10v2a7 7 0 01-14 0v-2" />
           <line x1="12" y1="19" x2="12" y2="23" />
           <line x1="8" y1="23" x2="16" y2="23" />
-        </svg>
+        </motion.svg>
       </div>
     </div>
   );
