@@ -71,7 +71,7 @@ function buildEmphasisRegex(userName?: string): RegExp {
   return new RegExp(`(\\*[^*]+\\*|\\b(?:${wordPattern}|${numberPattern})\\b)`, 'gi');
 }
 
-function renderEmphasis(text: string, baseFontSize: number, baseColour: string, userName?: string) {
+function renderEmphasis(text: string, _baseFontSize: number, baseColour: string, userName?: string) {
   const regex = buildEmphasisRegex(userName);
   const parts = text.split(regex).filter(Boolean);
 
@@ -82,7 +82,7 @@ function renderEmphasis(text: string, baseFontSize: number, baseColour: string, 
   return parts.map((part, i) => {
     if (part.startsWith('*') && part.endsWith('*')) {
       return (
-        <span key={i} style={{ fontStyle: 'italic', fontWeight: 400, color: sinbad, fontSize: baseFontSize }}>
+        <span key={i} style={{ fontStyle: 'italic', color: sinbad }}>
           {part.slice(1, -1)}
         </span>
       );
@@ -91,7 +91,7 @@ function renderEmphasis(text: string, baseFontSize: number, baseColour: string, 
     if (regex.test(part)) {
       regex.lastIndex = 0;
       return (
-        <span key={i} style={{ fontStyle: 'italic', fontWeight: 400, color: sinbad, fontSize: baseFontSize }}>
+        <span key={i} style={{ fontStyle: 'italic', color: sinbad }}>
           {part}
         </span>
       );
@@ -185,7 +185,7 @@ export function ConversationScreen({
           top: 0,
           left: 0,
           right: 0,
-          height: '25vh',
+          height: '18vh',
           background: `linear-gradient(to bottom, ${spectra} 0%, ${spectra} 30%, transparent 100%)`,
           zIndex: 10,
           pointerEvents: 'none',
@@ -238,9 +238,9 @@ export function ConversationScreen({
           return (
             <motion.div
               key={msg.id}
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.4 }}
               style={{ textAlign: 'left', maxWidth: '100%', marginBottom: 28 }}
             >
               <p
@@ -259,29 +259,29 @@ export function ConversationScreen({
               </p>
 
               {isAi ? (
-                <div style={{ lineHeight: 1.2, margin: 0 }}>
+                <div style={{ lineHeight: 1.25, margin: 0 }}>
                   {isLastAi
                     ? aiSentences.slice(0, revealedCount).map((sentence, si) => (
                         <motion.span
                           key={`${msg.id}-s${si}`}
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
-                          transition={{ duration: 0.5 }}
-                          style={{ display: 'inline', fontSize: 40, fontWeight: 700, color: pampas }}
+                          transition={{ duration: 0.3 }}
+                          style={{ display: 'inline', fontSize: 34, fontWeight: 700, color: pampas }}
                         >
                           {si > 0 ? ' ' : ''}
-                          {renderEmphasis(sentence, 40, pampas, userName)}
+                          {renderEmphasis(sentence, 34, pampas, userName)}
                         </motion.span>
                       ))
-                    : renderEmphasis(msg.text, 40, pampas, userName)}
+                    : renderEmphasis(msg.text, 34, pampas, userName)}
                 </div>
               ) : (
                 <div
                   style={{
-                    fontSize: 32,
+                    fontSize: 30,
                     fontWeight: 400,
                     color: sinbad,
-                    lineHeight: 1.25,
+                    lineHeight: 1.3,
                     whiteSpace: 'pre-line' as const,
                     margin: 0,
                   }}

@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import studentPhoto from '@/assets/student-2.png';
 
 const pampas = '#FAF9F7';
 const spectra = '#2D4C4C';
+const sinbad = '#99CCCE';
 const lilac = '#DDD6FE';
-const hotPink = '#F59E0B';
+const buttercup = '#F59E0B';
+const bittersweet = '#FF6B6B';
 
 interface BaselineAssessmentScreenProps {
   onStartAssessment: () => void;
@@ -37,43 +38,62 @@ export function BaselineAssessmentScreen({ onStartAssessment }: BaselineAssessme
             transition={{ duration: 0.4 }}
             style={{ flex: 1, display: 'flex', flexDirection: 'column' }}
           >
-            {/* Photo with top padding so Dynamic Island doesn't obscure face */}
+            {/* Brand graphic — abstract dot pattern + logo */}
             <motion.div
-              initial={{ opacity: 0, scale: 1.02 }}
-              animate={{ opacity: 1, scale: 1 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               transition={{ duration: 0.8 }}
               style={{
                 width: '100%',
-                overflow: 'hidden',
-                position: 'relative',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                paddingTop: '80px',
+                paddingBottom: '12px',
                 flexShrink: 0,
-                paddingTop: '60px',
               }}
             >
-              <img
-                src={studentPhoto}
-                alt=""
-                style={{
-                  width: '80%',
-                  maxHeight: '280px',
-                  objectFit: 'cover',
-                  objectPosition: 'center top',
-                  display: 'block',
-                  margin: '0 auto',
-                  borderRadius: '0 0 20px 20px',
-                }}
-              />
-              {/* Soft fade into background */}
-              <div
-                style={{
-                  position: 'absolute',
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  height: '80px',
-                  background: `linear-gradient(transparent, ${pampas})`,
-                }}
-              />
+              {/* Abstract dot cluster */}
+              <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
+                {[sinbad, buttercup, lilac, bittersweet, sinbad].map((c, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, scale: 0.5 }}
+                    animate={{ opacity: 0.7, scale: 1 }}
+                    transition={{ duration: 0.4, delay: 0.15 * i }}
+                    style={{
+                      width: i === 2 ? 28 : 20,
+                      height: i === 2 ? 28 : 20,
+                      borderRadius: '50%',
+                      backgroundColor: c,
+                    }}
+                  />
+                ))}
+              </div>
+              {/* Mind Measure logo mark */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+              >
+                <svg width="56" height="56" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="20" cy="20" r="20" fill={spectra} />
+                  <path
+                    d="M12 26V16l4 6 4-6v10"
+                    stroke={sinbad}
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M24 26V16l4 6"
+                    stroke={sinbad}
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </motion.div>
             </motion.div>
 
             {/* Content */}
