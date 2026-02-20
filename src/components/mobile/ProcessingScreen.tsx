@@ -9,34 +9,35 @@ const bittersweet = '#FF6B6B';
 const lilac = '#DDD6FE';
 
 interface Step {
-  label: string;
+  action: string;
+  subject: string;
   color: string;
 }
 
 const STEPS: Step[] = [
   // Audio — bittersweet (5)
-  { label: 'Capturing voice signal', color: bittersweet },
-  { label: 'Measuring pitch', color: bittersweet },
-  { label: 'Tracking speech rhythm', color: bittersweet },
-  { label: 'Pause patterns', color: bittersweet },
-  { label: 'Voice stability', color: bittersweet },
+  { action: 'Capturing', subject: 'voice signal', color: bittersweet },
+  { action: 'Measuring', subject: 'pitch', color: bittersweet },
+  { action: 'Tracking', subject: 'speech rhythm', color: bittersweet },
+  { action: '', subject: 'Pause patterns', color: bittersweet },
+  { action: '', subject: 'Voice stability', color: bittersweet },
   // Video — buttercup (4)
-  { label: 'Tracking facial cues', color: buttercup },
-  { label: 'Eye contact', color: buttercup },
-  { label: 'Facial tension', color: buttercup },
-  { label: 'Emotional valence', color: buttercup },
+  { action: 'Tracking', subject: 'facial cues', color: buttercup },
+  { action: '', subject: 'Eye contact', color: buttercup },
+  { action: '', subject: 'Facial tension', color: buttercup },
+  { action: '', subject: 'Emotional valence', color: buttercup },
   // Multimodal — lilac (7)
-  { label: 'Comparing to baseline', color: lilac },
-  { label: 'Measuring variance', color: lilac },
-  { label: 'Energy shift', color: lilac },
-  { label: 'Aligning multimodal signals', color: lilac },
-  { label: 'Fusion weights', color: lilac },
-  { label: 'Recalculating score', color: lilac },
-  { label: 'Finalising insight', color: lilac },
+  { action: 'Comparing to', subject: 'baseline', color: lilac },
+  { action: 'Measuring', subject: 'variance', color: lilac },
+  { action: '', subject: 'Energy shift', color: lilac },
+  { action: 'Aligning', subject: 'multimodal signals', color: lilac },
+  { action: '', subject: 'Fusion weights', color: lilac },
+  { action: 'Recalculating', subject: 'score', color: lilac },
+  { action: 'Finalising', subject: 'insight', color: lilac },
   // Text — sinbad (3)
-  { label: 'Parsing language', color: sinbad },
-  { label: 'Stress markers', color: sinbad },
-  { label: 'Coping signals', color: sinbad },
+  { action: 'Parsing', subject: 'language', color: sinbad },
+  { action: '', subject: 'Stress markers', color: sinbad },
+  { action: '', subject: 'Coping signals', color: sinbad },
 ];
 
 const COLS = 7;
@@ -235,28 +236,44 @@ export function ProcessingScreen({
           {displayScore}
         </div>
 
-        {/* Process word — immediately below the number */}
-        <div style={{ height: 28, overflow: 'hidden', marginTop: 6 }}>
+        {/* Process word — two-tone typography immediately below the number */}
+        <div style={{ minHeight: 52, overflow: 'hidden', marginTop: 6 }}>
           <AnimatePresence mode="wait">
             {stepIndex >= 0 && stepIndex < STEPS.length && (
-              <motion.p
+              <motion.div
                 key={stepIndex}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 0.5, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.2 }}
-                style={{
-                  fontSize: 15,
-                  fontWeight: 500,
-                  color: sinbad,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.12em',
-                  margin: 0,
-                  fontFamily: 'Inter, system-ui, sans-serif',
-                }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.25 }}
+                style={{ margin: 0 }}
               >
-                {STEPS[stepIndex].label}
-              </motion.p>
+                {STEPS[stepIndex].action && (
+                  <div
+                    style={{
+                      fontSize: 15,
+                      fontWeight: 400,
+                      color: sinbad,
+                      opacity: 0.55,
+                      lineHeight: 1.3,
+                      fontFamily: 'Inter, system-ui, sans-serif',
+                    }}
+                  >
+                    {STEPS[stepIndex].action}
+                  </div>
+                )}
+                <div
+                  style={{
+                    fontSize: 26,
+                    fontWeight: 700,
+                    color: pampas,
+                    lineHeight: 1.2,
+                    fontFamily: 'Lato, system-ui, sans-serif',
+                  }}
+                >
+                  {STEPS[stepIndex].subject}
+                </div>
+              </motion.div>
             )}
           </AnimatePresence>
         </div>
