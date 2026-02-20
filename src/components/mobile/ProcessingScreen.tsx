@@ -14,19 +14,16 @@ interface Step {
   color: string;
 }
 
-const STEPS: Step[] = [
-  // Audio — bittersweet (5)
+const CHECKIN_STEPS: Step[] = [
   { action: 'Capturing', subject: 'voice signal', color: bittersweet },
   { action: 'Measuring', subject: 'pitch', color: bittersweet },
   { action: 'Tracking', subject: 'speech rhythm', color: bittersweet },
   { action: '', subject: 'Pause patterns', color: bittersweet },
   { action: '', subject: 'Voice stability', color: bittersweet },
-  // Video — buttercup (4)
   { action: 'Tracking', subject: 'facial cues', color: buttercup },
   { action: '', subject: 'Eye contact', color: buttercup },
   { action: '', subject: 'Facial tension', color: buttercup },
   { action: '', subject: 'Emotional valence', color: buttercup },
-  // Multimodal — lilac (7)
   { action: 'Comparing to', subject: 'baseline', color: lilac },
   { action: 'Measuring', subject: 'variance', color: lilac },
   { action: '', subject: 'Energy shift', color: lilac },
@@ -34,21 +31,39 @@ const STEPS: Step[] = [
   { action: '', subject: 'Fusion weights', color: lilac },
   { action: 'Recalculating', subject: 'score', color: lilac },
   { action: 'Finalising', subject: 'insight', color: lilac },
-  // Text — sinbad (3)
   { action: 'Parsing', subject: 'language', color: sinbad },
   { action: '', subject: 'Stress markers', color: sinbad },
   { action: '', subject: 'Coping signals', color: sinbad },
 ];
 
-const COLS = 7;
-const DOT_SIZE = 38;
-const DOT_GAP = 8;
+const BASELINE_STEPS: Step[] = [
+  // Setup — sinbad (3)
+  { action: 'Secure session', subject: 'initialised', color: sinbad },
+  { action: 'Identity', subject: 'verified and encrypted', color: sinbad },
+  { action: 'Baseline mode', subject: 'activated', color: sinbad },
+  // Capture — bittersweet (4)
+  { action: 'Conversational AI', subject: 'engaged', color: bittersweet },
+  { action: 'Audio signal', subject: 'captured', color: bittersweet },
+  { action: 'Facial signal', subject: 'captured', color: bittersweet },
+  { action: 'Speech transcribed', subject: 'to text', color: bittersweet },
+  // Clinical — buttercup (4)
+  { action: 'PHQ-2 responses', subject: 'processed', color: buttercup },
+  { action: 'GAD-2 responses', subject: 'processed', color: buttercup },
+  { action: 'Linguistic sentiment', subject: 'analysed', color: buttercup },
+  { action: 'Cognitive pattern markers', subject: 'extracted', color: buttercup },
+  // Fusion + Calibration — lilac (8)
+  { action: 'Vocal prosody features', subject: 'evaluated', color: lilac },
+  { action: 'Facial affect signals', subject: 'interpreted', color: lilac },
+  { action: 'Signal quality', subject: 'and confidence scored', color: lilac },
+  { action: 'Multimodal features', subject: 'normalised', color: lilac },
+  { action: 'Cross-modal fusion model', subject: 'executed', color: lilac },
+  { action: 'Personal baseline', subject: 'calibrated', color: lilac },
+  { action: 'Individual variance range', subject: 'established', color: lilac },
+  { action: 'Personalised wellbeing score', subject: 'generated', color: lilac },
+];
 
-// Row 1: _ _ _ _ _ ● ●   (2 audio, right)
-// Row 2: ● ● ● ● ● ● ●   (3 audio + 4 video)
-// Row 3: ● ● ● ● ● ● ●   (7 multimodal)
-// Row 4: ● ● ● _ _ _ _   (3 text, left)
-const GRID_MAP: (number | null)[] = [
+// Check-in grid: Row1: __●● Row2: ●●●●●●● Row3: ●●●●●●● Row4: ●●●____
+const CHECKIN_GRID: (number | null)[] = [
   null,
   null,
   null,
@@ -79,26 +94,68 @@ const GRID_MAP: (number | null)[] = [
   null,
 ];
 
+// Baseline grid: Row1: ____●●● Row2: ●●●●●●● Row3: ●●●●●●● Row4: ●●_____
+const BASELINE_GRID: (number | null)[] = [
+  null,
+  null,
+  null,
+  null,
+  0,
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11,
+  12,
+  13,
+  14,
+  15,
+  16,
+  17,
+  18,
+  null,
+  null,
+  null,
+  null,
+  null,
+];
+
+const COLS = 7;
+const DOT_SIZE = 38;
+const DOT_GAP = 8;
 const STEP_INTERVAL = 750;
 const SCORE_TWEEN_MS = 1500;
 const SCORE_HOLD_MS = 2500;
 
 interface ProcessingScreenProps {
   mode?: 'baseline' | 'checkin';
-  previousScore?: number;
+  previousScore?: number | null;
   newScore?: number | null;
+  isFirstBaseline?: boolean;
   onScoreRevealed?: () => void;
 }
 
 export function ProcessingScreen({
   mode = 'checkin',
-  previousScore = 50,
+  previousScore = null,
   newScore = null,
+  isFirstBaseline = false,
   onScoreRevealed,
 }: ProcessingScreenProps) {
+  const steps = mode === 'baseline' ? BASELINE_STEPS : CHECKIN_STEPS;
+  const gridMap = mode === 'baseline' ? BASELINE_GRID : CHECKIN_GRID;
+
+  const initialNumber = isFirstBaseline ? steps.length : (previousScore ?? 50);
+
   const [stepIndex, setStepIndex] = useState(-1);
   const [phase, setPhase] = useState<'processing' | 'revealing' | 'hold'>('processing');
-  const [displayScore, setDisplayScore] = useState(previousScore);
+  const [displayScore, setDisplayScore] = useState(initialNumber);
   const tweenRef = useRef<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -109,7 +166,7 @@ export function ProcessingScreen({
     let current = 0;
     const interval = setInterval(() => {
       current++;
-      if (current >= STEPS.length) {
+      if (current >= steps.length) {
         clearInterval(interval);
         return;
       }
@@ -117,10 +174,10 @@ export function ProcessingScreen({
     }, STEP_INTERVAL);
 
     return () => clearInterval(interval);
-  }, [phase]);
+  }, [phase, steps.length]);
 
   useEffect(() => {
-    if (stepIndex < STEPS.length - 1) return;
+    if (stepIndex < steps.length - 1) return;
     if (phase !== 'processing') return;
 
     timerRef.current = setTimeout(() => {
@@ -130,13 +187,13 @@ export function ProcessingScreen({
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [stepIndex, phase]);
+  }, [stepIndex, phase, steps.length]);
 
   useEffect(() => {
     if (phase !== 'revealing') return;
 
-    const target = newScore ?? previousScore;
-    const start = previousScore;
+    const target = newScore ?? initialNumber;
+    const start = initialNumber;
     const diff = target - start;
 
     if (diff === 0) {
@@ -163,7 +220,7 @@ export function ProcessingScreen({
     return () => {
       if (tweenRef.current) cancelAnimationFrame(tweenRef.current);
     };
-  }, [phase, newScore, previousScore]);
+  }, [phase, newScore, initialNumber]);
 
   useEffect(() => {
     if (phase !== 'hold') return;
@@ -185,9 +242,17 @@ export function ProcessingScreen({
   }, []);
 
   const rows: (number | null)[][] = [];
-  for (let i = 0; i < GRID_MAP.length; i += COLS) {
-    rows.push(GRID_MAP.slice(i, i + COLS));
+  for (let i = 0; i < gridMap.length; i += COLS) {
+    rows.push(gridMap.slice(i, i + COLS));
   }
+
+  const getLabel = (): string => {
+    if (phase === 'hold' && newScore !== null) {
+      return isFirstBaseline ? 'your baseline' : mode === 'baseline' ? 'new baseline' : 'new score';
+    }
+    if (isFirstBaseline) return 'signals to analyse';
+    return mode === 'baseline' ? 'previous baseline' : 'current score';
+  };
 
   return (
     <div
@@ -202,9 +267,8 @@ export function ProcessingScreen({
         padding: '0 28px',
       }}
     >
-      {/* Upper section: label + score + process word — positioned to match dashboard */}
       <div style={{ paddingTop: '18vh' }}>
-        {/* "current score" label */}
+        {/* Label */}
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 0.4 }}
@@ -219,10 +283,10 @@ export function ProcessingScreen({
             fontFamily: 'Inter, system-ui, sans-serif',
           }}
         >
-          {phase === 'hold' && newScore !== null && newScore !== previousScore ? 'new score' : 'current score'}
+          {getLabel()}
         </motion.p>
 
-        {/* Large score number — matches dashboard: 285px, 900 weight */}
+        {/* Large number */}
         <div
           style={{
             fontSize: 285,
@@ -236,10 +300,10 @@ export function ProcessingScreen({
           {displayScore}
         </div>
 
-        {/* Process word — two-tone typography immediately below the number */}
-        <div style={{ minHeight: 52, overflow: 'hidden', marginTop: 6 }}>
+        {/* Process word — two-tone typography */}
+        <div style={{ minHeight: 58, overflow: 'hidden', marginTop: 6 }}>
           <AnimatePresence mode="wait">
-            {stepIndex >= 0 && stepIndex < STEPS.length && (
+            {stepIndex >= 0 && stepIndex < steps.length && (
               <motion.div
                 key={stepIndex}
                 initial={{ opacity: 0, y: 10 }}
@@ -248,10 +312,10 @@ export function ProcessingScreen({
                 transition={{ duration: 0.25 }}
                 style={{ margin: 0 }}
               >
-                {STEPS[stepIndex].action && (
+                {steps[stepIndex].action && (
                   <div
                     style={{
-                      fontSize: 15,
+                      fontSize: 17,
                       fontWeight: 400,
                       color: sinbad,
                       opacity: 0.55,
@@ -259,19 +323,19 @@ export function ProcessingScreen({
                       fontFamily: 'Inter, system-ui, sans-serif',
                     }}
                   >
-                    {STEPS[stepIndex].action}
+                    {steps[stepIndex].action}
                   </div>
                 )}
                 <div
                   style={{
-                    fontSize: 26,
+                    fontSize: 32,
                     fontWeight: 700,
                     color: pampas,
                     lineHeight: 1.2,
                     fontFamily: 'Lato, system-ui, sans-serif',
                   }}
                 >
-                  {STEPS[stepIndex].subject}
+                  {steps[stepIndex].subject}
                 </div>
               </motion.div>
             )}
@@ -279,7 +343,7 @@ export function ProcessingScreen({
         </div>
       </div>
 
-      {/* Dot grid — lower portion, large dots */}
+      {/* Dot grid */}
       <div
         style={{
           flex: 1,
@@ -289,13 +353,7 @@ export function ProcessingScreen({
           alignItems: 'flex-start',
         }}
       >
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: DOT_GAP,
-          }}
-        >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: DOT_GAP }}>
           {rows.map((row, ri) => (
             <div key={ri} style={{ display: 'flex', gap: DOT_GAP }}>
               {row.map((stepIdx, ci) => {
@@ -304,7 +362,7 @@ export function ProcessingScreen({
                 }
 
                 const isActive = stepIdx <= stepIndex;
-                const color = isActive ? STEPS[stepIdx].color : null;
+                const color = isActive ? steps[stepIdx].color : null;
 
                 return (
                   <motion.div

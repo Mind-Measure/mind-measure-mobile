@@ -11,22 +11,31 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
     requestingPermissions,
     messages,
     isSaving,
-    processingPhase,
-    processingMessage,
     showErrorModal,
     errorMessage,
     conversationStatus,
+    previousBaselineScore,
+    isFirstBaseline,
+    newScore,
     handleStartAssessment,
     handleFinish,
     handleErrorCancel,
     handleErrorRetry,
   } = useBaselineAssessment({ onComplete });
 
-  // --- Conversation view (with optional processing overlay) ---
   if (showConversation) {
     return (
       <>
-        {isSaving && <ProcessingOverlay processingPhase={processingPhase} processingMessage={processingMessage} />}
+        {isSaving && (
+          <ProcessingOverlay
+            previousScore={previousBaselineScore}
+            newScore={newScore}
+            isFirstBaseline={isFirstBaseline}
+            onScoreRevealed={() => {
+              if (onComplete) onComplete();
+            }}
+          />
+        )}
 
         <ConversationScreen
           type="baseline"
@@ -40,7 +49,6 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
     );
   }
 
-  // --- Welcome / landing view ---
   return (
     <>
       <WelcomeScreen requestingPermissions={requestingPermissions} onStart={handleStartAssessment} />

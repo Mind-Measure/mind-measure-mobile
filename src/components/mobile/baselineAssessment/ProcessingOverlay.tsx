@@ -1,15 +1,25 @@
-import type { ProcessingPhase } from './types';
 import { ProcessingScreen } from '../ProcessingScreen';
 
 interface ProcessingOverlayProps {
-  processingPhase: ProcessingPhase;
-  processingMessage: string;
+  previousScore?: number | null;
+  newScore?: number | null;
+  isFirstBaseline?: boolean;
+  onScoreRevealed?: () => void;
 }
 
-export function ProcessingOverlay({ processingPhase: _phase, processingMessage: _msg }: ProcessingOverlayProps) {
+export function ProcessingOverlay({
+  previousScore,
+  newScore,
+  isFirstBaseline = false,
+  onScoreRevealed,
+}: ProcessingOverlayProps) {
   return (
-    <div className="fixed inset-0 z-[9999]">
-      <ProcessingScreen mode="baseline" />
-    </div>
+    <ProcessingScreen
+      mode="baseline"
+      previousScore={previousScore}
+      newScore={newScore}
+      isFirstBaseline={isFirstBaseline}
+      onScoreRevealed={onScoreRevealed}
+    />
   );
 }

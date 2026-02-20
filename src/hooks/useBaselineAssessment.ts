@@ -29,6 +29,9 @@ export function useBaselineAssessment({ onComplete }: UseBaselineAssessmentOptio
   const [isSaving, setIsSaving] = useState(false);
   const [processingPhase, setProcessingPhase] = useState<ProcessingPhase>('extracting');
   const [processingMessage, setProcessingMessage] = useState('');
+  const [previousBaselineScore, setPreviousBaselineScore] = useState<number | null>(null);
+  const [isFirstBaseline, setIsFirstBaseline] = useState(true);
+  const [newScore, setNewScore] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [showErrorModal, setShowErrorModal] = useState(false);
@@ -84,6 +87,34 @@ export function useBaselineAssessment({ onComplete }: UseBaselineAssessmentOptio
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
   }, [messages]);
+
+  // Fetch previous baseline score to determine first-time vs subsequent
+  useEffect(() => {
+    (async () => {
+      if (!user?.id) return;
+      try {
+        const { BackendServiceFactory } = await import('../services/database/BackendServiceFactory');
+        const backendService = BackendServiceFactory.createService(BackendServiceFactory.getEnvironmentConfig());
+        const { data: sessions } = await backendService.database.select('fusion_outputs', {
+          columns: ['score', 'analysis'],
+          filters: { user_id: user.id },
+          orderBy: [{ column: 'created_at', ascending: false }],
+        });
+        if (sessions && sessions.length > 0) {
+          const baselineSession = sessions.find((s: Record<string, unknown>) => {
+            const a = typeof s.analysis === 'string' ? JSON.parse(s.analysis) : s.analysis;
+            return a?.assessment_type === 'baseline';
+          });
+          if (baselineSession) {
+            setPreviousBaselineScore(baselineSession.score as number);
+            setIsFirstBaseline(false);
+          }
+        }
+      } catch {
+        /* fallback: treat as first baseline */
+      }
+    })();
+  }, [user?.id]);
 
   // Reset state helper
   const resetState = useCallback(() => {
@@ -240,6 +271,7 @@ export function useBaselineAssessment({ onComplete }: UseBaselineAssessmentOptio
 
     // Use enriched score if available, otherwise clinical-only
     const finalScore = enrichmentResult?.finalScore ?? composite.score;
+    setNewScore(Math.round(finalScore));
 
     // Phase 3: Saving
     setTimeout(() => setProcessingPhase('saving'), 3000);
@@ -565,6 +597,9 @@ export function useBaselineAssessment({ onComplete }: UseBaselineAssessmentOptio
     errorMessage,
     conversationStatus: conversation.status,
     messagesEndRef,
+    previousBaselineScore,
+    isFirstBaseline,
+    newScore,
 
     // Actions
     handleStartAssessment,
