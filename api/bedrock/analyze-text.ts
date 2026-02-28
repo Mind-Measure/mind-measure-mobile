@@ -332,9 +332,6 @@ Now produce a single valid JSON object that matches the TextAnalysisResult schem
       success: true,
       data: getEmptyResult('Text analysis was not available for this check in.'),
       warning: 'Analysis failed, using fallback',
-      debug_error: errMsg,
-      debug_code: errCode,
-      debug_name: errName,
     });
   }
 }
