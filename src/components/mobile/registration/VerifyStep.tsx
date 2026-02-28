@@ -210,7 +210,7 @@ export function VerifyStep({ flow }: VerifyStepProps) {
               Check <strong>Promotions</strong> or <strong>Other</strong> tabs (Gmail)
             </li>
             <li>
-              The sender is <strong>no-reply@verificationemail.com</strong>
+              The sender is <strong>noreply@mindmeasure.co.uk</strong>
             </li>
             <li>It may take 1–2 minutes to arrive</li>
           </ul>

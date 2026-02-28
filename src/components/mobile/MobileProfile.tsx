@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
+import { Preferences } from '@capacitor/preferences';
 import { Shield, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { cognitoApiClient } from '@/services/cognito-api-client';
 import { useProfileData } from '@/hooks/useProfileData';
 import { useDataExport } from '@/hooks/useDataExport';
 import { OverviewTab } from './profile/OverviewTab';
@@ -41,10 +43,14 @@ export function MobileProfile({
   void _onNavigateBack;
 
   const [activeTab, setActiveTab] = useState<TabType>(initialTab ?? 'wellness');
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(true);
   const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
   const [showPrivacy, setShowPrivacy] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteStep, setDeleteStep] = useState<1 | 2>(1);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // ----- Hooks -----
   const {
@@ -149,6 +155,41 @@ export function MobileProfile({
       }
     };
   }, [saveRef, handleSaveProfile]);
+
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
+    setDeleteError(null);
+    try {
+      const token = await cognitoApiClient.getIdToken();
+      if (!token) {
+        setDeleteError('Not authenticated. Please sign in and try again.');
+        setIsDeleting(false);
+        return;
+      }
+      const isCapacitor =
+        window.location.protocol === 'capacitor:' ||
+        !!(window as unknown as { Capacitor?: unknown }).Capacitor;
+      const apiBase = import.meta.env.VITE_API_BASE_URL ||
+        (isCapacitor ? 'https://mobile.mindmeasure.app/api' : '/api');
+      const response = await fetch(`${apiBase}/user/delete-account`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error((body as { error?: string }).error || `Request failed (${response.status})`);
+      }
+      await Preferences.clear();
+      await signOut();
+    } catch (error: unknown) {
+      console.error('Delete account error:', error);
+      setDeleteError((error as Error).message || 'Something went wrong. Please try again or contact support.');
+      setIsDeleting(false);
+    }
+  };
 
   // ----- Navigation with unsaved changes guard -----
   const handleTabChangeWithWarning = (newTab: TabType) => {
@@ -592,7 +633,179 @@ export function MobileProfile({
         >
           Sign Out
         </motion.button>
+
+        {/* Delete Account */}
+        <motion.button
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4 }}
+          onClick={() => { setShowDeleteConfirm(true); setDeleteStep(1); setDeleteError(null); }}
+          style={{
+            width: '100%',
+            padding: '14px',
+            backgroundColor: 'transparent',
+            color: '#E8706E',
+            border: '1.5px solid rgba(255,107,107,0.2)',
+            borderRadius: '14px',
+            fontSize: '15px',
+            fontWeight: 500,
+            cursor: 'pointer',
+            fontFamily: 'Inter, system-ui, sans-serif',
+            marginBottom: '12px',
+          }}
+        >
+          Delete my account
+        </motion.button>
       </div>
+
+      {/* Delete Account Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.6)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '20px',
+          }}
+          onClick={() => { if (!isDeleting) setShowDeleteConfirm(false); }}
+        >
+          <div
+            style={{
+              background: 'white',
+              borderRadius: '16px',
+              padding: '24px',
+              maxWidth: '400px',
+              width: '100%',
+              boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {deleteStep === 1 && (
+              <>
+                <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#1a1a1a', margin: '0 0 12px 0' }}>
+                  Delete your account?
+                </h3>
+                <p style={{ fontSize: '14px', color: '#666666', margin: '0 0 16px 0', lineHeight: '1.6' }}>
+                  This will permanently delete:
+                </p>
+                <ul style={{ margin: '0 0 20px 0', padding: '0 0 0 18px', fontSize: '14px', color: '#666666', lineHeight: '1.8' }}>
+                  <li>All your check-in conversations and scores</li>
+                  <li>Your mood ratings and insights</li>
+                  <li>Your wellbeing reports</li>
+                  <li>Your buddy connections</li>
+                  <li>Your profile and account</li>
+                </ul>
+                <p style={{ fontSize: '13px', color: '#E53E3E', fontWeight: '500', margin: '0 0 20px 0' }}>
+                  This cannot be undone.
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <button
+                    onClick={() => setDeleteStep(2)}
+                    style={{
+                      width: '100%',
+                      padding: '14px',
+                      border: '1.5px solid #E53E3E',
+                      borderRadius: '10px',
+                      background: 'white',
+                      color: '#E53E3E',
+                      fontSize: '15px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    I understand, continue
+                  </button>
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    style={{
+                      width: '100%',
+                      padding: '14px',
+                      border: 'none',
+                      borderRadius: '10px',
+                      background: '#F5F5F5',
+                      color: '#666666',
+                      fontSize: '15px',
+                      fontWeight: '500',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </>
+            )}
+            {deleteStep === 2 && (
+              <>
+                <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#E53E3E', margin: '0 0 12px 0' }}>
+                  Are you absolutely sure?
+                </h3>
+                <p style={{ fontSize: '14px', color: '#666666', margin: '0 0 20px 0', lineHeight: '1.6' }}>
+                  All your data will be permanently removed from our servers. You will not be able to recover your account, scores, or conversation history.
+                </p>
+                {deleteError && (
+                  <div style={{
+                    background: '#FEF2F2',
+                    border: '1px solid #FECACA',
+                    borderRadius: '10px',
+                    padding: '12px 14px',
+                    marginBottom: '16px',
+                    fontSize: '13px',
+                    color: '#991B1B',
+                    lineHeight: '1.5',
+                  }}>
+                    {deleteError}
+                  </div>
+                )}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <button
+                    onClick={handleDeleteAccount}
+                    disabled={isDeleting}
+                    style={{
+                      width: '100%',
+                      padding: '14px',
+                      border: 'none',
+                      borderRadius: '10px',
+                      background: '#E53E3E',
+                      color: 'white',
+                      fontSize: '15px',
+                      fontWeight: '600',
+                      cursor: isDeleting ? 'default' : 'pointer',
+                      opacity: isDeleting ? 0.7 : 1,
+                    }}
+                  >
+                    {isDeleting ? 'Deleting everything...' : 'Delete everything permanently'}
+                  </button>
+                  <button
+                    onClick={() => { setShowDeleteConfirm(false); setDeleteStep(1); }}
+                    disabled={isDeleting}
+                    style={{
+                      width: '100%',
+                      padding: '14px',
+                      border: 'none',
+                      borderRadius: '10px',
+                      background: '#F5F5F5',
+                      color: '#666666',
+                      fontSize: '15px',
+                      fontWeight: '500',
+                      cursor: isDeleting ? 'default' : 'pointer',
+                      opacity: isDeleting ? 0.5 : 1,
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Export Modal */}
       {showExportModal && (

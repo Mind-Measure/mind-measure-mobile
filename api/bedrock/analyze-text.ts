@@ -12,6 +12,30 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedrock-runtime';
 
+/* ── Inline retry ──────────────────────────────────────────────── */
+const RETRYABLE_ERROR_CODES = new Set([
+  'ThrottlingException', 'TooManyRequestsException', 'ProvisionedThroughputExceededException',
+  'ServiceUnavailableException', 'InternalServerException', 'RequestTimeout',
+  'ECONNRESET', 'ETIMEDOUT', 'EPIPE',
+]);
+async function withRetry<T>(fn: () => Promise<T>, opts: { maxAttempts?: number; baseDelayMs?: number; maxDelayMs?: number } = {}): Promise<T> {
+  const { maxAttempts = 3, baseDelayMs = 500, maxDelayMs = 4000 } = opts;
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try { return await fn(); } catch (err: unknown) {
+      lastError = err;
+      const errCode = (err as Record<string, unknown>)?.name as string || (err as Record<string, unknown>)?.code as string || '';
+      const statusCode = (err as Record<string, unknown>)?.$metadata ? ((err as Record<string, unknown>).$metadata as Record<string, unknown>)?.httpStatusCode : undefined;
+      const isRetryable = RETRYABLE_ERROR_CODES.has(errCode) || (typeof statusCode === 'number' && (statusCode === 429 || statusCode >= 500));
+      if (!isRetryable || attempt === maxAttempts) throw err;
+      const jitter = Math.random() * 200;
+      const delay = Math.min(baseDelayMs * Math.pow(2, attempt - 1) + jitter, maxDelayMs);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+  throw lastError;
+}
+
 // Types
 export type RiskLevel = 'none' | 'mild' | 'moderate' | 'high';
 export type DirectionOfChange = 'better' | 'worse' | 'same' | 'unclear';
@@ -106,13 +130,12 @@ Guidance:
 
 - "drivers_positive" are short phrases that describe what helped them cope or feel okay, for example "sense of purpose", "good sleep", "time with friends".
 - "drivers_negative" are short phrases that describe what pulled their mood down, for example "deadlines", "money worries", "feeling isolated".
-- "conversation_summary" is 1 or 2 plain sentences in UK English, past tense, neutral in tone. Do not give advice. Example:
-  "You talked about a busy but steady work day, feeling a bit better than usual and having a sense of purpose."
+- "conversation_summary" is 1 or 2 plain sentences in UK English, past tense, neutral in tone. It MUST be unique to this specific conversation — summarise what THIS person actually said, using their own topics and words. Do not give advice. Do not use generic filler. Every summary should be different.
 - "notable_quotes" are 1 to 3 short direct phrases copied from the transcript that capture the tone or content. Do not add quotation marks inside the strings.
 
 Do not mention Mind Measure, scoring systems, models, or analysis in the summary. Just describe what the student talked about.`;
 
-const MODEL_ID = 'anthropic.claude-3-haiku-20240307-v1:0';
+const MODEL_ID = 'eu.anthropic.claude-3-7-sonnet-20250219-v1:0';
 
 function getEmptyResult(summary: string): TextAnalysisResult {
   return {
@@ -139,7 +162,6 @@ function validateAndSanitize(parsed: Record<string, unknown>): TextAnalysisResul
     parsed.mood_score < 1 ||
     parsed.mood_score > 10
   ) {
-    console.warn('[Bedrock API] Invalid mood_score, defaulting to 5');
     parsed.mood_score = 5;
   } else {
     parsed.mood_score = Math.round(parsed.mood_score);
@@ -152,14 +174,12 @@ function validateAndSanitize(parsed: Record<string, unknown>): TextAnalysisResul
     parsed.text_score < 0 ||
     parsed.text_score > 100
   ) {
-    console.warn('[Bedrock API] Invalid text_score, defaulting to 50');
     parsed.text_score = 50;
     parsed.uncertainty = Math.max(parsed.uncertainty ?? 0.5, 0.6);
   }
 
   // Validate uncertainty
   if (typeof parsed.uncertainty !== 'number' || parsed.uncertainty < 0 || parsed.uncertainty > 1) {
-    console.warn('[Bedrock API] Invalid uncertainty, defaulting to 0.5');
     parsed.uncertainty = 0.5;
   }
 
@@ -195,7 +215,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Handle empty/short transcripts
     if (transcript.trim().length < 10) {
-      console.warn('[Bedrock API] Transcript too short, returning high uncertainty result');
       return res.status(200).json({
         success: true,
         data: getEmptyResult(
@@ -256,7 +275,7 @@ Now produce a single valid JSON object that matches the TextAnalysisResult schem
       body: JSON.stringify(requestBody),
     });
 
-    const response = await bedrockClient.send(command);
+    const response = await withRetry(() => bedrockClient.send(command));
     const decoded = new TextDecoder().decode(response.body);
     const responseBody = JSON.parse(decoded);
 

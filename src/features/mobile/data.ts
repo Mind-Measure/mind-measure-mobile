@@ -24,9 +24,19 @@ export interface UserProfile {
   created_at: string;
   updated_at: string;
 }
-// Get user's university profile with all mobile-relevant data
+// In-memory profile cache — avoids repeated multi-call DB round-trips
+let _profileCache: { data: MobileUniversityProfile; userId: string; ts: number } | null = null;
+const PROFILE_CACHE_TTL = 3 * 60 * 1000; // 3 minutes
+
+export function clearProfileCache() {
+  _profileCache = null;
+}
+
 export async function getUserUniversityProfile(userId?: string): Promise<MobileUniversityProfile | null> {
-  // AWS Backend Service
+  if (userId && _profileCache && _profileCache.userId === userId && Date.now() - _profileCache.ts < PROFILE_CACHE_TTL) {
+    return _profileCache.data;
+  }
+
   const backendService = BackendServiceFactory.createService(BackendServiceFactory.getEnvironmentConfig());
   try {
     // If no userId provided, try to get from current session
@@ -56,25 +66,25 @@ export async function getUserUniversityProfile(userId?: string): Promise<MobileU
     if (!profile?.university_id) {
       return null;
     }
-    // Get university data with emergency contacts and help articles
-    const universityResponse = await backendService.database.select<University>('universities', {
-      filters: { id: profile.university_id },
-      limit: 1,
-    });
+    // Fetch university data and articles in parallel
+    const [universityResponse, articlesResponse] = await Promise.all([
+      backendService.database.select<University>('universities', {
+        filters: { id: profile.university_id },
+        limit: 1,
+      }),
+      backendService.database.select<ContentArticle>('content_articles', {
+        filters: {
+          university_id: profile.university_id,
+          status: 'published',
+        },
+      }),
+    ]);
 
     const university = universityResponse.data?.[0];
     if (!university) {
       console.error('Error fetching university - not found');
       return null;
     }
-
-    // Get published help articles for this university
-    const articlesResponse = await backendService.database.select<ContentArticle>('content_articles', {
-      filters: {
-        university_id: profile.university_id,
-        status: 'published',
-      },
-    });
 
     const articles = articlesResponse.data || [];
 
@@ -95,7 +105,7 @@ export async function getUserUniversityProfile(userId?: string): Promise<MobileU
       });
     }
 
-    return {
+    const result: MobileUniversityProfile = {
       id: university.id,
       name: university.name,
       short_name: university.short_name,
@@ -111,6 +121,9 @@ export async function getUserUniversityProfile(userId?: string): Promise<MobileU
         | string
         | undefined,
     };
+
+    _profileCache = { data: result, userId: userIdToUse!, ts: Date.now() };
+    return result;
   } catch (error: unknown) {
     console.error('Error fetching user university profile:', error);
     return null;

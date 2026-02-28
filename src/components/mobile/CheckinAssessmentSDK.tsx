@@ -83,6 +83,9 @@ export function CheckinAssessmentSDK({ onBack, onComplete }: CheckinAssessmentSD
     lastMood: string;
     daysSince: string;
     lastSummary: string;
+    checkinCount: string;
+    moodTrend: string;
+    timeOfDay: string;
   } | null>(null);
 
   // Initialize the ElevenLabs conversation hook - SAME AS BASELINE
@@ -141,12 +144,14 @@ export function CheckinAssessmentSDK({ onBack, onComplete }: CheckinAssessmentSD
     lastMood: string;
     daysSince: string;
     lastSummary: string;
+    checkinCount: string;
+    moodTrend: string;
+    timeOfDay: string;
   } | null> => {
     try {
       const { BackendServiceFactory } = await import('../../services/database/BackendServiceFactory');
       const backendService = BackendServiceFactory.createService(BackendServiceFactory.getEnvironmentConfig());
 
-      // Get the most recent check-in for this user (matches useDashboardData pattern)
       const { data: sessions, error } = await backendService.database.select('fusion_outputs', {
         columns: ['id', 'score', 'analysis', 'created_at'],
         filters: { user_id: user!.id },
@@ -157,36 +162,46 @@ export function CheckinAssessmentSDK({ onBack, onComplete }: CheckinAssessmentSD
         return null;
       }
 
-      // Find the most recent CHECK-IN (not baseline)
-      const lastCheckin = sessions.find((s: Record<string, unknown>) => {
-        const analysis = typeof s.analysis === 'string' ? JSON.parse(s.analysis) : s.analysis;
-        return analysis?.assessment_type === 'checkin';
+      // Filter to check-ins only (not baselines)
+      const checkins = sessions.filter((s: Record<string, unknown>) => {
+        const a = typeof s.analysis === 'string' ? JSON.parse(s.analysis) : s.analysis;
+        return a?.assessment_type === 'checkin';
       });
 
-      if (!lastCheckin) {
+      if (checkins.length === 0) {
         return null;
       }
 
+      const lastCheckin = checkins[0];
       const analysis =
         typeof lastCheckin.analysis === 'string' ? JSON.parse(lastCheckin.analysis) : lastCheckin.analysis;
 
-      // Calculate days since last check-in
       const lastDate = new Date(lastCheckin.created_at as string);
       const now = new Date();
       const diffMs = now.getTime() - lastDate.getTime();
       const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-      // Extract context
+      // Build mood trend from last 5 check-ins
+      const recentMoods = checkins.slice(0, 5).map((s: Record<string, unknown>) => {
+        const a = typeof s.analysis === 'string' ? JSON.parse(s.analysis) : s.analysis;
+        return a?.mood_score;
+      }).filter((m: unknown) => typeof m === 'number').reverse();
+
+      const hour = now.getHours();
+      const timeOfDay = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
+
       const context = {
         lastThemes: (analysis.themes || []).slice(0, 3).join(', ') || 'general wellbeing',
         lastMood: String(analysis.mood_score || ''),
         daysSince: String(diffDays),
         lastSummary: (analysis.conversation_summary || '').substring(0, 100) || '',
+        checkinCount: String(checkins.length),
+        moodTrend: recentMoods.join(', '),
+        timeOfDay,
       };
 
       return context;
     } catch (err: unknown) {
-      console.warn('[CheckinSDK] ⚠️ Could not fetch previous context:', err);
       return null;
     }
   };
@@ -263,12 +278,18 @@ export function CheckinAssessmentSDK({ onBack, onComplete }: CheckinAssessmentSD
             dynamicVars.last_mood = prevContext.lastMood;
             dynamicVars.days_since_checkin = prevContext.daysSince;
             dynamicVars.last_summary = prevContext.lastSummary;
+            dynamicVars.checkin_count = prevContext.checkinCount;
+            dynamicVars.mood_trend = prevContext.moodTrend;
+            dynamicVars.time_of_day = prevContext.timeOfDay;
           } else {
-            // Provide defaults so placeholders don't show raw
             dynamicVars.last_themes = '';
             dynamicVars.last_mood = '';
             dynamicVars.days_since_checkin = '';
             dynamicVars.last_summary = '';
+            dynamicVars.checkin_count = '';
+            dynamicVars.mood_trend = '';
+            const hour = new Date().getHours();
+            dynamicVars.time_of_day = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
           }
 
           // Pass user context via dynamicVariables

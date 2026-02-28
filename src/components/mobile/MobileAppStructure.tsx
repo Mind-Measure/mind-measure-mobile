@@ -10,7 +10,8 @@ import { MobileProfile } from './MobileProfile';
 import { ContentPage } from './ContentPage';
 import { MobileSettings } from './MobileSettings';
 import { RegistrationFlow } from './RegistrationFlow';
-import { ReturningSplashScreen } from './ReturningSplashScreen';
+import { ReturningSplashScreen, SPLASH_BRAND_COLOR } from './ReturningSplashScreen';
+import { motion, AnimatePresence } from 'motion/react';
 import { BaselineAssessmentScreen } from './BaselineWelcome';
 import { BaselineAssessmentSDK } from './BaselineAssessmentSDK';
 import { ProfileReminderModal } from './ProfileReminderModal';
@@ -185,6 +186,7 @@ export const MobileAppStructure: React.FC = () => {
   const [showProfileUnsavedWarning, setShowProfileUnsavedWarning] = useState(false);
   const [pendingTabChange, setPendingTabChange] = useState<MobileTab | null>(null);
   const [showBuddyReminderModal, setShowBuddyReminderModal] = useState(false);
+  const [splashWipeActive, setSplashWipeActive] = useState(false);
   // Ref to trigger save from parent
   const profileSaveRef = useRef<(() => Promise<void>) | null>(null);
 
@@ -237,6 +239,7 @@ export const MobileAppStructure: React.FC = () => {
 
   const handleReturningSplashComplete = useCallback(async () => {
     setHasCompletedInitialSplash(true);
+    setSplashWipeActive(true);
 
     if (!user) {
       setOnboardingScreen('splash');
@@ -566,6 +569,27 @@ export const MobileAppStructure: React.FC = () => {
           </div>
         </div>
       )}
+      <AnimatePresence>
+        {splashWipeActive && (
+          <motion.div
+            key="splash-wipe"
+            initial={{ x: 0 }}
+            animate={{ x: '-100%' }}
+            exit={{ x: '-100%' }}
+            transition={{ duration: 1.4, ease: [0.4, 0, 0.2, 1] }}
+            onAnimationComplete={() => setSplashWipeActive(false)}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: SPLASH_BRAND_COLOR,
+              zIndex: 9999,
+            }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };

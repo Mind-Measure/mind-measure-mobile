@@ -30,7 +30,6 @@ async function existsInCognito(email: string): Promise<boolean> {
   const secretAccessKey = (process.env.AWS_SECRET_ACCESS_KEY || '').trim();
 
   if (!userPoolId || !accessKeyId || !secretAccessKey) {
-    console.warn('[check-email] Cognito config missing (USER_POOL_ID or credentials) – skipping Cognito check');
     return false;
   }
 

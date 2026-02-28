@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import mindMeasureLogo from '../../assets/66710e04a85d98ebe33850197f8ef41bd28d8b84.png';
 
 const pampas = '#FAF9F7';
 const spectra = '#2D4C4C';
@@ -76,23 +77,7 @@ export function BaselineAssessmentScreen({ onStartAssessment }: BaselineAssessme
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.6, delay: 0.3 }}
               >
-                <svg width="56" height="56" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="20" cy="20" r="20" fill={spectra} />
-                  <path
-                    d="M12 26V16l4 6 4-6v10"
-                    stroke={sinbad}
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M24 26V16l4 6"
-                    stroke={sinbad}
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
+                <img src={mindMeasureLogo} alt="Mind Measure" style={{ width: 56, height: 56 }} />
               </motion.div>
             </motion.div>
 
@@ -227,7 +212,7 @@ export function BaselineAssessmentScreen({ onStartAssessment }: BaselineAssessme
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <div
-                    style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: hotPink, opacity: 0.6 }}
+                    style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: bittersweet, opacity: 0.6 }}
                   />
                   <span
                     style={{
@@ -323,9 +308,9 @@ export function BaselineAssessmentScreen({ onStartAssessment }: BaselineAssessme
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {[
                 { text: 'Five questions from Jodie', accent: lilac },
-                { text: '3-5 minutes max', accent: hotPink },
+                { text: '3-5 minutes max', accent: bittersweet },
                 { text: 'We use your camera so make sure you are looking at the screen', accent: lilac },
-                { text: 'We analyse your voice to understand your mood', accent: hotPink },
+                { text: 'We analyse your voice to understand your mood', accent: bittersweet },
                 { text: 'We delete any voice and images we collect as soon as we have analysed them', accent: lilac },
               ].map((item, i) => (
                 <motion.div

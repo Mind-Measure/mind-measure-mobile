@@ -11,6 +11,33 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { Client } from 'pg';
 import { createHash, randomBytes } from 'crypto';
 import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
+import { CognitoJwtVerifier } from 'aws-jwt-verify';
+
+/* ── Inline Auth ───────────────────────────────────────────────── */
+const _idV = CognitoJwtVerifier.create({
+  userPoolId: process.env.AWS_COGNITO_USER_POOL_ID || '',
+  tokenUse: 'id',
+  clientId: process.env.AWS_COGNITO_CLIENT_ID || '',
+});
+const _accV = CognitoJwtVerifier.create({
+  userPoolId: process.env.AWS_COGNITO_USER_POOL_ID || '',
+  tokenUse: 'access',
+});
+async function getUserIdFromToken(authHeader: string | undefined): Promise<string> {
+  if (!authHeader?.startsWith('Bearer ')) throw new Error('No authentication token provided');
+  const token = authHeader.substring(7);
+  try {
+    const p = await _idV.verify(token);
+    const uid = p.sub || (p['cognito:username'] as string) || '';
+    if (uid) return uid;
+  } catch {}
+  try {
+    const p = await _accV.verify(token);
+    const uid = p.sub || p.username || '';
+    if (uid) return uid;
+  } catch {}
+  throw new Error('Invalid or expired token');
+}
 
 // ── Inlined from _lib/db.ts ─────────────────────────────────────────
 function getDbClient(): Client {
@@ -179,28 +206,6 @@ ${
   await sendEmail({ to, subject, textBody, htmlBody });
 }
 
-/** Decode a JWT payload without signature verification. */
-function decodeJwtPayload(token: string): Record<string, unknown> | null {
-  try {
-    const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-    return JSON.parse(Buffer.from(base64, 'base64').toString('utf-8'));
-  } catch {
-    return null;
-  }
-}
-
-/** Extract user ID from Bearer token (ID token or access token). */
-function getUserIdFromToken(authHeader: string | undefined): string {
-  if (!authHeader?.startsWith('Bearer ')) throw new Error('No authentication token provided');
-  const payload = decodeJwtPayload(authHeader.substring(7));
-  if (!payload) throw new Error('Invalid token');
-  const exp = payload.exp as number | undefined;
-  if (exp && exp * 1000 < Date.now()) throw new Error('Token has expired');
-  const userId = (payload.sub as string) || (payload['cognito:username'] as string) || '';
-  if (!userId) throw new Error('Could not determine user identity');
-  return userId;
-}
-
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_TOTAL = 5;
 
@@ -229,7 +234,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // ── Auth ────────────────────────────────────────────────────────
   let userId: string;
   try {
-    userId = getUserIdFromToken(req.headers.authorization);
+    userId = await getUserIdFromToken(req.headers.authorization);
   } catch (e: unknown) {
     return res.status(401).json({ error: e instanceof Error ? e.message : 'Authentication failed' });
   }

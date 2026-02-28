@@ -259,7 +259,7 @@ export function ConversationScreen({
               </p>
 
               {isAi ? (
-                <div style={{ lineHeight: 1.25, margin: 0 }}>
+                <div style={{ lineHeight: 1.25, margin: 0, fontSize: 34, fontWeight: 700, color: pampas }}>
                   {isLastAi
                     ? aiSentences.slice(0, revealedCount).map((sentence, si) => (
                         <motion.span
@@ -267,7 +267,7 @@ export function ConversationScreen({
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           transition={{ duration: 0.3 }}
-                          style={{ display: 'inline', fontSize: 34, fontWeight: 700, color: pampas }}
+                          style={{ display: 'inline' }}
                         >
                           {si > 0 ? ' ' : ''}
                           {renderEmphasis(sentence, 34, pampas, userName)}

@@ -8,16 +8,6 @@ import { VercelRequest, VercelResponse } from '@vercel/node';
 import { CognitoIdentityProviderClient, InitiateAuthCommand } from '@aws-sdk/client-cognito-identity-provider';
 import { Client } from 'pg';
 
-/** Decode a JWT payload without verifying (server already issued it). */
-function decodeJwtPayload(token: string): Record<string, unknown> | null {
-  try {
-    const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-    return JSON.parse(Buffer.from(base64, 'base64').toString('utf-8'));
-  } catch {
-    return null;
-  }
-}
-
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -113,11 +103,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       await pgClient.end();
-
-      console.log(`✅ Profile lookup for ${email}: profile=${!!profile}, baseline=${hasCompletedBaseline}`);
-    } catch (dbError: unknown) {
+    } catch {
       // Non-fatal: auth still succeeded, app can work without profile
-      console.warn('⚠️ Database lookup failed (non-fatal):', dbError instanceof Error ? dbError.message : dbError);
     }
 
     // ── 4. Return tokens + profile data ────────────────────────────

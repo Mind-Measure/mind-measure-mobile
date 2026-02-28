@@ -301,15 +301,15 @@ export function ProcessingScreen({
         </div>
 
         {/* Process word — two-tone typography */}
-        <div style={{ minHeight: 58, overflow: 'hidden', marginTop: 6 }}>
-          <AnimatePresence mode="wait">
+        <div style={{ minHeight: 58, overflow: 'hidden', marginTop: 6, position: 'relative' }}>
+          <AnimatePresence>
             {stepIndex >= 0 && stepIndex < steps.length && (
               <motion.div
                 key={stepIndex}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.25 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0, position: 'absolute' as const }}
+                transition={{ duration: 0.3 }}
                 style={{ margin: 0 }}
               >
                 {steps[stepIndex].action && (

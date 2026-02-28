@@ -148,6 +148,12 @@ functions:
             type: COGNITO_USER_POOLS
             authorizerId: !Ref CognitoAuthorizer
 
+  customMessage:
+    handler: dist/custom-message/index.handler
+    timeout: 5
+    memorySize: 128
+    vpc: ~
+
 # CloudFormation Resources - HIPAA Compliance Enabled
 resources:
   Resources:

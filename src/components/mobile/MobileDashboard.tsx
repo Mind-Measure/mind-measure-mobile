@@ -1486,6 +1486,74 @@ export function DashboardScreen({ onNeedHelp, onCheckIn, onRetakeBaseline }: Das
           </motion.button>
         </div>
 
+        {/* Post-baseline onboarding cards */}
+        {isPostBaselineView && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              onClick={onCheckIn}
+              style={{
+                borderRadius: '16px',
+                padding: '22px 20px',
+                backgroundColor: C.spectra,
+                color: C.white,
+                cursor: 'pointer',
+              }}
+            >
+              <div style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', opacity: 0.5, marginBottom: '8px' }}>
+                Next step
+              </div>
+              <h4 style={{ fontSize: '18px', fontWeight: 600, margin: '0 0 6px', lineHeight: 1.3 }}>
+                Do your first check-in
+              </h4>
+              <p style={{ fontSize: '14px', lineHeight: 1.5, margin: 0, opacity: 0.7 }}>
+                A quick two-minute conversation with Jodie. She'll ask how you're doing and your score will update based on what you share.
+              </p>
+              <div style={{ fontSize: '13px', fontWeight: 600, marginTop: '14px', opacity: 0.8 }}>
+                Start check-in →
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.25 }}
+              style={{
+                borderRadius: '16px',
+                padding: '20px',
+                backgroundColor: `${C.sinbad}30`,
+              }}
+            >
+              <h4 style={{ fontSize: '16px', fontWeight: 600, color: C.spectra, margin: '0 0 6px', lineHeight: 1.3 }}>
+                How your score works
+              </h4>
+              <p style={{ fontSize: '14px', lineHeight: 1.5, margin: 0, color: 'rgba(45,76,76,0.7)' }}>
+                Your score of <strong style={{ color: C.spectra }}>{score}</strong> is based on what you shared in your baseline. It will update after every check-in, tracking your mood, stress, sleep, and more over time.
+              </p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+              style={{
+                borderRadius: '16px',
+                padding: '20px',
+                backgroundColor: `${C.buttercup}18`,
+              }}
+            >
+              <h4 style={{ fontSize: '16px', fontWeight: 600, color: C.spectra, margin: '0 0 6px', lineHeight: 1.3 }}>
+                Complete your profile
+              </h4>
+              <p style={{ fontSize: '14px', lineHeight: 1.5, margin: 0, color: 'rgba(45,76,76,0.7)' }}>
+                Head to <strong style={{ color: C.spectra }}>Profile</strong> to add your details. You can also invite a buddy to share your journey with.
+              </p>
+            </motion.div>
+          </div>
+        )}
+
         {/* Mood + Streak cards */}
         {!isPostBaselineView && latestSession && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>

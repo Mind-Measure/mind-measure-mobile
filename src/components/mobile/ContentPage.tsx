@@ -18,7 +18,7 @@ interface CachedData {
 
 function getCachedArticles(): CachedData | null {
   try {
-    const raw = sessionStorage.getItem(CACHE_KEY);
+    const raw = localStorage.getItem(CACHE_KEY);
     if (!raw) return null;
     const cached: CachedData = JSON.parse(raw);
     if (Date.now() - cached.timestamp < CACHE_TTL) return cached;
@@ -30,7 +30,7 @@ function getCachedArticles(): CachedData | null {
 
 function setCachedArticles(data: CachedData) {
   try {
-    sessionStorage.setItem(CACHE_KEY, JSON.stringify(data));
+    localStorage.setItem(CACHE_KEY, JSON.stringify(data));
   } catch {
     /* quota exceeded — ignore */
   }
@@ -48,6 +48,7 @@ interface ContentArticle {
   author?: string;
   publishDate?: string;
   published_at?: string;
+  poolSourceId?: string;
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -105,6 +106,7 @@ export function ContentPage({
             })
           : '',
         published_at: (row.published_at as string) || undefined,
+        poolSourceId: (row.pool_source_id as string) || undefined,
       };
     });
     mapped.sort((a, b) => {
@@ -131,13 +133,28 @@ export function ContentPage({
       }
 
       try {
+        // Fetch profile and pool content in parallel to avoid waterfall
         const profilePromise = user?.id ? getUserUniversityProfile(user.id).catch(() => null) : Promise.resolve(null);
-        const articlesPromise = fetch('/api/content/pool?limit=50')
-          .then((r) => (r.ok ? r.json() : { data: [] }))
-          .catch(() => ({ data: [] }));
 
-        const [profile, poolData] = await Promise.all([profilePromise, articlesPromise]);
+        const earlyPoolUrl = '/api/content/pool?limit=50';
+
+        const [profile, earlyPoolData] = await Promise.all([
+          profilePromise,
+          cached ? Promise.resolve(null) : fetch(earlyPoolUrl).then((r) => r.ok ? r.json() : { data: [] }).catch(() => ({ data: [] })),
+        ]);
         if (cancelled) return;
+
+        const universityId = profile?.university_id || profile?.id || '';
+
+        // If profile returned a university ID, re-fetch with it (only if early fetch didn't have it)
+        let poolData = earlyPoolData;
+        if (universityId && (!poolData || poolData.data?.length === 0)) {
+          poolData = await fetch(`/api/content/pool?universityId=${universityId}&limit=50`)
+            .then((r) => (r.ok ? r.json() : { data: [] }))
+            .catch(() => ({ data: [] }));
+        }
+        if (cancelled) return;
+        if (!poolData) poolData = { data: [] };
 
         const uniName = profile?.name || 'Rummidge University';
         const supportUrl = profile?.wellbeing_support_url || '';

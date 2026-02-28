@@ -1,49 +1,63 @@
 // @ts-nocheck
 /**
  * SECURED Generic Database INSERT Endpoint
- *
- * Security: JWT decode auth, table allowlist, automatic user_id injection.
- * No _lib/ imports — all code inlined to avoid Vercel bundling issues.
+ * All code inlined — Vercel Vite builder cannot resolve cross-file imports.
  */
 
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { Client } from 'pg';
+import { Pool } from 'pg';
+import { CognitoJwtVerifier } from 'aws-jwt-verify';
 
-/** Decode a JWT payload without signature verification. */
-function decodeJwtPayload(token: string): Record<string, unknown> | null {
-  try {
-    const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-    return JSON.parse(Buffer.from(base64, 'base64').toString('utf-8'));
-  } catch {
-    return null;
+/* ── Inline DB pool ────────────────────────────────────────────── */
+let _pool: Pool | null = null;
+function getPool(): Pool {
+  if (!_pool) {
+    _pool = new Pool({
+      host: process.env.AWS_AURORA_HOST || process.env.DB_HOST || 'mindmeasure-aurora.cluster-cz8c8wq4k3ak.eu-west-2.rds.amazonaws.com',
+      port: parseInt(process.env.AWS_AURORA_PORT || process.env.DB_PORT || '5432'),
+      database: process.env.AWS_AURORA_DATABASE || process.env.DB_NAME || 'mindmeasure',
+      user: process.env.AWS_AURORA_USERNAME || process.env.DB_USERNAME || 'mindmeasure_admin',
+      password: process.env.AWS_AURORA_PASSWORD || process.env.DB_PASSWORD,
+      ssl: { rejectUnauthorized: false },
+      max: 5, idleTimeoutMillis: 30000, connectionTimeoutMillis: 5000,
+    });
+    _pool.on('error', () => { _pool = null; });
   }
+  return _pool;
 }
+async function dbQuery(text: string, params?: unknown[]) { return getPool().query(text, params); }
+async function dbGetClient() { return getPool().connect(); }
 
-/** Extract user ID from Bearer token (ID token or access token). */
-function getUserIdFromToken(authHeader: string | undefined): string {
-  if (!authHeader?.startsWith('Bearer ')) {
-    throw new Error('No authentication token provided');
-  }
+/* ── Inline Auth ───────────────────────────────────────────────── */
+const _idV = CognitoJwtVerifier.create({
+  userPoolId: process.env.AWS_COGNITO_USER_POOL_ID || '',
+  tokenUse: 'id',
+  clientId: process.env.AWS_COGNITO_CLIENT_ID || '',
+});
+const _accV = CognitoJwtVerifier.create({
+  userPoolId: process.env.AWS_COGNITO_USER_POOL_ID || '',
+  tokenUse: 'access',
+});
+async function getUserIdFromToken(authHeader: string | undefined): Promise<string> {
+  if (!authHeader?.startsWith('Bearer ')) throw new Error('No authentication token provided');
   const token = authHeader.substring(7);
-  const payload = decodeJwtPayload(token);
-  if (!payload) throw new Error('Invalid token');
-
-  const exp = payload.exp as number | undefined;
-  if (exp && exp * 1000 < Date.now()) throw new Error('Token has expired');
-
-  const userId = (payload.sub as string) || (payload['cognito:username'] as string) || '';
-  if (!userId) throw new Error('Could not determine user identity');
-  return userId;
+  try {
+    const p = await _idV.verify(token);
+    const uid = p.sub || (p['cognito:username'] as string) || '';
+    if (uid) return uid;
+  } catch {}
+  try {
+    const p = await _accV.verify(token);
+    const uid = p.sub || p.username || '';
+    if (uid) return uid;
+  } catch {}
+  throw new Error('Invalid or expired token');
 }
 
+/* ── Config ────────────────────────────────────────────────────── */
 const ALLOWED_TABLES = new Set([
-  'profiles',
-  'fusion_outputs',
-  'assessment_sessions',
-  'assessment_transcripts',
-  'assessment_items',
-  'weekly_summary',
-  'buddy_contacts',
+  'profiles', 'fusion_outputs', 'assessment_sessions', 'assessment_transcripts',
+  'assessment_items', 'weekly_summary', 'buddy_contacts',
 ]);
 
 interface InsertRequest {
@@ -52,7 +66,6 @@ interface InsertRequest {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // CORS
   const origin = req.headers.origin;
   if (origin) {
     res.setHeader('Access-Control-Allow-Origin', origin);
@@ -63,10 +76,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  // ── Auth ────────────────────────────────────────────────────────
   let userId: string;
   try {
-    userId = getUserIdFromToken(req.headers.authorization);
+    userId = await getUserIdFromToken(req.headers.authorization);
   } catch (e: unknown) {
     return res.status(401).json({ error: e instanceof Error ? e.message : 'Authentication failed' });
   }
@@ -75,61 +87,40 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { table, data }: InsertRequest = req.body;
 
     if (!table || !ALLOWED_TABLES.has(table)) {
-      return res
-        .status(403)
-        .json({ error: 'Forbidden', message: `Cannot insert into table '${table}'`, code: 'TABLE_NOT_ALLOWED' });
+      return res.status(403).json({ error: 'Forbidden', message: `Cannot insert into table '${table}'`, code: 'TABLE_NOT_ALLOWED' });
     }
 
-    // Force user_id to authenticated user
     data.user_id = userId;
 
-    const client = new Client({
-      host: process.env.AWS_AURORA_HOST,
-      port: parseInt(process.env.AWS_AURORA_PORT || '5432'),
-      database: process.env.AWS_AURORA_DATABASE,
-      user: process.env.AWS_AURORA_USERNAME,
-      password: process.env.AWS_AURORA_PASSWORD,
-      ssl: { rejectUnauthorized: false },
-    });
-
-    await client.connect();
-
-    // Auto-seed university if inserting a profile with a university_id that doesn't exist
     if (table === 'profiles' && data.university_id) {
-      const uniCheck = await client.query('SELECT id FROM universities WHERE id = $1 OR slug = $1 LIMIT 1', [
-        data.university_id,
-      ]);
-      if (uniCheck.rows.length === 0) {
-        const uniName =
-          String(data.university_id).charAt(0).toUpperCase() + String(data.university_id).slice(1) + ' University';
-        await client.query(
-          `INSERT INTO universities (id, name, slug, short_name, status, total_students, created_at, updated_at)
-           VALUES ($1, $2, $1, $3, 'active', 0, NOW(), NOW())
-           ON CONFLICT (id) DO NOTHING`,
-          [data.university_id, uniName, String(data.university_id).substring(0, 3).toUpperCase()]
-        );
+      const client = await dbGetClient();
+      try {
+        const uniCheck = await client.query('SELECT id FROM universities WHERE id = $1 OR slug = $1 LIMIT 1', [data.university_id]);
+        if (uniCheck.rows.length === 0) {
+          const uniName = String(data.university_id).charAt(0).toUpperCase() + String(data.university_id).slice(1) + ' University';
+          await client.query(
+            `INSERT INTO universities (id, name, slug, short_name, status, total_students, created_at, updated_at)
+             VALUES ($1, $2, $1, $3, 'active', 0, NOW(), NOW())
+             ON CONFLICT (id) DO NOTHING`,
+            [data.university_id, uniName, String(data.university_id).substring(0, 3).toUpperCase()]
+          );
+        }
+      } finally {
+        client.release();
       }
     }
 
     const columns = Object.keys(data);
     const values = Object.values(data);
     const placeholders = values.map((_, index) => `$${index + 1}`).join(', ');
-
     const sql = `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${placeholders}) RETURNING *`;
-
-    const result = await client.query(sql, values);
-    await client.end();
+    const result = await dbQuery(sql, values);
 
     return res.status(200).json({ data: result.rows, error: null });
   } catch (error: unknown) {
     const table = req.body?.table || 'unknown';
     const errMsg = error instanceof Error ? error.message : 'Unknown error';
     console.error(`[DB INSERT] Error inserting into ${table} for user ${userId}:`, errMsg, error);
-    return res.status(500).json({
-      error: 'Database insert failed',
-      message: errMsg,
-      table,
-      data: null,
-    });
+    return res.status(500).json({ error: 'Database insert failed', message: errMsg, table, data: null });
   }
 }

@@ -92,10 +92,26 @@ export function useProfileData(): UseProfileDataReturn {
       if (profileResponse.data && profileResponse.data.length > 0) {
         const profile = profileResponse.data[0] as Record<string, unknown>;
 
-        // Fetch university data
-        const universityResponse = await backendService.database.select('universities', {
-          filters: { id: profile.university_id },
-        });
+        // Resolve university: try profile's university_id, then fall back to email domain
+        let uniId = profile.university_id as string | undefined;
+
+        if (!uniId && user.email) {
+          const { resolveUniversityFromEmail } = await import('../services/UniversityResolver');
+          uniId = await resolveUniversityFromEmail(user.email);
+          if (uniId) {
+            backendService.database.update('profiles', { university_id: uniId }, { user_id: user.id }).catch(() => {});
+          }
+        }
+
+        let universityResponse = uniId
+          ? await backendService.database.select('universities', { filters: { id: uniId } })
+          : { data: [] as Record<string, unknown>[] };
+
+        if (!universityResponse.data?.length && uniId) {
+          universityResponse = await backendService.database.select('universities', {
+            filters: { slug: uniId },
+          });
+        }
 
         let uniData: UniversityData | null = null;
         let schools: string[] = [];

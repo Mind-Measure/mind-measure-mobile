@@ -521,10 +521,8 @@ export function useBaselineAssessment({ onComplete }: UseBaselineAssessmentOptio
         key: 'mindmeasure_baseline_complete',
         value: 'true',
       });
-      setIsSaving(false);
-      if (onComplete) {
-        onComplete();
-      }
+      // Do NOT setIsSaving(false) or call onComplete() here.
+      // The ProcessingScreen animation controls the lifecycle via onScoreRevealed.
     } catch (error: unknown) {
       console.error('[SDK] ❌ Error saving assessment:', error);
       setIsSaving(false);
@@ -549,9 +547,11 @@ export function useBaselineAssessment({ onComplete }: UseBaselineAssessmentOptio
       // Haptics/audio not available
     }
 
-    // End the conversation
+    // End the conversation (non-blocking timeout to prevent hanging)
     try {
-      await conversation.endSession();
+      if (conversation.status === 'connected') {
+        await Promise.race([conversation.endSession(), new Promise((resolve) => setTimeout(resolve, 3000))]);
+      }
     } catch (error: unknown) {
       console.error('[SDK] ❌ Error ending conversation:', error);
     }
@@ -585,6 +585,11 @@ export function useBaselineAssessment({ onComplete }: UseBaselineAssessmentOptio
     [resetState]
   );
 
+  const completeProcessing = useCallback(() => {
+    setIsSaving(false);
+    if (onComplete) onComplete();
+  }, [onComplete]);
+
   return {
     // State
     showConversation,
@@ -606,5 +611,6 @@ export function useBaselineAssessment({ onComplete }: UseBaselineAssessmentOptio
     handleFinish,
     handleErrorCancel,
     handleErrorRetry,
+    completeProcessing,
   };
 }

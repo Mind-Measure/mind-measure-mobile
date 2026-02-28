@@ -7,11 +7,11 @@ import { Client } from 'pg';
 
 export function getDbClient(): Client {
   return new Client({
-    host: process.env.AWS_AURORA_HOST || process.env.AWS_RDS_HOST,
-    port: parseInt(process.env.AWS_AURORA_PORT || process.env.AWS_RDS_PORT || '5432'),
-    database: process.env.AWS_AURORA_DATABASE || process.env.AWS_RDS_DATABASE || 'mindmeasure',
-    user: process.env.AWS_AURORA_USERNAME || process.env.AWS_RDS_USERNAME,
-    password: process.env.AWS_AURORA_PASSWORD || process.env.AWS_RDS_PASSWORD,
+    host: process.env.AWS_AURORA_HOST || process.env.AWS_RDS_HOST || process.env.DB_HOST || 'mindmeasure-aurora.cluster-cz8c8wq4k3ak.eu-west-2.rds.amazonaws.com',
+    port: parseInt(process.env.AWS_AURORA_PORT || process.env.AWS_RDS_PORT || process.env.DB_PORT || '5432'),
+    database: process.env.AWS_AURORA_DATABASE || process.env.AWS_RDS_DATABASE || process.env.DB_NAME || 'mindmeasure',
+    user: process.env.AWS_AURORA_USERNAME || process.env.AWS_RDS_USERNAME || process.env.DB_USERNAME || 'mindmeasure_admin',
+    password: process.env.AWS_AURORA_PASSWORD || process.env.AWS_RDS_PASSWORD || process.env.DB_PASSWORD,
     ssl: { rejectUnauthorized: false },
   });
 }

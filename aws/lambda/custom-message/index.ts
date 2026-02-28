@@ -30,11 +30,7 @@ function buildEmailHtml(code: string, firstName: string, heading: string, bodyTe
 
 <!-- Header -->
 <tr><td style="background:${BRAND.spectra};padding:32px 40px;text-align:center;">
-  <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none">
-    <circle cx="20" cy="20" r="20" fill="${BRAND.sinbad}" opacity="0.2"/>
-    <path d="M12 26V16l4 6 4-6v10" stroke="${BRAND.sinbad}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M24 26V16l4 6" stroke="${BRAND.sinbad}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-  </svg>
+  <img src="https://mindmeasure.app/logo-white.png" alt="Mind Measure" width="44" height="44" style="display:inline-block;width:44px;height:44px;" />
   <div style="margin-top:12px;font-size:20px;font-weight:700;color:#fff;letter-spacing:-0.3px;">Mind Measure</div>
 </td></tr>
 

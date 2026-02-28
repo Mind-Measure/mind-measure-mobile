@@ -3,6 +3,11 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "installCommand": "npm install",
+  "functions": {
+    "api/**/*.ts": {
+      "includeFiles": "api/_lib/**,api/buddies/_lib/**"
+    }
+  },
   "rewrites": [
     {
       "source": "/((?!api|_next|favicon.ico|assets).*)",

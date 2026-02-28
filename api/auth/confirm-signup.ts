@@ -63,7 +63,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Create minimal profile: fetch Cognito user then insert into Aurora.
     try {
       if (!userPoolId) {
-        console.warn('[confirm-signup] AWS_COGNITO_USER_POOL_ID missing, skipping profile create');
+        // Skip profile create when Cognito config is missing
       } else {
         const getUserCmd = new AdminGetUserCommand({
           UserPoolId: userPoolId,
@@ -77,7 +77,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const displayName = [givenName, familyName].filter(Boolean).join(' ') || trimmedEmail;
 
         if (!sub) {
-          console.warn('[confirm-signup] No sub from Cognito, skipping profile create');
+          // Skip profile create when no sub from Cognito
         } else {
           const pg = new Client(getDbConfig());
           await pg.connect();

@@ -1,72 +1,70 @@
 // @ts-nocheck
 /**
  * SECURED Generic Database SELECT Endpoint
- *
- * Security: JWT decode auth, table allowlist, automatic user scoping.
- * No _lib/ imports — all code inlined to avoid Vercel bundling issues.
+ * All code inlined — Vercel Vite builder cannot resolve cross-file imports.
  */
 
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { Client } from 'pg';
+import { Pool } from 'pg';
+import { CognitoJwtVerifier } from 'aws-jwt-verify';
 
-/** Decode a JWT payload without signature verification. */
-function decodeJwtPayload(token: string): Record<string, unknown> | null {
-  try {
-    const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-    return JSON.parse(Buffer.from(base64, 'base64').toString('utf-8'));
-  } catch {
-    return null;
+/* ── Inline DB pool ────────────────────────────────────────────── */
+let _pool: Pool | null = null;
+function getPool(): Pool {
+  if (!_pool) {
+    _pool = new Pool({
+      host: process.env.AWS_AURORA_HOST || process.env.DB_HOST || 'mindmeasure-aurora.cluster-cz8c8wq4k3ak.eu-west-2.rds.amazonaws.com',
+      port: parseInt(process.env.AWS_AURORA_PORT || process.env.DB_PORT || '5432'),
+      database: process.env.AWS_AURORA_DATABASE || process.env.DB_NAME || 'mindmeasure',
+      user: process.env.AWS_AURORA_USERNAME || process.env.DB_USERNAME || 'mindmeasure_admin',
+      password: process.env.AWS_AURORA_PASSWORD || process.env.DB_PASSWORD,
+      ssl: { rejectUnauthorized: false },
+      max: 5, idleTimeoutMillis: 30000, connectionTimeoutMillis: 5000,
+    });
+    _pool.on('error', () => { _pool = null; });
   }
+  return _pool;
 }
+async function dbQuery(text: string, params?: unknown[]) { return getPool().query(text, params); }
 
-/** Extract user ID from Bearer token (ID token or access token). */
-function getUserIdFromToken(authHeader: string | undefined): string {
-  if (!authHeader?.startsWith('Bearer ')) {
-    throw new Error('No authentication token provided');
-  }
+/* ── Inline Auth ───────────────────────────────────────────────── */
+const _idV = CognitoJwtVerifier.create({
+  userPoolId: process.env.AWS_COGNITO_USER_POOL_ID || '',
+  tokenUse: 'id',
+  clientId: process.env.AWS_COGNITO_CLIENT_ID || '',
+});
+const _accV = CognitoJwtVerifier.create({
+  userPoolId: process.env.AWS_COGNITO_USER_POOL_ID || '',
+  tokenUse: 'access',
+});
+async function getUserIdFromToken(authHeader: string | undefined): Promise<string> {
+  if (!authHeader?.startsWith('Bearer ')) throw new Error('No authentication token provided');
   const token = authHeader.substring(7);
-  const payload = decodeJwtPayload(token);
-  if (!payload) throw new Error('Invalid token');
-
-  const exp = payload.exp as number | undefined;
-  if (exp && exp * 1000 < Date.now()) throw new Error('Token has expired');
-
-  const userId = (payload.sub as string) || (payload['cognito:username'] as string) || '';
-  if (!userId) throw new Error('Could not determine user identity');
-  return userId;
+  try {
+    const p = await _idV.verify(token);
+    const uid = p.sub || (p['cognito:username'] as string) || '';
+    if (uid) return uid;
+  } catch {}
+  try {
+    const p = await _accV.verify(token);
+    const uid = p.sub || p.username || '';
+    if (uid) return uid;
+  } catch {}
+  throw new Error('Invalid or expired token');
 }
 
-// STRICT TABLE ALLOWLIST
+/* ── Config ────────────────────────────────────────────────────── */
 const ALLOWED_TABLES = new Set([
-  'profiles',
-  'fusion_outputs',
-  'assessment_sessions',
-  'assessment_transcripts',
-  'assessment_items',
-  'weekly_summary',
-  'universities',
-  'help_resources',
-  'content_blocks',
-  'wellbeing_reports',
-  'buddy_contacts',
-  'content_articles',
+  'profiles', 'fusion_outputs', 'assessment_sessions', 'assessment_transcripts',
+  'assessment_items', 'weekly_summary', 'universities', 'help_resources',
+  'content_blocks', 'wellbeing_reports', 'buddy_contacts', 'content_articles',
   'content_categories',
 ]);
-
 const PUBLIC_TABLES = new Set([
-  'universities',
-  'help_resources',
-  'content_blocks',
-  'content_articles',
-  'content_categories',
+  'universities', 'help_resources', 'content_blocks', 'content_articles', 'content_categories',
 ]);
 
-interface FilterValue {
-  in?: unknown[];
-  eq?: unknown;
-  gte?: string;
-}
-
+interface FilterValue { in?: unknown[]; eq?: unknown; gte?: string; }
 interface SelectRequest {
   table: string;
   filters?: Record<string, string | number | boolean | FilterValue>;
@@ -76,7 +74,6 @@ interface SelectRequest {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // CORS
   const origin = req.headers.origin;
   if (origin) {
     res.setHeader('Access-Control-Allow-Origin', origin);
@@ -87,10 +84,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  // ── Auth ────────────────────────────────────────────────────────
   let userId: string;
   try {
-    userId = getUserIdFromToken(req.headers.authorization);
+    userId = await getUserIdFromToken(req.headers.authorization);
   } catch (e: unknown) {
     return res.status(401).json({ error: e instanceof Error ? e.message : 'Authentication failed' });
   }
@@ -99,26 +95,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { table, filters = {}, columns = '*', orderBy, limit }: SelectRequest = req.body;
 
     if (!table || !ALLOWED_TABLES.has(table)) {
-      return res
-        .status(403)
-        .json({ error: 'Forbidden', message: `Table '${table}' is not accessible`, code: 'TABLE_NOT_ALLOWED' });
+      return res.status(403).json({ error: 'Forbidden', message: `Table '${table}' is not accessible`, code: 'TABLE_NOT_ALLOWED' });
     }
 
-    // Auto-scope to authenticated user (unless public table)
     if (!PUBLIC_TABLES.has(table)) {
       filters.user_id = userId;
     }
-
-    const client = new Client({
-      host: process.env.AWS_AURORA_HOST,
-      port: parseInt(process.env.AWS_AURORA_PORT || '5432'),
-      database: process.env.AWS_AURORA_DATABASE,
-      user: process.env.AWS_AURORA_USERNAME,
-      password: process.env.AWS_AURORA_PASSWORD,
-      ssl: { rejectUnauthorized: false },
-    });
-
-    await client.connect();
 
     let sql = `SELECT ${columns} FROM ${table}`;
     const params: unknown[] = [];
@@ -153,18 +135,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       params.push(limit);
     }
 
-    const result = await client.query(sql, params);
-    await client.end();
-
+    const result = await dbQuery(sql, params);
     return res.status(200).json({ data: result.rows, error: null });
   } catch (error: unknown) {
     console.error(`[DB SELECT] Error for user ${userId}:`, error);
-    return res
-      .status(500)
-      .json({
-        error: 'Database query failed',
-        message: error instanceof Error ? error.message : 'Unknown error',
-        data: null,
-      });
+    return res.status(500).json({
+      error: 'Database query failed',
+      message: error instanceof Error ? error.message : 'Unknown error',
+      data: null,
+    });
   }
 }

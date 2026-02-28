@@ -180,8 +180,6 @@ function prepareReportData(sessions: SessionRecord[], periodDays: number): Repor
         if (summary) {
           transcriptSnippets.push(summary);
         }
-      } else {
-        console.warn(`[Report] Session ${index + 1}: analysis is null/undefined`);
       }
     } catch (e) {
       console.error(`[Report] Session ${index + 1}: Failed to parse analysis:`, e);

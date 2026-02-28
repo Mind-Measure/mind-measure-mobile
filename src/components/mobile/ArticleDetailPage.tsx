@@ -14,11 +14,12 @@ interface ArticleDetailPageProps {
     fullContent: string;
     author?: string;
     publishDate?: string;
+    poolSourceId?: string;
   };
   onBack: () => void;
   universityName?: string;
   universityLogo?: string;
-  wellbeingSupportUrl?: string; // NEW: Link to university wellbeing services
+  wellbeingSupportUrl?: string;
 }
 
 export function ArticleDetailPage({
@@ -41,6 +42,7 @@ export function ArticleDetailPage({
             articleId: article.id,
             userId: user?.id,
             universityId: user?.university_id,
+            poolSourceId: article.poolSourceId || undefined,
           }),
         });
       } catch (error) {

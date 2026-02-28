@@ -22,6 +22,7 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
     handleFinish,
     handleErrorCancel,
     handleErrorRetry,
+    completeProcessing,
   } = useBaselineAssessment({ onComplete });
 
   // Auto-start: BaselineWelcome already handled the welcome flow,
@@ -41,9 +42,7 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
             previousScore={previousBaselineScore}
             newScore={newScore}
             isFirstBaseline={isFirstBaseline}
-            onScoreRevealed={() => {
-              if (onComplete) onComplete();
-            }}
+            onScoreRevealed={completeProcessing}
           />
         )}
 

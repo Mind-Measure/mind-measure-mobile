@@ -12,6 +12,32 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { RekognitionClient, DetectFacesCommand } from '@aws-sdk/client-rekognition';
 
+/* ── Inline retry ──────────────────────────────────────────────── */
+const RETRYABLE_ERROR_CODES = new Set([
+  'ThrottlingException', 'TooManyRequestsException', 'ProvisionedThroughputExceededException',
+  'ServiceUnavailableException', 'InternalServerException', 'RequestTimeout',
+  'ECONNRESET', 'ETIMEDOUT', 'EPIPE',
+]);
+async function withRetry<T>(fn: () => Promise<T>, opts: { maxAttempts?: number; baseDelayMs?: number; maxDelayMs?: number } = {}): Promise<T> {
+  const { maxAttempts = 3, baseDelayMs = 500, maxDelayMs = 4000 } = opts;
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try { return await fn(); } catch (err: unknown) {
+      lastError = err;
+      const errCode = (err as Record<string, unknown>)?.name as string || (err as Record<string, unknown>)?.code as string || '';
+      const statusCode = (err as Record<string, unknown>)?.$metadata ? ((err as Record<string, unknown>).$metadata as Record<string, unknown>)?.httpStatusCode : undefined;
+      const isRetryable = RETRYABLE_ERROR_CODES.has(errCode) || (typeof statusCode === 'number' && (statusCode === 429 || statusCode >= 500));
+      if (!isRetryable || attempt === maxAttempts) throw err;
+      const jitter = Math.random() * 200;
+      const delay = Math.min(baseDelayMs * Math.pow(2, attempt - 1) + jitter, maxDelayMs);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+  throw lastError;
+}
+
+const MAX_FRAMES = 20;
+
 // Initialize Rekognition client
 const rekognitionClient = new RekognitionClient({
   region: process.env.AWS_REGION || 'eu-west-2',
@@ -35,9 +61,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'No frames provided' });
     }
 
-    // Analyze each frame with Rekognition
+    // Analyze each frame with Rekognition (capped to MAX_FRAMES)
+    const cappedFrames = frames.slice(0, MAX_FRAMES);
     const analyses = await Promise.all(
-      frames.map(async (frameBase64: string, index: number) => {
+      cappedFrames.map(async (frameBase64: string, index: number) => {
         try {
           // Convert base64 to buffer
           const imageBuffer = Buffer.from(frameBase64, 'base64');
@@ -50,7 +77,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             Attributes: ['ALL'], // Get all facial attributes
           });
 
-          const response = await rekognitionClient.send(command);
+          const response = await withRetry(() => rekognitionClient.send(command));
 
           if (!response.FaceDetails || response.FaceDetails.length === 0) {
             return null;
@@ -108,7 +135,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.status(200).json({
       success: true,
-      totalFrames: frames.length,
+      totalFrames: cappedFrames.length,
       analyzedFrames: validAnalyses.length,
       analyses: validAnalyses,
     });

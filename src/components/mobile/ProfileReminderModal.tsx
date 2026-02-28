@@ -1,16 +1,20 @@
 /**
- * Pop-up shown after baseline assessment: reminds user to complete profile
- * and add buddies. Profile is in the bottom menu; buddies in Buddies tab.
+ * Post-baseline modal: encourages user to complete profile and add buddies.
  */
 
 import { useState } from 'react';
-import mindMeasureLogo from '../../assets/66710e04a85d98ebe33850197f8ef41bd28d8b84.png';
+
+const C = {
+  spectra: '#2D4C4C',
+  sinbad: '#99CCCE',
+  pampas: '#FAF9F7',
+  buttercup: '#F59E0B',
+  white: '#FFFFFF',
+};
 
 export interface ProfileReminderModalProps {
   isOpen: boolean;
-  /** User tapped "Complete profile" – e.g. navigate to Profile tab */
   onComplete: () => void;
-  /** User tapped "I'll do this later" – close modal */
   onSkip: () => void;
 }
 
@@ -24,7 +28,7 @@ export function ProfileReminderModal({ isOpen, onComplete, onSkip }: ProfileRemi
     setTimeout(() => {
       setIsClosing(false);
       onSkip();
-    }, 300);
+    }, 280);
   };
 
   const handleComplete = () => {
@@ -32,69 +36,48 @@ export function ProfileReminderModal({ isOpen, onComplete, onSkip }: ProfileRemi
     setTimeout(() => {
       setIsClosing(false);
       onComplete();
-    }, 300);
+    }, 280);
   };
+
+  const benefits = [
+    { label: 'Personalised insights', desc: 'Tailored to your course and year' },
+    { label: 'Accurate tracking', desc: 'Better context for your check-ins' },
+    { label: 'Buddy support', desc: 'Share your journey with friends' },
+  ];
 
   return (
     <div
       style={{
         position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: 'rgba(0, 0, 0, 0.6)',
+        inset: 0,
+        background: 'rgba(0, 0, 0, 0.55)',
+        backdropFilter: 'blur(6px)',
+        WebkitBackdropFilter: 'blur(6px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 1000,
-        padding: '20px',
-        animation: isClosing ? 'fadeOut 0.3s ease-out' : 'fadeIn 0.3s ease-out',
+        padding: '24px',
+        opacity: isClosing ? 0 : 1,
+        transition: 'opacity 0.28s ease',
       }}
       onClick={handleSkip}
     >
-      <style>
-        {`
-          @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-          }
-          @keyframes fadeOut {
-            from { opacity: 1; }
-            to { opacity: 0; }
-          }
-          @keyframes slideUp {
-            from { transform: translateY(30px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-          }
-          @keyframes slideDown {
-            from { transform: translateY(0); opacity: 1; }
-            to { transform: translateY(30px); opacity: 0; }
-          }
-        `}
-      </style>
-
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: 'white',
-          borderRadius: '24px',
-          maxWidth: '440px',
+          backgroundColor: C.pampas,
+          borderRadius: '28px',
+          maxWidth: '380px',
           width: '100%',
-          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
           overflow: 'hidden',
-          animation: isClosing ? 'slideDown 0.3s ease-out' : 'slideUp 0.3s ease-out',
+          transform: isClosing ? 'translateY(20px) scale(0.97)' : 'translateY(0) scale(1)',
+          opacity: isClosing ? 0 : 1,
+          transition: 'transform 0.28s ease, opacity 0.28s ease',
         }}
       >
-        {/* Header with gradient */}
-        <div
-          style={{
-            background: '#2D4C4C',
-            padding: '32px 24px',
-            textAlign: 'center',
-            position: 'relative',
-          }}
-        >
+        {/* Header */}
+        <div style={{ backgroundColor: C.sinbad, padding: '36px 28px 28px', position: 'relative' }}>
           <button
             type="button"
             onClick={handleSkip}
@@ -102,7 +85,7 @@ export function ProfileReminderModal({ isOpen, onComplete, onSkip }: ProfileRemi
               position: 'absolute',
               top: '16px',
               right: '16px',
-              background: 'rgba(255, 255, 255, 0.2)',
+              background: 'rgba(45, 76, 76, 0.1)',
               border: 'none',
               borderRadius: '50%',
               width: '32px',
@@ -111,198 +94,104 @@ export function ProfileReminderModal({ isOpen, onComplete, onSkip }: ProfileRemi
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
-              transition: 'all 0.2s',
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
             }}
           >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="white"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.spectra} strokeWidth="2.5" strokeLinecap="round">
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
           </button>
 
-          <div
-            style={{
-              width: '80px',
-              height: '80px',
-              background: 'white',
-              borderRadius: '50%',
-              margin: '0 auto 16px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-            }}
-          >
-            <img src={mindMeasureLogo} alt="Mind Measure" style={{ width: '56px', height: '56px' }} />
+          <div style={{ fontSize: '48px', fontWeight: 900, color: C.spectra, letterSpacing: '-0.04em', lineHeight: 1, marginBottom: '8px' }}>
+            You're in.
           </div>
-
-          <h2
-            style={{
-              fontSize: '24px',
-              fontWeight: '700',
-              color: 'white',
-              margin: '0 0 8px 0',
-              lineHeight: '1.2',
-            }}
-          >
-            Complete Your Profile
-          </h2>
-
-          <p
-            style={{
-              fontSize: '15px',
-              color: 'rgba(255, 255, 255, 0.9)',
-              margin: 0,
-              lineHeight: '1.5',
-            }}
-          >
-            Baseline assessment complete!
+          <p style={{ fontSize: '16px', fontWeight: 400, color: C.spectra, opacity: 0.7, margin: 0, lineHeight: 1.4 }}>
+            Baseline complete. Two quick things to get the most from Mind Measure.
           </p>
         </div>
 
-        {/* Content */}
-        <div style={{ padding: '32px 24px' }}>
-          <div
-            style={{
-              background: 'linear-gradient(135deg, #F3F4F6 0%, #E5E7EB 100%)',
-              borderRadius: '16px',
-              padding: '20px',
-              marginBottom: '24px',
-              textAlign: 'center',
-            }}
-          >
-            <p
-              style={{
-                fontSize: '16px',
-                color: '#1a1a1a',
-                margin: '0 0 12px 0',
-                lineHeight: '1.6',
-                fontWeight: '500',
-              }}
-            >
-              Help us to help you with two quick steps:
-            </p>
-            <ul
-              style={{
-                fontSize: '14px',
-                color: '#374151',
-                margin: 0,
-                paddingLeft: '20px',
-                textAlign: 'left',
-                lineHeight: '1.6',
-              }}
-            >
-              <li style={{ marginBottom: '8px' }}>
-                <strong>Profile</strong> (bottom menu) – fill in your details
-              </li>
-              <li>
-                <strong>Buddies</strong> (bottom menu) – add buddies to your buddy list
-              </li>
-            </ul>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                marginTop: '12px',
-              }}
-            >
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#2D4C4C"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="12 6 12 12 16 14" />
-              </svg>
-              <span style={{ fontSize: '14px', color: '#666666', fontWeight: '600' }}>Only takes a minute</span>
-            </div>
-          </div>
-
-          <div style={{ marginBottom: '24px' }}>
-            <p
-              style={{
-                fontSize: '14px',
-                color: '#666666',
-                margin: '0 0 16px 0',
-                fontWeight: '600',
-              }}
-            >
-              Why complete your profile?
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {[
-                { icon: '🎯', text: 'Personalised wellbeing insights' },
-                { icon: '📊', text: 'More accurate tracking' },
-                { icon: '🤝', text: 'Better support recommendations' },
-              ].map((item, index) => (
-                <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div
-                    style={{
-                      fontSize: '20px',
-                      width: '32px',
-                      height: '32px',
-                      background: '#FAF9F7',
-                      borderRadius: '8px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                    }}
-                  >
-                    {item.icon}
-                  </div>
-                  <span style={{ fontSize: '14px', color: '#1a1a1a', lineHeight: '1.5' }}>{item.text}</span>
+        {/* Steps */}
+        <div style={{ padding: '24px 28px 0' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+              <div style={{
+                width: '32px', height: '32px', borderRadius: '50%',
+                backgroundColor: C.spectra, color: C.white,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '14px', fontWeight: 700, flexShrink: 0, marginTop: '2px',
+              }}>1</div>
+              <div>
+                <div style={{ fontSize: '16px', fontWeight: 600, color: C.spectra, lineHeight: 1.3 }}>
+                  Fill in your profile
                 </div>
-              ))}
+                <div style={{ fontSize: '13px', color: 'rgba(45,76,76,0.55)', lineHeight: 1.4, marginTop: '2px' }}>
+                  Year of study and course — takes 30 seconds
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+              <div style={{
+                width: '32px', height: '32px', borderRadius: '50%',
+                backgroundColor: C.spectra, color: C.white,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '14px', fontWeight: 700, flexShrink: 0, marginTop: '2px',
+              }}>2</div>
+              <div>
+                <div style={{ fontSize: '16px', fontWeight: 600, color: C.spectra, lineHeight: 1.3 }}>
+                  Add a buddy
+                </div>
+                <div style={{ fontSize: '13px', color: 'rgba(45,76,76,0.55)', lineHeight: 1.4, marginTop: '2px' }}>
+                  Invite a friend to share your wellbeing journey
+                </div>
+              </div>
             </div>
           </div>
+        </div>
 
+        {/* Benefits */}
+        <div style={{ padding: '20px 28px 0' }}>
+          <div style={{
+            backgroundColor: `${C.sinbad}20`,
+            borderRadius: '16px',
+            padding: '16px 18px',
+          }}>
+            {benefits.map((b, i) => (
+              <div key={i} style={{
+                display: 'flex', alignItems: 'center', gap: '12px',
+                padding: '8px 0',
+                borderBottom: i < benefits.length - 1 ? '1px solid rgba(45,76,76,0.06)' : 'none',
+              }}>
+                <div style={{
+                  width: '6px', height: '6px', borderRadius: '50%',
+                  backgroundColor: C.sinbad, flexShrink: 0,
+                }} />
+                <div>
+                  <span style={{ fontSize: '14px', fontWeight: 600, color: C.spectra }}>{b.label}</span>
+                  <span style={{ fontSize: '13px', color: 'rgba(45,76,76,0.5)', marginLeft: '6px' }}>{b.desc}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div style={{ padding: '24px 28px 28px' }}>
           <button
             type="button"
             onClick={handleComplete}
             style={{
               width: '100%',
               padding: '16px',
-              background: '#2D4C4C',
+              backgroundColor: C.spectra,
               border: 'none',
-              borderRadius: '12px',
-              color: 'white',
-              fontSize: '16px',
-              fontWeight: '600',
+              borderRadius: '16px',
+              color: C.white,
+              fontSize: '17px',
+              fontWeight: 600,
               cursor: 'pointer',
-              transition: 'all 0.2s',
-              boxShadow: '0 4px 12px rgba(45, 76, 76, 0.3)',
-              marginBottom: '12px',
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 6px 16px rgba(45, 76, 76, 0.4)';
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(45, 76, 76, 0.3)';
+              marginBottom: '8px',
+              letterSpacing: '-0.01em',
             }}
           >
             Go to Profile
@@ -317,19 +206,11 @@ export function ProfileReminderModal({ isOpen, onComplete, onSkip }: ProfileRemi
               background: 'transparent',
               border: 'none',
               borderRadius: '12px',
-              color: '#666666',
+              color: 'rgba(45,76,76,0.45)',
               fontSize: '14px',
-              fontWeight: '600',
+              fontWeight: 500,
               cursor: 'pointer',
-              transition: 'all 0.2s',
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.background = '#F3F4F6';
-              e.currentTarget.style.color = '#1a1a1a';
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.background = 'transparent';
-              e.currentTarget.style.color = '#666666';
+              letterSpacing: '-0.01em',
             }}
           >
             I'll do this later
