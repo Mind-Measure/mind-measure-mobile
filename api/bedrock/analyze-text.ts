@@ -135,7 +135,7 @@ Guidance:
 
 Do not mention Mind Measure, scoring systems, models, or analysis in the summary. Just describe what the student talked about.`;
 
-const MODEL_ID = 'eu.anthropic.claude-3-7-sonnet-20250219-v1:0';
+const MODEL_ID = 'anthropic.claude-3-7-sonnet-20250219-v1:0';
 
 function getEmptyResult(summary: string): TextAnalysisResult {
   return {
@@ -332,6 +332,9 @@ Now produce a single valid JSON object that matches the TextAnalysisResult schem
       success: true,
       data: getEmptyResult('Text analysis was not available for this check in.'),
       warning: 'Analysis failed, using fallback',
+      debug_error: errMsg,
+      debug_code: errCode,
+      debug_name: errName,
     });
   }
 }
