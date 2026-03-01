@@ -2,7 +2,7 @@
   "framework": "vite",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "installCommand": "npm install",
+  "installCommand": "git config --global url.\"https://x-access-token:${GH_PAT}@github.com/\".insteadOf \"https://github.com/\" && git config --global url.\"https://x-access-token:${GH_PAT}@github.com/\".insteadOf \"ssh://git@github.com/\" && npm install",
   "functions": {
     "api/**/*.ts": {
       "includeFiles": "api/_lib/**,api/buddies/_lib/**"
