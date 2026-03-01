@@ -21,6 +21,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Configure git for private packages
+        run: |
+          git config --global url."https://x-access-token:${{ secrets.GH_PAT }}@github.com/".insteadOf "ssh://git@github.com/"
+          git config --global --add url."https://x-access-token:${{ secrets.GH_PAT }}@github.com/".insteadOf "https://github.com/"
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -47,6 +52,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Configure git for private packages
+        run: |
+          git config --global url."https://x-access-token:${{ secrets.GH_PAT }}@github.com/".insteadOf "ssh://git@github.com/"
+          git config --global --add url."https://x-access-token:${{ secrets.GH_PAT }}@github.com/".insteadOf "https://github.com/"
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -70,6 +80,11 @@ jobs:
     needs: build
     steps:
       - uses: actions/checkout@v4
+
+      - name: Configure git for private packages
+        run: |
+          git config --global url."https://x-access-token:${{ secrets.GH_PAT }}@github.com/".insteadOf "ssh://git@github.com/"
+          git config --global --add url."https://x-access-token:${{ secrets.GH_PAT }}@github.com/".insteadOf "https://github.com/"
 
       - uses: actions/setup-node@v4
         with:
