@@ -20,6 +20,7 @@
     "@capacitor/preferences": "^8.0.0",
     "@elevenlabs/react": "^0.11.3",
     "@mindmeasure/shared-services": "github:Mind-Measure/mindmeasure-shared-services",
+    "@mindmeasure/shared-types": "git+https://github.com/Mind-Measure/mindmeasure-shared-types.git",
     "@radix-ui/react-accordion": "^1.2.3",
     "@radix-ui/react-alert-dialog": "^1.1.6",
     "@radix-ui/react-aspect-ratio": "^1.1.2",
