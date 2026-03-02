@@ -16,27 +16,33 @@
 ## 🚧 Phase 2: Core Extractors (IN PROGRESS)
 
 ### 2.1 Audio Feature Extractor
+
 **File:** `extractors/audioFeatures.ts`  
 **Features:** 23 total
 
 **Pitch/Prosody (8):**
+
 - meanPitch, pitchRange, pitchVariability
 - pitchContourSlope, jitter, shimmer
 - harmonicRatio, pitchDynamics
 
 **Timing/Rhythm (7):**
+
 - speakingRate, articulationRate
 - pauseFrequency, pauseDuration
 - speechRatio, filledPauseRate, silenceDuration
 
 **Energy/Intensity (5):**
+
 - voiceEnergy, energyVariability, energyContour
 - dynamicRange, stressPatterns
 
 **Voice Quality (3):**
+
 - spectralCentroid, spectralFlux, voicedRatio
 
 **Key Difference from Baseline:**
+
 - Calibrated for conversational speech (not one-word answers)
 - More sophisticated pause detection (filled vs unfilled)
 - Stress pattern analysis for emotional state
@@ -45,25 +51,31 @@
 ---
 
 ### 2.2 Visual Feature Extractor
+
 **File:** `extractors/visualFeatures.ts`  
 **Features:** 18 total
 
 **Facial Expression (7):**
+
 - smileFrequency, smileIntensity, smileDuration
 - eyebrowRaiseFrequency, eyebrowFurrowFrequency
 - mouthTension, facialSymmetry
 
 **Gaze/Attention (3):**
+
 - eyeContact, gazeStability, blinkRate
 
 **Movement/Behavior (5):**
+
 - headMovement, headStability
 - fidgetingRate, gestureFrequency, postureShift
 
 **Affect/Emotion (3):**
+
 - emotionalValence, emotionalArousal, emotionalStability
 
 **Key Difference from Baseline:**
+
 - Extended Rekognition analysis (emotions, landmarks)
 - Temporal analysis (frequency, duration, stability)
 - Behavioral indicators (fidgeting, gestures)
@@ -71,9 +83,11 @@
 ---
 
 ### 2.3 Multimodal Extractor (Orchestrator)
+
 **File:** `extractors/multimodalExtractor.ts`
 
 **Responsibilities:**
+
 - Coordinate audio + visual extraction (parallel)
 - Handle failures gracefully
 - Compute quality scores
@@ -84,9 +98,11 @@
 ## 📝 Phase 3: Text Analysis
 
 ### 3.1 Text Analyzer
+
 **File:** `analyzers/textAnalyzer.ts`
 
 **Outputs:**
+
 - Summary (natural language)
 - Keywords/themes
 - Positive drivers
@@ -94,6 +110,7 @@
 - 16 linguistic features (for fusion)
 
 **Implementation:**
+
 - AWS Comprehend for sentiment
 - Custom keyword extraction
 - Driver detection (positive/negative patterns)
@@ -102,13 +119,16 @@
 ---
 
 ### 3.2 Risk Assessor
+
 **File:** `analyzers/riskAssessor.ts`
 
 **Outputs:**
+
 - Risk level (none/mild/moderate/high)
 - Risk reasons (specific concerns)
 
 **Triggers:**
+
 - Explicit harm mentions
 - Persistent negative affect (multimodal + text)
 - Extreme changes vs baseline
@@ -119,9 +139,11 @@
 ## 🧮 Phase 4: Fusion & Scoring
 
 ### 4.1 Fusion Engine
+
 **File:** `fusion/fusionEngine.ts`
 
 **Algorithm:**
+
 1. Compute z-scores vs personal baseline
 2. Quality-weight each modality
 3. Fuse into single deviation score
@@ -129,12 +151,14 @@
 5. Determine direction of change
 
 **Inputs:**
+
 - Audio score + confidence
 - Visual score + confidence
 - Text score + confidence
 - User baseline data
 
 **Outputs:**
+
 - mindMeasureScore (0-100)
 - directionOfChange (better/same/worse)
 - uncertainty
@@ -143,9 +167,11 @@
 ---
 
 ### 4.2 Baseline Comparator
+
 **File:** `fusion/baselineComparator.ts`
 
 **Responsibilities:**
+
 - Load user baseline from database
 - Compute z-scores for each feature
 - Identify significant deviations
@@ -156,9 +182,11 @@
 ## 📦 Phase 5: Assembly & Integration
 
 ### 5.1 Dashboard Assembler
+
 **File:** `assembly/dashboardAssembler.ts`
 
 **Responsibilities:**
+
 - Combine fusion result + text analysis
 - Format for UI display
 - Structure for database storage
@@ -167,9 +195,11 @@
 ---
 
 ### 5.2 Component Integration
+
 **File:** Update existing `CheckinAssessment.tsx`
 
 **Changes:**
+
 - Call check-in enrichment service
 - Show processing screen
 - Display multimodal results
@@ -180,16 +210,19 @@
 ## 🧪 Phase 6: Testing & Calibration
 
 ### 6.1 Unit Tests
+
 - Test each extractor independently
 - Test fusion algorithm with known inputs
 - Test text analyzer with sample transcripts
 
 ### 6.2 Integration Tests
+
 - End-to-end check-in flow
 - With/without baseline comparison
 - Graceful degradation scenarios
 
 ### 6.3 Calibration
+
 - Run on real conversational data
 - Adjust feature ranges
 - Tune fusion weights
@@ -200,11 +233,13 @@
 ## 📊 Implementation Metrics
 
 **Total Features:** 57
+
 - Audio: 23
 - Visual: 18
 - Text: 16
 
 **Total Services:** 8
+
 - audioFeatures.ts
 - visualFeatures.ts
 - multimodalExtractor.ts
@@ -215,6 +250,7 @@
 - dashboardAssembler.ts
 
 **Estimated Complexity:**
+
 - Phase 2: ~400 lines (extractors)
 - Phase 3: ~300 lines (text analysis)
 - Phase 4: ~250 lines (fusion)
@@ -241,6 +277,7 @@
 **Current Focus:** Phase 2.1 - Audio Feature Extractor
 
 **Order of Implementation:**
+
 1. Audio features (conversational calibration)
 2. Visual features (extended Rekognition)
 3. Multimodal orchestrator
@@ -251,6 +288,7 @@
 8. Component integration
 
 **Estimated Timeline:**
+
 - Phase 2: Audio + Visual extractors
 - Phase 3: Text analysis
 - Phase 4: Fusion scoring
@@ -266,15 +304,19 @@
 **Feature Branch:** `feature/checkin-multimodal`
 
 **Commit Strategy:**
+
 - Commit after each major service
 - Tag stable milestones
 - Test before merging to main
 
+---
 
+## 🤖 Institutional Agent Resolution
 
+**CheckinAssessmentSDK** resolves the institution-specific ElevenLabs agent before starting a session.
 
+**Flow:**
 
-
-
-
-
+- Calls `GET /api/agents/resolve?university_id=...` to obtain the institutional agent ID
+- Falls back to the default **Jodie Check-in** agent (`agent_7501k3hpgd5gf8ssm3c3530jx8qx`) if no institutional agent is configured
+- The `/api/agents/resolve` endpoint is hosted on the mobile app's own backend, querying the shared database
