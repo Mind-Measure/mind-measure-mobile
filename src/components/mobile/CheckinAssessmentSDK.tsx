@@ -182,10 +182,14 @@ export function CheckinAssessmentSDK({ onBack, onComplete }: CheckinAssessmentSD
       const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
       // Build mood trend from last 5 check-ins
-      const recentMoods = checkins.slice(0, 5).map((s: Record<string, unknown>) => {
-        const a = typeof s.analysis === 'string' ? JSON.parse(s.analysis) : s.analysis;
-        return a?.mood_score;
-      }).filter((m: unknown) => typeof m === 'number').reverse();
+      const recentMoods = checkins
+        .slice(0, 5)
+        .map((s: Record<string, unknown>) => {
+          const a = typeof s.analysis === 'string' ? JSON.parse(s.analysis) : s.analysis;
+          return a?.mood_score;
+        })
+        .filter((m: unknown) => typeof m === 'number')
+        .reverse();
 
       const hour = now.getHours();
       const timeOfDay = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
@@ -292,10 +296,24 @@ export function CheckinAssessmentSDK({ onBack, onComplete }: CheckinAssessmentSD
             dynamicVars.time_of_day = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
           }
 
-          // Pass user context via dynamicVariables
-          // Agent prompt can include: {{user_name}}, {{last_themes}}, {{last_mood}}, {{days_since_checkin}}, {{last_summary}}
+          // Resolve institutional agent (if institution has a custom agent, use it; otherwise fallback)
+          let resolvedAgentId = 'agent_7501k3hpgd5gf8ssm3c3530jx8qx';
+          if (user?.university_id) {
+            try {
+              const agentRes = await fetch(`/api/agents/resolve?university_id=${user.university_id}`);
+              if (agentRes.ok) {
+                const agentData = await agentRes.json();
+                if (agentData.agentId && !agentData.fallback) {
+                  resolvedAgentId = agentData.agentId;
+                }
+              }
+            } catch {
+              // Fallback to default agent silently
+            }
+          }
+
           const sid = await conversation.startSession({
-            agentId: 'agent_7501k3hpgd5gf8ssm3c3530jx8qx', // Check-in agent
+            agentId: resolvedAgentId,
             dynamicVariables: dynamicVars,
           } as ElevenLabsSessionOptions);
 
