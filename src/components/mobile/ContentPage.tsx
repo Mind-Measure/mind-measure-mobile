@@ -13,6 +13,7 @@ interface CachedData {
   articles: ContentArticle[];
   universityName: string;
   wellbeingSupportUrl: string;
+  universityId?: string;
   timestamp: number;
 }
 
@@ -133,20 +134,25 @@ export function ContentPage({
       }
 
       try {
-        const profile = user?.id ? await getUserUniversityProfile(user.id).catch(() => null) : null;
-        if (cancelled) return;
+        const universityId = user?.university_id || '';
 
-        const universityId = profile?.university_id || profile?.id || '';
-        const poolUrl = universityId
-          ? `/api/content/pool?universityId=${universityId}&limit=50`
-          : '/api/content/pool?limit=50';
+        if (!universityId) {
+          if (!cached) setArticles([]);
+          return;
+        }
 
-        const poolData = await fetch(poolUrl)
+        // Fire pool fetch immediately — universityId is already on the auth user
+        const poolPromise = fetch(`/api/content/pool?universityId=${universityId}&limit=50`)
           .then((r) => (r.ok ? r.json() : { data: [] }))
           .catch(() => ({ data: [] }));
+
+        // Profile fetch runs in parallel (only needed for display name + support URL)
+        const profilePromise = user?.id ? getUserUniversityProfile(user.id).catch(() => null) : Promise.resolve(null);
+
+        const [poolData, profile] = await Promise.all([poolPromise, profilePromise]);
         if (cancelled) return;
 
-        const uniName = profile?.name || 'Rummidge University';
+        const uniName = profile?.name || universityName;
         const supportUrl = profile?.wellbeing_support_url || '';
         const mapped = parseArticles(poolData);
 
