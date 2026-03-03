@@ -298,7 +298,8 @@ export function ArticleDetailPage({
           .article-body h3 { font-size: 1.1rem; font-weight: 700; color: #1a1a1a; margin: 1.25rem 0 0.5rem; line-height: 1.3; }
           .article-body h4 { font-size: 1rem; font-weight: 700; color: #1a1a1a; margin: 1rem 0 0.5rem; line-height: 1.3; }
           .article-body p { margin: 0 0 1rem; }
-          .article-body ul, .article-body ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+          .article-body ul { margin: 0 0 1rem; padding-left: 1.5rem; list-style-type: disc; }
+          .article-body ol { margin: 0 0 1rem; padding-left: 1.5rem; list-style-type: decimal; }
           .article-body li { margin-bottom: 0.375rem; }
           .article-body blockquote { margin: 1rem 0; padding: 0.75rem 1rem; border-left: 4px solid #2563eb; background: #F0F4FF; border-radius: 0 8px 8px 0; font-style: italic; color: #555; }
           .article-body a { color: #2563eb; text-decoration: underline; }
