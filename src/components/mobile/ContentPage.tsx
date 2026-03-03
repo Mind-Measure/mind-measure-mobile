@@ -133,28 +133,18 @@ export function ContentPage({
       }
 
       try {
-        // Fetch profile and pool content in parallel to avoid waterfall
-        const profilePromise = user?.id ? getUserUniversityProfile(user.id).catch(() => null) : Promise.resolve(null);
-
-        const earlyPoolUrl = '/api/content/pool?limit=50';
-
-        const [profile, earlyPoolData] = await Promise.all([
-          profilePromise,
-          cached ? Promise.resolve(null) : fetch(earlyPoolUrl).then((r) => r.ok ? r.json() : { data: [] }).catch(() => ({ data: [] })),
-        ]);
+        const profile = user?.id ? await getUserUniversityProfile(user.id).catch(() => null) : null;
         if (cancelled) return;
 
         const universityId = profile?.university_id || profile?.id || '';
+        const poolUrl = universityId
+          ? `/api/content/pool?universityId=${universityId}&limit=50`
+          : '/api/content/pool?limit=50';
 
-        // If profile returned a university ID, re-fetch with it (only if early fetch didn't have it)
-        let poolData = earlyPoolData;
-        if (universityId && (!poolData || poolData.data?.length === 0)) {
-          poolData = await fetch(`/api/content/pool?universityId=${universityId}&limit=50`)
-            .then((r) => (r.ok ? r.json() : { data: [] }))
-            .catch(() => ({ data: [] }));
-        }
+        const poolData = await fetch(poolUrl)
+          .then((r) => (r.ok ? r.json() : { data: [] }))
+          .catch(() => ({ data: [] }));
         if (cancelled) return;
-        if (!poolData) poolData = { data: [] };
 
         const uniName = profile?.name || 'Rummidge University';
         const supportUrl = profile?.wellbeing_support_url || '';

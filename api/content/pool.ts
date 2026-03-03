@@ -1,18 +1,15 @@
-// @ts-nocheck
 /**
  * GET /api/content/pool
  *
  * Returns published articles from the university's content hub.
- * Content is curated by the university admin — only articles they've
- * approved and published appear here.
- *
- * Falls back to the central Marketing CMS pool if no hub articles exist yet.
+ * Content is curated by the university admin. Only articles the
+ * university has approved and published appear here. No fallback
+ * to the generic CMS pool: the university controls what students see.
  */
 
 import { VercelRequest, VercelResponse } from '@vercel/node';
 
 const HUB_URL = process.env.HUB_URL || 'https://hub.mindmeasure.co.uk';
-const MARKETING_CMS_URL = process.env.MARKETING_CMS_URL || 'https://marketing.mindmeasure.co.uk';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
@@ -22,38 +19,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const universityId = req.query.universityId as string | undefined;
 
+  if (!universityId) {
+    return res.status(200).json({ success: true, data: [], count: 0, source: 'hub' });
+  }
+
   try {
+    const response = await fetch(`${HUB_URL}/api/content?universityId=${universityId}`, {
+      signal: AbortSignal.timeout(6000),
+    });
+
     let articles: Record<string, unknown>[] = [];
-
-    // Fetch hub and CMS pool in parallel — use whichever returns content
-    const hubPromise = universityId
-      ? fetch(`${HUB_URL}/api/content?universityId=${universityId}`, { signal: AbortSignal.timeout(6000) })
-          .then(async (r) => {
-            if (!r.ok) return [];
-            const d = await r.json();
-            return (d.articles || []).filter((a: Record<string, unknown>) => a.status === 'PUBLISHED');
-          })
-          .catch(() => {
-            return [] as Record<string, unknown>[];
-          })
-      : Promise.resolve([] as Record<string, unknown>[]);
-
-    const cmsPromise = fetch(`${MARKETING_CMS_URL}/api/blog-posts?status=PUBLISHED&limit=100`, { signal: AbortSignal.timeout(6000) })
-      .then(async (r) => {
-        if (!r.ok) return [];
-        const d = await r.json();
-        const allPosts: Record<string, unknown>[] = d.data || d || [];
-        return allPosts.filter((post) => {
-          const targets = post.target_sites || post.targetSites;
-          return Array.isArray(targets) && targets.includes('university-pool');
-        });
-      })
-      .catch(() => {
-        return [] as Record<string, unknown>[];
-      });
-
-    const [hubArticles, cmsArticles] = await Promise.all([hubPromise, cmsPromise]);
-    articles = hubArticles.length > 0 ? hubArticles : cmsArticles;
+    if (response.ok) {
+      const d = await response.json();
+      articles = (d.articles || []).filter((a: Record<string, unknown>) => a.status === 'PUBLISHED');
+    }
 
     const normalized = articles.map((a) => ({
       id: a.id,
@@ -83,7 +62,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       success: true,
       data: normalized,
       count: normalized.length,
-      source: articles.length > 0 && universityId ? 'hub' : 'pool',
+      source: 'hub',
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
