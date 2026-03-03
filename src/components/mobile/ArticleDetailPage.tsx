@@ -292,7 +292,22 @@ export function ArticleDetailPage({
         </div>
 
         {/* Full Content */}
+        <style>{`
+          .article-body h1 { font-size: 1.5rem; font-weight: 700; color: #1a1a1a; margin: 1.75rem 0 0.75rem; line-height: 1.3; }
+          .article-body h2 { font-size: 1.3rem; font-weight: 700; color: #1a1a1a; margin: 1.5rem 0 0.625rem; line-height: 1.3; }
+          .article-body h3 { font-size: 1.1rem; font-weight: 700; color: #1a1a1a; margin: 1.25rem 0 0.5rem; line-height: 1.3; }
+          .article-body h4 { font-size: 1rem; font-weight: 700; color: #1a1a1a; margin: 1rem 0 0.5rem; line-height: 1.3; }
+          .article-body p { margin: 0 0 1rem; }
+          .article-body ul, .article-body ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+          .article-body li { margin-bottom: 0.375rem; }
+          .article-body blockquote { margin: 1rem 0; padding: 0.75rem 1rem; border-left: 4px solid #2563eb; background: #F0F4FF; border-radius: 0 8px 8px 0; font-style: italic; color: #555; }
+          .article-body a { color: #2563eb; text-decoration: underline; }
+          .article-body img { max-width: 100%; border-radius: 8px; margin: 1rem 0; }
+          .article-body strong { font-weight: 700; color: #1a1a1a; }
+          .article-body hr { border: none; border-top: 1px solid #E0E0E0; margin: 1.5rem 0; }
+        `}</style>
         <div
+          className="article-body"
           style={{
             fontSize: '15px',
             color: '#333333',
