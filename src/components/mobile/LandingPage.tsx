@@ -120,7 +120,7 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
             animate="visible"
             style={{
               position: 'absolute',
-              left: '38%',
+              left: '50%',
               bottom: 0,
               width: '72%',
               zIndex: 5,
