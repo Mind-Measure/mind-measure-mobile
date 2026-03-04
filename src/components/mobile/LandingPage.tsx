@@ -2,7 +2,7 @@ import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 
-const MM_LOGO = '/images/mind-measure-logo.png';
+const MM_LOGO = '/images/mind-measure-logo-white.png';
 const heroStudent = '/images/hero-student.png';
 const coral = '#FF6B6B';
 const spectra = '#2D4C4C';
@@ -55,7 +55,7 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
             zIndex: 10,
           }}
         >
-          <img src={MM_LOGO} alt="" style={{ width: 36, height: 36, objectFit: 'contain' }} />
+          <img src={MM_LOGO} alt="" style={{ width: 72, height: 72, objectFit: 'contain' }} />
           <span
             style={{
               fontFamily: "'Lato', sans-serif",
@@ -82,7 +82,7 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
             style={{
               position: 'relative',
               zIndex: 10,
-              padding: '32px 24px 0',
+              padding: '56px 24px 0',
             }}
           >
             <motion.p
@@ -136,9 +136,9 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
             animate="visible"
             style={{
               position: 'absolute',
-              right: 0,
+              right: -24,
               bottom: 0,
-              width: '58%',
+              width: '62%',
               zIndex: 5,
             }}
           >
