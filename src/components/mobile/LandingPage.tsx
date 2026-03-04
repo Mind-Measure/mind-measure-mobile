@@ -106,11 +106,9 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
             >
               Know
               <br />
-              how you
+              yourself
               <br />
-              <em style={{ fontWeight: 300, fontStyle: 'italic' }}>actually</em>
-              <br />
-              feel.
+              <em style={{ fontWeight: 300, fontStyle: 'italic' }}>better.</em>
             </motion.h1>
           </div>
 
