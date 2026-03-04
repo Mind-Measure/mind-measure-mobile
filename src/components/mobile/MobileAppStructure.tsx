@@ -239,16 +239,18 @@ export const MobileAppStructure: React.FC = () => {
 
   const handleReturningSplashComplete = useCallback(async () => {
     setHasCompletedInitialSplash(true);
-    setSplashWipeActive(true);
 
     if (!user) {
       setOnboardingScreen('splash');
+      // Brief delay so the new screen paints before wipe fades out
+      requestAnimationFrame(() => setSplashWipeActive(true));
       return;
     }
     if (hasAssessmentHistory === true) {
       setOnboardingScreen(null);
       setCurrentScreen('dashboard');
       setActiveTab('dashboard');
+      requestAnimationFrame(() => setSplashWipeActive(true));
       const showProfile = await shouldShowProfileReminderThisVisit(user.id);
       if (showProfile) setShowProfileReminderModal(true);
       else {
@@ -258,6 +260,7 @@ export const MobileAppStructure: React.FC = () => {
       return;
     }
     setOnboardingScreen('baseline_welcome');
+    requestAnimationFrame(() => setSplashWipeActive(true));
   }, [user, hasAssessmentHistory]);
 
   const handleBaselineStart = useCallback(() => {
@@ -408,7 +411,7 @@ export const MobileAppStructure: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen" style={{ backgroundColor: splashWipeActive ? SPLASH_BRAND_COLOR : '#ffffff' }}>
       <div className={onboardingScreen || !user ? '' : 'pb-24'}>{renderContent()}</div>
       {!onboardingScreen && user && ['dashboard', 'content', 'buddies', 'profile'].includes(currentScreen) && (
         <BottomNav
@@ -573,10 +576,9 @@ export const MobileAppStructure: React.FC = () => {
         {splashWipeActive && (
           <motion.div
             key="splash-wipe"
-            initial={{ x: 0 }}
-            animate={{ x: '-100%' }}
-            exit={{ x: '-100%' }}
-            transition={{ duration: 1.4, ease: [0.4, 0, 0.2, 1] }}
+            initial={{ opacity: 1 }}
+            animate={{ opacity: 0 }}
+            transition={{ duration: 0.8, ease: 'easeInOut', delay: 0.15 }}
             onAnimationComplete={() => setSplashWipeActive(false)}
             style={{
               position: 'fixed',
@@ -586,6 +588,7 @@ export const MobileAppStructure: React.FC = () => {
               bottom: 0,
               backgroundColor: SPLASH_BRAND_COLOR,
               zIndex: 9999,
+              pointerEvents: 'none',
             }}
           />
         )}

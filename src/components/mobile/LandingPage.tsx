@@ -12,22 +12,17 @@ interface SplashScreenProps {
 }
 
 export function SplashScreen({ onGetStarted }: SplashScreenProps) {
-  const fadeIn = {
-    hidden: { opacity: 0, y: 24 },
-    visible: (i: number) => ({
-      opacity: 1,
-      y: 0,
-      transition: { delay: i * 0.12, duration: 0.5, ease: 'easeOut' },
-    }),
-  };
-
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5, ease: 'easeOut' }}
       style={{
         minHeight: '100vh',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
+        backgroundColor: coral,
       }}
     >
       {/* ─── CORAL SECTION ─── */}
@@ -41,11 +36,7 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
         }}
       >
         {/* Top bar */}
-        <motion.div
-          custom={0}
-          variants={fadeIn}
-          initial="hidden"
-          animate="visible"
+        <div
           style={{
             padding: '68px 24px 0',
             position: 'relative',
@@ -53,7 +44,7 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
           }}
         >
           <img src={MM_LOGO} alt="Mind Measure" style={{ height: 56, objectFit: 'contain' }} />
-        </motion.div>
+        </div>
 
         {/* Hero area — text overlapping figure */}
         <div
@@ -71,11 +62,7 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
               padding: '40px 24px 0',
             }}
           >
-            <motion.p
-              custom={1}
-              variants={fadeIn}
-              initial="hidden"
-              animate="visible"
+            <p
               style={{
                 fontFamily: "'Inter', sans-serif",
                 fontSize: 12,
@@ -87,13 +74,9 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
               }}
             >
               For Students
-            </motion.p>
+            </p>
 
-            <motion.h1
-              custom={2}
-              variants={fadeIn}
-              initial="hidden"
-              animate="visible"
+            <h1
               style={{
                 fontFamily: "'Lato', sans-serif",
                 fontWeight: 900,
@@ -109,15 +92,11 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
               yourself
               <br />
               <em style={{ fontWeight: 300, fontStyle: 'italic' }}>better.</em>
-            </motion.h1>
+            </h1>
           </div>
 
           {/* Hero figure — anchored bottom-right, overlapping text */}
-          <motion.div
-            custom={3}
-            variants={fadeIn}
-            initial="hidden"
-            animate="visible"
+          <div
             style={{
               position: 'absolute',
               left: '50%',
@@ -135,16 +114,12 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
                 display: 'block',
               }}
             />
-          </motion.div>
+          </div>
         </div>
       </div>
 
       {/* ─── DARK GREEN SECTION ─── */}
-      <motion.div
-        custom={4}
-        variants={fadeIn}
-        initial="hidden"
-        animate="visible"
+      <div
         style={{
           backgroundColor: spectra,
           padding: '28px 24px 48px',
@@ -184,7 +159,7 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
             <ArrowRight className="w-5 h-5 ml-2" />
           </Button>
         </motion.div>
-      </motion.div>
+      </div>
 
       {/* Dev Debug */}
       {process.env.NODE_ENV === 'development' && (
@@ -231,6 +206,6 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
           </div>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
