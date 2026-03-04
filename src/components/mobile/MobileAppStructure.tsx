@@ -409,7 +409,7 @@ export const MobileAppStructure: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="pb-24">{renderContent()}</div>
+      <div className={onboardingScreen ? '' : 'pb-24'}>{renderContent()}</div>
       {!onboardingScreen && ['dashboard', 'content', 'buddies', 'profile'].includes(currentScreen) && (
         <BottomNav
           activeView={activeTab === 'dashboard' ? 'home' : activeTab}
