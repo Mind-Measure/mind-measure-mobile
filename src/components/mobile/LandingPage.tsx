@@ -4,7 +4,7 @@ import { ArrowRight } from 'lucide-react';
 
 const MM_LOGO = '/images/mind-measure-logo.png';
 const heroStudent = '/images/hero-student.png';
-const coral = '#E8706E';
+const coral = '#FF6B6B';
 const spectra = '#2D4C4C';
 
 interface SplashScreenProps {
