@@ -4,6 +4,7 @@ export const containerStyle: React.CSSProperties = {
   minHeight: '100dvh',
   backgroundColor: '#F5F5F5',
   padding: '20px',
+  paddingTop: '60px',
   paddingBottom: '120px',
   overflowY: 'auto',
   WebkitOverflowScrolling: 'touch',
