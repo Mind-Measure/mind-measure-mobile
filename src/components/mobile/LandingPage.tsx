@@ -38,7 +38,7 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
         {/* Top bar */}
         <div
           style={{
-            padding: '68px 24px 0',
+            padding: '108px 24px 0',
             position: 'relative',
             zIndex: 10,
           }}
