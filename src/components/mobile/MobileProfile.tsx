@@ -167,10 +167,9 @@ export function MobileProfile({
         return;
       }
       const isCapacitor =
-        window.location.protocol === 'capacitor:' ||
-        !!(window as unknown as { Capacitor?: unknown }).Capacitor;
-      const apiBase = import.meta.env.VITE_API_BASE_URL ||
-        (isCapacitor ? 'https://mobile.mindmeasure.app/api' : '/api');
+        window.location.protocol === 'capacitor:' || !!(window as unknown as { Capacitor?: unknown }).Capacitor;
+      const apiBase =
+        import.meta.env.VITE_API_BASE_URL || (isCapacitor ? 'https://mobile.mindmeasure.app/api' : '/api');
       const response = await fetch(`${apiBase}/user/delete-account`, {
         method: 'DELETE',
         headers: {
@@ -351,7 +350,7 @@ export function MobileProfile({
           />
         )}
 
-        {activeTab === 'wellness' && <WellnessTab userData={userData} onExportData={handleExportData} />}
+        {activeTab === 'wellness' && <WellnessTab userData={userData} />}
       </div>
 
       {/* Wellbeing Report */}
@@ -639,7 +638,11 @@ export function MobileProfile({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4 }}
-          onClick={() => { setShowDeleteConfirm(true); setDeleteStep(1); setDeleteError(null); }}
+          onClick={() => {
+            setShowDeleteConfirm(true);
+            setDeleteStep(1);
+            setDeleteError(null);
+          }}
           style={{
             width: '100%',
             padding: '14px',
@@ -674,7 +677,9 @@ export function MobileProfile({
             zIndex: 1000,
             padding: '20px',
           }}
-          onClick={() => { if (!isDeleting) setShowDeleteConfirm(false); }}
+          onClick={() => {
+            if (!isDeleting) setShowDeleteConfirm(false);
+          }}
         >
           <div
             style={{
@@ -695,7 +700,15 @@ export function MobileProfile({
                 <p style={{ fontSize: '14px', color: '#666666', margin: '0 0 16px 0', lineHeight: '1.6' }}>
                   This will permanently delete:
                 </p>
-                <ul style={{ margin: '0 0 20px 0', padding: '0 0 0 18px', fontSize: '14px', color: '#666666', lineHeight: '1.8' }}>
+                <ul
+                  style={{
+                    margin: '0 0 20px 0',
+                    padding: '0 0 0 18px',
+                    fontSize: '14px',
+                    color: '#666666',
+                    lineHeight: '1.8',
+                  }}
+                >
                   <li>All your check-in conversations and scores</li>
                   <li>Your mood ratings and insights</li>
                   <li>Your wellbeing reports</li>
@@ -747,19 +760,22 @@ export function MobileProfile({
                   Are you absolutely sure?
                 </h3>
                 <p style={{ fontSize: '14px', color: '#666666', margin: '0 0 20px 0', lineHeight: '1.6' }}>
-                  All your data will be permanently removed from our servers. You will not be able to recover your account, scores, or conversation history.
+                  All your data will be permanently removed from our servers. You will not be able to recover your
+                  account, scores, or conversation history.
                 </p>
                 {deleteError && (
-                  <div style={{
-                    background: '#FEF2F2',
-                    border: '1px solid #FECACA',
-                    borderRadius: '10px',
-                    padding: '12px 14px',
-                    marginBottom: '16px',
-                    fontSize: '13px',
-                    color: '#991B1B',
-                    lineHeight: '1.5',
-                  }}>
+                  <div
+                    style={{
+                      background: '#FEF2F2',
+                      border: '1px solid #FECACA',
+                      borderRadius: '10px',
+                      padding: '12px 14px',
+                      marginBottom: '16px',
+                      fontSize: '13px',
+                      color: '#991B1B',
+                      lineHeight: '1.5',
+                    }}
+                  >
                     {deleteError}
                   </div>
                 )}
@@ -783,7 +799,10 @@ export function MobileProfile({
                     {isDeleting ? 'Deleting everything...' : 'Delete everything permanently'}
                   </button>
                   <button
-                    onClick={() => { setShowDeleteConfirm(false); setDeleteStep(1); }}
+                    onClick={() => {
+                      setShowDeleteConfirm(false);
+                      setDeleteStep(1);
+                    }}
                     disabled={isDeleting}
                     style={{
                       width: '100%',
