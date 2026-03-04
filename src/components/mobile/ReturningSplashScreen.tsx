@@ -11,7 +11,7 @@ interface ReturningSplashScreenProps {
 
 export function ReturningSplashScreen({ onComplete }: ReturningSplashScreenProps) {
   useEffect(() => {
-    const timer = setTimeout(onComplete, 1500);
+    const timer = setTimeout(onComplete, 2200);
     return () => clearTimeout(timer);
   }, [onComplete]);
 
