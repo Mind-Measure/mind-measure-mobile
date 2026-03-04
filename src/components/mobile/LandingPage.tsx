@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
@@ -14,16 +14,37 @@ const HERO_FIGURES = [
   '/images/hero-splash-6.png',
   '/images/hero-splash-7.png',
 ];
+const HERO_CYCLE_KEY = 'mm_hero_cycle_index';
 const coral = '#FF6B6B';
 const spectra = '#2D4C4C';
 
-interface SplashScreenProps {
-  onGetStarted: () => void;
+function getNextHeroIndex(): number {
+  try {
+    const stored = localStorage.getItem(HERO_CYCLE_KEY);
+    const next = stored !== null ? (parseInt(stored, 10) + 1) % HERO_FIGURES.length : 0;
+    localStorage.setItem(HERO_CYCLE_KEY, String(next));
+    return next;
+  } catch {
+    return 0;
+  }
 }
 
-export function SplashScreen({ onGetStarted }: SplashScreenProps) {
-  const heroSrc = useMemo(() => HERO_FIGURES[Math.floor(Math.random() * HERO_FIGURES.length)], []);
+interface SplashScreenProps {
+  onGetStarted: () => void;
+  autoAdvanceMs?: number;
+}
+
+export function SplashScreen({ onGetStarted, autoAdvanceMs }: SplashScreenProps) {
+  const heroIndex = useMemo(() => getNextHeroIndex(), []);
+  const heroSrc = HERO_FIGURES[heroIndex];
   const isOriginalGirl = heroSrc === '/images/hero-student.png';
+
+  useEffect(() => {
+    if (autoAdvanceMs == null) return;
+    const timer = setTimeout(onGetStarted, autoAdvanceMs);
+    return () => clearTimeout(timer);
+  }, [autoAdvanceMs, onGetStarted]);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}

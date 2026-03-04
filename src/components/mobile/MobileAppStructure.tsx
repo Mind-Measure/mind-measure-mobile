@@ -187,6 +187,10 @@ export const MobileAppStructure: React.FC = () => {
   const [pendingTabChange, setPendingTabChange] = useState<MobileTab | null>(null);
   const [showBuddyReminderModal, setShowBuddyReminderModal] = useState(false);
   const [splashWipeActive, setSplashWipeActive] = useState(false);
+  const [splashAutoAdvance, setSplashAutoAdvance] = useState<{
+    destination: 'dashboard' | 'baseline_welcome';
+    userId?: string;
+  } | null>(null);
   // Ref to trigger save from parent
   const profileSaveRef = useRef<(() => Promise<void>) | null>(null);
 
@@ -237,31 +241,43 @@ export const MobileAppStructure: React.FC = () => {
     setOnboardingScreen('auth');
   }, []);
 
-  const handleReturningSplashComplete = useCallback(async () => {
+  const handleReturningSplashComplete = useCallback(() => {
     setHasCompletedInitialSplash(true);
+    setOnboardingScreen('splash');
+    requestAnimationFrame(() => setSplashWipeActive(true));
 
     if (!user) {
-      setOnboardingScreen('splash');
-      // Brief delay so the new screen paints before wipe fades out
-      requestAnimationFrame(() => setSplashWipeActive(true));
+      // New user — splash stays, they tap "Let's go"
       return;
     }
     if (hasAssessmentHistory === true) {
+      setSplashAutoAdvance({ destination: 'dashboard', userId: user.id });
+      return;
+    }
+    setSplashAutoAdvance({ destination: 'baseline_welcome', userId: user.id });
+  }, [user, hasAssessmentHistory]);
+
+  const handleSplashAutoAdvance = useCallback(async () => {
+    if (!splashAutoAdvance) return;
+    const { destination, userId } = splashAutoAdvance;
+    setSplashAutoAdvance(null);
+
+    if (destination === 'dashboard') {
       setOnboardingScreen(null);
       setCurrentScreen('dashboard');
       setActiveTab('dashboard');
-      requestAnimationFrame(() => setSplashWipeActive(true));
-      const showProfile = await shouldShowProfileReminderThisVisit(user.id);
-      if (showProfile) setShowProfileReminderModal(true);
-      else {
-        const showBuddy = await shouldShowBuddyReminderThisVisit(user.id);
-        if (showBuddy) setShowBuddyReminderModal(true);
+      if (userId) {
+        const showProfile = await shouldShowProfileReminderThisVisit(userId);
+        if (showProfile) setShowProfileReminderModal(true);
+        else {
+          const showBuddy = await shouldShowBuddyReminderThisVisit(userId);
+          if (showBuddy) setShowBuddyReminderModal(true);
+        }
       }
-      return;
+    } else {
+      setOnboardingScreen('baseline_welcome');
     }
-    setOnboardingScreen('baseline_welcome');
-    requestAnimationFrame(() => setSplashWipeActive(true));
-  }, [user, hasAssessmentHistory]);
+  }, [splashAutoAdvance]);
 
   const handleBaselineStart = useCallback(() => {
     setOnboardingScreen('baseline_assessment');
@@ -313,7 +329,12 @@ export const MobileAppStructure: React.FC = () => {
     if (onboardingScreen) {
       switch (onboardingScreen) {
         case 'splash':
-          return <SplashScreen onGetStarted={handleSplashComplete} />;
+          return (
+            <SplashScreen
+              onGetStarted={splashAutoAdvance ? handleSplashAutoAdvance : handleSplashComplete}
+              autoAdvanceMs={splashAutoAdvance ? 2500 : undefined}
+            />
+          );
         case 'auth':
           return (
             <RegistrationFlow
