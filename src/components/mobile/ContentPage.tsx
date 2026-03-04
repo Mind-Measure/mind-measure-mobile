@@ -134,22 +134,19 @@ export function ContentPage({
       }
 
       try {
-        const universityId = user?.university_id || '';
+        const profile = user?.id ? await getUserUniversityProfile(user.id).catch(() => null) : null;
+        if (cancelled) return;
+
+        const universityId = user?.university_id || profile?.id || '';
 
         if (!universityId) {
           if (!cached) setArticles([]);
           return;
         }
 
-        // Fire pool fetch immediately — universityId is already on the auth user
-        const poolPromise = fetch(`/api/content/pool?universityId=${universityId}&limit=50`)
+        const poolData = await fetch(`/api/content/pool?universityId=${universityId}&limit=50`)
           .then((r) => (r.ok ? r.json() : { data: [] }))
           .catch(() => ({ data: [] }));
-
-        // Profile fetch runs in parallel (only needed for display name + support URL)
-        const profilePromise = user?.id ? getUserUniversityProfile(user.id).catch(() => null) : Promise.resolve(null);
-
-        const [poolData, profile] = await Promise.all([poolPromise, profilePromise]);
         if (cancelled) return;
 
         const uniName = profile?.name || universityName;
