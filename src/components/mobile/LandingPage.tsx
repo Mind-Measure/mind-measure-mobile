@@ -47,12 +47,12 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
           initial="hidden"
           animate="visible"
           style={{
-            padding: '60px 24px 0',
+            padding: '68px 24px 0',
             position: 'relative',
             zIndex: 10,
           }}
         >
-          <img src={MM_LOGO} alt="Mind Measure" style={{ height: 48, objectFit: 'contain' }} />
+          <img src={MM_LOGO} alt="Mind Measure" style={{ height: 56, objectFit: 'contain' }} />
         </motion.div>
 
         {/* Hero area — text overlapping figure */}
@@ -68,7 +68,7 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
             style={{
               position: 'relative',
               zIndex: 10,
-              padding: '72px 24px 0',
+              padding: '40px 24px 0',
             }}
           >
             <motion.p
@@ -78,12 +78,12 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
               animate="visible"
               style={{
                 fontFamily: "'Inter', sans-serif",
-                fontSize: 11,
+                fontSize: 12,
                 fontWeight: 600,
                 letterSpacing: '0.15em',
                 textTransform: 'uppercase' as const,
                 color: 'rgba(255,255,255,0.7)',
-                marginBottom: 12,
+                marginBottom: 14,
               }}
             >
               For Students
@@ -97,7 +97,7 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
               style={{
                 fontFamily: "'Lato', sans-serif",
                 fontWeight: 900,
-                fontSize: 'clamp(44px, 13vw, 60px)',
+                fontSize: 'clamp(48px, 14vw, 64px)',
                 lineHeight: 0.93,
                 letterSpacing: '-0.03em',
                 color: '#fff',
