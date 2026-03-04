@@ -2,7 +2,7 @@ import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 
-const MM_LOGO = '/images/mind-measure-logo-white.png';
+const MM_LOGO = '/images/mm-logo-wordmark-white.png';
 const heroStudent = '/images/hero-student.png';
 const coral = '#FF6B6B';
 const spectra = '#2D4C4C';
@@ -47,26 +47,12 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
           initial="hidden"
           animate="visible"
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            padding: '52px 24px 0',
+            padding: '60px 24px 0',
             position: 'relative',
             zIndex: 10,
           }}
         >
-          <img src={MM_LOGO} alt="" style={{ width: 72, height: 72, objectFit: 'contain' }} />
-          <span
-            style={{
-              fontFamily: "'Lato', sans-serif",
-              fontWeight: 900,
-              fontSize: 18,
-              color: '#fff',
-              letterSpacing: '-0.01em',
-            }}
-          >
-            Mind Measure
-          </span>
+          <img src={MM_LOGO} alt="Mind Measure" style={{ height: 48, objectFit: 'contain' }} />
         </motion.div>
 
         {/* Hero area — text overlapping figure */}
@@ -82,7 +68,7 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
             style={{
               position: 'relative',
               zIndex: 10,
-              padding: '56px 24px 0',
+              padding: '72px 24px 0',
             }}
           >
             <motion.p
