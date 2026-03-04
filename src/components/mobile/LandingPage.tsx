@@ -1,4 +1,4 @@
-import { useMemo, useEffect } from 'react';
+import { useMemo } from 'react';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
@@ -31,19 +31,12 @@ function getNextHeroIndex(): number {
 
 interface SplashScreenProps {
   onGetStarted: () => void;
-  autoAdvanceMs?: number;
 }
 
-export function SplashScreen({ onGetStarted, autoAdvanceMs }: SplashScreenProps) {
+export function SplashScreen({ onGetStarted }: SplashScreenProps) {
   const heroIndex = useMemo(() => getNextHeroIndex(), []);
   const heroSrc = HERO_FIGURES[heroIndex];
   const isOriginalGirl = heroSrc === '/images/hero-student.png';
-
-  useEffect(() => {
-    if (autoAdvanceMs == null) return;
-    const timer = setTimeout(onGetStarted, autoAdvanceMs);
-    return () => clearTimeout(timer);
-  }, [autoAdvanceMs, onGetStarted]);
 
   return (
     <motion.div
