@@ -1,9 +1,19 @@
+import { useMemo } from 'react';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 
 const MM_LOGO = '/images/mm-logo-wordmark-white.png';
-const heroStudent = '/images/hero-student.png';
+const HERO_FIGURES = [
+  '/images/hero-student.png',
+  '/images/hero-splash-1.png',
+  '/images/hero-splash-2.png',
+  '/images/hero-splash-3.png',
+  '/images/hero-splash-4.png',
+  '/images/hero-splash-5.png',
+  '/images/hero-splash-6.png',
+  '/images/hero-splash-7.png',
+];
 const coral = '#FF6B6B';
 const spectra = '#2D4C4C';
 
@@ -12,6 +22,7 @@ interface SplashScreenProps {
 }
 
 export function SplashScreen({ onGetStarted }: SplashScreenProps) {
+  const heroSrc = useMemo(() => HERO_FIGURES[Math.floor(Math.random() * HERO_FIGURES.length)], []);
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -106,7 +117,7 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
             }}
           >
             <img
-              src={heroStudent}
+              src={heroSrc}
               alt="Student"
               style={{
                 width: '100%',
