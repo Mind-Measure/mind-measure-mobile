@@ -110,7 +110,7 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
           <div
             style={{
               position: 'absolute',
-              left: '50%',
+              left: '35%',
               bottom: 0,
               width: '72%',
               zIndex: 5,
