@@ -150,6 +150,7 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
           padding: '28px 24px 48px',
           position: 'relative',
           zIndex: 10,
+          textAlign: 'center',
         }}
       >
         <p
@@ -166,7 +167,7 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
           Measure. <span style={{ color: '#99CCCE' }}>Monitor.</span> Manage.
         </p>
 
-        <motion.div whileTap={{ scale: 0.97 }}>
+        <motion.div whileTap={{ scale: 0.97 }} style={{ display: 'flex', justifyContent: 'center' }}>
           <Button
             onClick={onGetStarted}
             className="h-14 px-8 text-base font-bold rounded-2xl shadow-lg"
@@ -174,7 +175,7 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
               backgroundColor: '#fff',
               color: spectra,
               width: '100%',
-              maxWidth: 320,
+              maxWidth: 360,
               fontFamily: "'Lato', sans-serif",
               letterSpacing: '-0.01em',
             }}
