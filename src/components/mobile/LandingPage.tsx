@@ -5,6 +5,7 @@ import { ArrowRight } from 'lucide-react';
 const MM_LOGO = '/images/mind-measure-logo.png';
 const heroStudent = '/images/hero-student.png';
 const coral = '#E8706E';
+const spectra = '#2D4C4C';
 
 interface SplashScreenProps {
   onGetStarted: () => void;
@@ -24,138 +25,147 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
     <div
       style={{
         minHeight: '100vh',
-        backgroundColor: coral,
-        position: 'relative',
-        overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
+        overflow: 'hidden',
       }}
     >
-      {/* Top bar */}
-      <motion.div
-        custom={0}
-        variants={fadeIn}
-        initial="hidden"
-        animate="visible"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-          padding: '52px 24px 0',
-          position: 'relative',
-          zIndex: 10,
-        }}
-      >
-        <img src={MM_LOGO} alt="" style={{ width: 36, height: 36, objectFit: 'contain' }} />
-        <span
-          style={{
-            fontFamily: "'Lato', sans-serif",
-            fontWeight: 900,
-            fontSize: 18,
-            color: '#fff',
-            letterSpacing: '-0.01em',
-          }}
-        >
-          Mind Measure
-        </span>
-      </motion.div>
-
-      {/* Main content — text left, figure right */}
+      {/* ─── CORAL SECTION ─── */}
       <div
         style={{
+          backgroundColor: coral,
+          position: 'relative',
           flex: 1,
           display: 'flex',
-          flexDirection: 'row',
-          alignItems: 'flex-end',
-          position: 'relative',
-          paddingLeft: 24,
-          paddingTop: 28,
+          flexDirection: 'column',
         }}
       >
-        {/* Left — typography */}
-        <div style={{ flex: '0 0 55%', position: 'relative', zIndex: 10, paddingBottom: 24 }}>
-          <motion.p
-            custom={1}
-            variants={fadeIn}
-            initial="hidden"
-            animate="visible"
-            style={{
-              fontFamily: "'Inter', sans-serif",
-              fontSize: 11,
-              fontWeight: 600,
-              letterSpacing: '0.15em',
-              textTransform: 'uppercase' as const,
-              color: 'rgba(255,255,255,0.7)',
-              marginBottom: 12,
-            }}
-          >
-            For Students
-          </motion.p>
-
-          <motion.h1
-            custom={2}
-            variants={fadeIn}
-            initial="hidden"
-            animate="visible"
-            style={{
-              fontFamily: "'Lato', sans-serif",
-              fontWeight: 900,
-              fontSize: 'clamp(42px, 12vw, 56px)',
-              lineHeight: 0.95,
-              letterSpacing: '-0.03em',
-              color: '#fff',
-              margin: 0,
-            }}
-          >
-            Know
-            <br />
-            how you
-            <br />
-            <em style={{ fontWeight: 300, fontStyle: 'italic' }}>actually</em>
-            <br />
-            feel.
-          </motion.h1>
-        </div>
-
-        {/* Right — hero figure */}
+        {/* Top bar */}
         <motion.div
-          custom={3}
+          custom={0}
           variants={fadeIn}
           initial="hidden"
           animate="visible"
           style={{
-            flex: '0 0 50%',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            padding: '52px 24px 0',
             position: 'relative',
-            zIndex: 5,
-            marginRight: -16,
-            alignSelf: 'flex-end',
+            zIndex: 10,
           }}
         >
-          <img
-            src={heroStudent}
-            alt="Student"
+          <img src={MM_LOGO} alt="" style={{ width: 36, height: 36, objectFit: 'contain' }} />
+          <span
             style={{
-              width: '100%',
-              height: 'auto',
-              display: 'block',
-              objectFit: 'contain',
-              objectPosition: 'bottom right',
+              fontFamily: "'Lato', sans-serif",
+              fontWeight: 900,
+              fontSize: 18,
+              color: '#fff',
+              letterSpacing: '-0.01em',
             }}
-          />
+          >
+            Mind Measure
+          </span>
         </motion.div>
+
+        {/* Hero area — text overlapping figure */}
+        <div
+          style={{
+            flex: 1,
+            position: 'relative',
+            minHeight: 380,
+          }}
+        >
+          {/* Typography — positioned left */}
+          <div
+            style={{
+              position: 'relative',
+              zIndex: 10,
+              padding: '32px 24px 0',
+            }}
+          >
+            <motion.p
+              custom={1}
+              variants={fadeIn}
+              initial="hidden"
+              animate="visible"
+              style={{
+                fontFamily: "'Inter', sans-serif",
+                fontSize: 11,
+                fontWeight: 600,
+                letterSpacing: '0.15em',
+                textTransform: 'uppercase' as const,
+                color: 'rgba(255,255,255,0.7)',
+                marginBottom: 12,
+              }}
+            >
+              For Students
+            </motion.p>
+
+            <motion.h1
+              custom={2}
+              variants={fadeIn}
+              initial="hidden"
+              animate="visible"
+              style={{
+                fontFamily: "'Lato', sans-serif",
+                fontWeight: 900,
+                fontSize: 'clamp(44px, 13vw, 60px)',
+                lineHeight: 0.93,
+                letterSpacing: '-0.03em',
+                color: '#fff',
+                margin: 0,
+              }}
+            >
+              Know
+              <br />
+              how you
+              <br />
+              <em style={{ fontWeight: 300, fontStyle: 'italic' }}>actually</em>
+              <br />
+              feel.
+            </motion.h1>
+          </div>
+
+          {/* Hero figure — anchored bottom-right, overlapping text */}
+          <motion.div
+            custom={3}
+            variants={fadeIn}
+            initial="hidden"
+            animate="visible"
+            style={{
+              position: 'absolute',
+              right: 0,
+              bottom: 0,
+              width: '58%',
+              zIndex: 5,
+            }}
+          >
+            <img
+              src={heroStudent}
+              alt="Student"
+              style={{
+                width: '100%',
+                height: 'auto',
+                display: 'block',
+              }}
+            />
+          </motion.div>
+        </div>
       </div>
 
-      {/* Bottom — description + CTA */}
+      {/* ─── DARK GREEN SECTION ─── */}
       <motion.div
         custom={4}
         variants={fadeIn}
         initial="hidden"
         animate="visible"
         style={{
+          backgroundColor: spectra,
+          padding: '28px 24px 48px',
           position: 'relative',
           zIndex: 10,
-          padding: '28px 24px 48px',
-          backgroundColor: '#2D4C4C',
         }}
       >
         <p
@@ -178,7 +188,7 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
             className="h-14 px-8 text-base font-bold rounded-2xl shadow-lg"
             style={{
               backgroundColor: '#fff',
-              color: '#2D4C4C',
+              color: spectra,
               width: '100%',
               maxWidth: 320,
               fontFamily: "'Lato', sans-serif",
@@ -193,7 +203,7 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
 
       {/* Dev Debug */}
       {process.env.NODE_ENV === 'development' && (
-        <div style={{ padding: '0 24px 24px', position: 'relative', zIndex: 10, backgroundColor: '#2D4C4C' }}>
+        <div style={{ padding: '0 24px 24px', backgroundColor: spectra }}>
           <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 8 }}>Debug:</p>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button
