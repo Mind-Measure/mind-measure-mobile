@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { cognitoApiClient } from '../services/cognito-api-client';
 import { saveUserToDevice } from '../components/mobile/MobileAppWrapper';
+import { getUserUniversityProfile } from '../features/mobile/data';
 
 export interface AuthUser {
   id: string;
@@ -66,17 +67,30 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (error) {
           setUser(null);
         } else if (data?.user && data.user.email) {
-          setUser(data.user);
+          const authUser = data.user;
+
+          // Enrich with university_id from profiles DB (Cognito getUser doesn't return it)
+          if (!authUser.university_id && authUser.id) {
+            try {
+              const uniProfile = await getUserUniversityProfile(authUser.id);
+              if (uniProfile?.id) {
+                authUser.university_id = uniProfile.id;
+              }
+            } catch {
+              // Non-blocking — content page has its own fallback
+            }
+          }
+
+          setUser(authUser);
         } else {
           setUser(null);
         }
 
-        // Set up auth state listener (simplified - no polling)
         unsubscribe = cognitoApiClient.onAuthStateChange((_event, user) => {
           setUser(user);
         });
       } catch (error: unknown) {
-        console.error('❌ Auth initialization error:', error);
+        console.error('Auth initialization error:', error);
         setUser(null);
       } finally {
         setLoading(false);
@@ -88,7 +102,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return () => {
       if (unsubscribe) unsubscribe();
     };
-  }, []); // Run ONCE on mount
+  }, []);
 
   const signIn = async (
     email: string,
@@ -98,7 +112,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       const result = await cognitoApiClient.signInWithPassword(email, password);
       if (result.error) {
-        // Pass through needsVerification flag for unverified emails
         return {
           error: result.error,
           needsVerification: result.needsVerification,
@@ -108,7 +121,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const signedInUser = result.data.user;
       setUser(signedInUser);
 
-      // Save to device preferences so the app recognises them on next launch
       if (signedInUser) {
         await saveUserToDevice(signedInUser.id, signedInUser.hasCompletedBaseline ?? false);
       }
@@ -136,9 +148,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return { error };
       }
 
-      // Phase 1: Auth only handles Cognito signup
-      // Profile creation will be moved to BaselineAssessment in Phase 2
-
       setUser(authData.user);
       return { error: null };
     } catch (error: unknown) {
@@ -164,12 +173,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const updateProfile = async (_updates: Record<string, unknown>) => {
-    // TODO: Implement profile updates
     return { error: null as string | null };
   };
 
   const completeOnboarding = async () => {
-    // TODO: Implement onboarding completion
     return { error: null as string | null };
   };
 
@@ -225,6 +232,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       const { data } = await cognitoApiClient.getUser();
       if (data?.user) {
+        if (!data.user.university_id && data.user.id) {
+          try {
+            const uniProfile = await getUserUniversityProfile(data.user.id);
+            if (uniProfile?.id) {
+              data.user.university_id = uniProfile.id;
+            }
+          } catch {
+            // Non-blocking
+          }
+        }
         setUser(data.user);
       }
     } catch (error: unknown) {
