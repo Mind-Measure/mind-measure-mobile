@@ -23,6 +23,7 @@ interface SplashScreenProps {
 
 export function SplashScreen({ onGetStarted }: SplashScreenProps) {
   const heroSrc = useMemo(() => HERO_FIGURES[Math.floor(Math.random() * HERO_FIGURES.length)], []);
+  const isOriginalGirl = heroSrc === '/images/hero-student.png';
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -110,7 +111,7 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
           <div
             style={{
               position: 'absolute',
-              left: '35%',
+              left: isOriginalGirl ? '50%' : '35%',
               bottom: 0,
               width: '72%',
               zIndex: 5,
