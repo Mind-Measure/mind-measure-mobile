@@ -154,16 +154,16 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
       >
         <p
           style={{
-            fontFamily: "'Inter', sans-serif",
-            fontSize: 14,
-            lineHeight: 1.55,
-            color: 'rgba(255,255,255,0.75)',
+            fontFamily: "'Lato', sans-serif",
+            fontSize: 22,
+            fontWeight: 700,
+            lineHeight: 1.3,
+            color: '#fff',
             marginBottom: 20,
-            maxWidth: 320,
+            letterSpacing: '-0.01em',
           }}
         >
-          A two-minute daily check-in with Jodie, your AI companion. She listens, remembers, and gives you a score that
-          actually means something.
+          Measure. <span style={{ color: '#99CCCE' }}>Monitor.</span> Manage.
         </p>
 
         <motion.div whileTap={{ scale: 0.97 }}>
