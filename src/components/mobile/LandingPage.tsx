@@ -4,16 +4,10 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 const MM_LOGO = '/images/mind-measure-logo.png';
 
-const student1 = '/images/student1.png';
-const student2 = '/images/student2.png';
-const student3 = '/images/student3.png';
-const student4 = '/images/student4.png';
-const student5 = '/images/student5.png';
-const student6 = '/images/student6.png';
+const heroStudent = '/images/hero-student.png';
 
-const spectra = '#2D4C4C';
-const sinbad = '#99CCCE';
-const pampas = '#FAF9F7';
+const coral = '#E8706E';
+const coralDeep = '#D4605E';
 
 interface SplashScreenProps {
   onGetStarted: () => void;
@@ -21,30 +15,13 @@ interface SplashScreenProps {
 
 export function SplashScreen({ onGetStarted }: SplashScreenProps) {
   const [currentTaglineIndex, setCurrentTaglineIndex] = useState(0);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const taglineWords = ['Measure', 'Monitor', 'Manage'];
-
-  const studentImages = [
-    { src: student1, alt: 'Mind Measure student with sunglasses and colorful jacket' },
-    { src: student2, alt: 'Mind Measure student with confident pose' },
-    { src: student3, alt: 'Mind Measure student looking thoughtful' },
-    { src: student4, alt: 'Mind Measure student with pink knit scarf smiling warmly' },
-    { src: student5, alt: 'Mind Measure student with glasses and blonde hair' },
-    { src: student6, alt: 'Mind Measure student with curly hair in black top' },
-  ];
 
   useEffect(() => {
     const id = setInterval(() => {
       setCurrentTaglineIndex((prev) => (prev + 1) % taglineWords.length);
     }, 2000);
-    return () => clearInterval(id);
-  }, []);
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      setCurrentImageIndex((prev) => (prev + 1) % studentImages.length);
-    }, 4500);
     return () => clearInterval(id);
   }, []);
 
@@ -59,15 +36,15 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: sinbad }}>
-      {/* Warm branded gradient background */}
+    <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: coral }}>
+      {/* Bold gradient background */}
       <div
         className="absolute inset-0"
         style={{
           background: `
-            radial-gradient(ellipse at 30% 20%, rgba(45,76,76,0.3) 0%, transparent 50%),
-            radial-gradient(ellipse at 70% 80%, rgba(245,158,11,0.15) 0%, transparent 40%),
-            radial-gradient(ellipse at 50% 50%, rgba(153,204,206,0.4) 0%, transparent 60%)
+            radial-gradient(ellipse at 30% 20%, rgba(212,96,94,0.6) 0%, transparent 50%),
+            radial-gradient(ellipse at 70% 80%, rgba(245,158,11,0.12) 0%, transparent 40%),
+            radial-gradient(ellipse at 50% 100%, rgba(180,60,60,0.3) 0%, transparent 50%)
           `,
         }}
       />
@@ -115,51 +92,31 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
           </div>
         </motion.div>
 
-        {/* Student Image Carousel */}
-        <motion.div variants={fadeUp} className="mb-8 relative">
-          <div
-            className="w-48 h-64 rounded-3xl overflow-hidden shadow-xl relative"
-            style={{ border: '3px solid rgba(255,255,255,0.3)' }}
-          >
-            {studentImages.map((image, idx) => (
-              <motion.div
-                key={idx}
-                className="absolute inset-0"
-                initial={{ opacity: 0, scale: 1.08 }}
-                animate={{
-                  opacity: idx === currentImageIndex ? 1 : 0,
-                  scale: idx === currentImageIndex ? 1 : 1.08,
-                }}
-                transition={{ duration: 0.8, ease: 'easeInOut' }}
-              >
-                <img src={image.src} alt={image.alt} className="w-full h-full object-cover" />
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Dots */}
-          <div className="flex gap-1.5 justify-center mt-3">
-            {studentImages.map((_, idx) => (
-              <motion.div
-                key={idx}
-                className="w-2 h-2 rounded-full transition-all duration-300"
-                style={{
-                  backgroundColor: idx === currentImageIndex ? '#ffffff' : 'rgba(255,255,255,0.4)',
-                }}
-                animate={{ scale: idx === currentImageIndex ? 1.2 : 1 }}
-              />
-            ))}
-          </div>
+        {/* Hero Student Image */}
+        <motion.div variants={fadeUp} className="mb-6">
+          <img
+            src={heroStudent}
+            alt="Student"
+            style={{
+              width: '100%',
+              maxWidth: 280,
+              height: 'auto',
+              objectFit: 'contain',
+            }}
+          />
         </motion.div>
 
         {/* Main Heading */}
         <motion.div variants={fadeUp} className="mb-6 max-w-xs">
-          <h2 className="text-2xl font-semibold mb-3" style={{ color: '#ffffff' }}>
-            Empowering <span style={{ color: '#F59E0B' }}>every student&apos;s</span> mental wellness
+          <h2
+            className="text-3xl font-black mb-3"
+            style={{ color: '#ffffff', lineHeight: 1.1, letterSpacing: '-0.02em' }}
+          >
+            Know how you <em style={{ fontStyle: 'italic', fontWeight: 300 }}>actually</em> feel.
           </h2>
-          <p className="text-base leading-relaxed" style={{ color: 'rgba(255,255,255,0.75)' }}>
-            Join thousands of students who use Mind Measure to understand and improve their wellbeing with just a few
-            minutes each day.
+          <p className="text-base leading-relaxed" style={{ color: 'rgba(255,255,255,0.85)' }}>
+            A two-minute daily check-in with Jodie, your AI companion. She listens, remembers, and gives you a score
+            that actually means something.
           </p>
         </motion.div>
 
@@ -168,7 +125,7 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
           <Button
             onClick={onGetStarted}
             className="h-14 px-8 text-lg font-semibold rounded-2xl shadow-lg min-w-[280px]"
-            style={{ backgroundColor: '#ffffff', color: spectra }}
+            style={{ backgroundColor: '#ffffff', color: coralDeep }}
           >
             Take Your First Check-In
             <motion.div animate={{ x: [0, 4, 0] }} transition={{ duration: 1.2, repeat: Infinity }}>
@@ -180,7 +137,7 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
         {/* Dev Debug Buttons */}
         {process.env.NODE_ENV === 'development' && (
           <motion.div variants={fadeUp} className="mt-6 space-y-2">
-            <p className="text-sm" style={{ color: `${spectra}70` }}>
+            <p className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>
               Debug Options:
             </p>
             <div className="flex gap-2 flex-wrap justify-center">
@@ -188,9 +145,9 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
                 onClick={() => (window.location.href = '/test-returning')}
                 className="text-xs px-4 py-2 rounded-lg border"
                 style={{
-                  backgroundColor: `${sinbad}30`,
-                  color: spectra,
-                  borderColor: `${sinbad}60`,
+                  backgroundColor: 'rgba(255,255,255,0.15)',
+                  color: '#fff',
+                  borderColor: 'rgba(255,255,255,0.3)',
                 }}
               >
                 Test Returning User
@@ -204,9 +161,9 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
                 }}
                 className="text-xs px-4 py-2 rounded-lg border"
                 style={{
-                  backgroundColor: '#FC686830',
-                  color: spectra,
-                  borderColor: '#FC686860',
+                  backgroundColor: 'rgba(255,255,255,0.15)',
+                  color: '#fff',
+                  borderColor: 'rgba(255,255,255,0.3)',
                 }}
               >
                 Clear Device Data
@@ -225,9 +182,9 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
                 }}
                 className="text-xs px-4 py-2 rounded-lg border"
                 style={{
-                  backgroundColor: '#F59E0B30',
-                  color: spectra,
-                  borderColor: '#F59E0B60',
+                  backgroundColor: 'rgba(255,255,255,0.15)',
+                  color: '#fff',
+                  borderColor: 'rgba(255,255,255,0.3)',
                 }}
               >
                 Check Device Data
