@@ -154,7 +154,8 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
         style={{
           position: 'relative',
           zIndex: 10,
-          padding: '20px 24px 48px',
+          padding: '28px 24px 48px',
+          backgroundColor: '#2D4C4C',
         }}
       >
         <p
@@ -162,7 +163,7 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
             fontFamily: "'Inter', sans-serif",
             fontSize: 14,
             lineHeight: 1.55,
-            color: 'rgba(255,255,255,0.85)',
+            color: 'rgba(255,255,255,0.75)',
             marginBottom: 20,
             maxWidth: 320,
           }}
@@ -177,7 +178,7 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
             className="h-14 px-8 text-base font-bold rounded-2xl shadow-lg"
             style={{
               backgroundColor: '#fff',
-              color: coral,
+              color: '#2D4C4C',
               width: '100%',
               maxWidth: 320,
               fontFamily: "'Lato', sans-serif",
@@ -192,7 +193,7 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
 
       {/* Dev Debug */}
       {process.env.NODE_ENV === 'development' && (
-        <div style={{ padding: '0 24px 24px', position: 'relative', zIndex: 10 }}>
+        <div style={{ padding: '0 24px 24px', position: 'relative', zIndex: 10, backgroundColor: '#2D4C4C' }}>
           <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 8 }}>Debug:</p>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button
