@@ -409,8 +409,8 @@ export const MobileAppStructure: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      <div className={onboardingScreen ? '' : 'pb-24'}>{renderContent()}</div>
-      {!onboardingScreen && ['dashboard', 'content', 'buddies', 'profile'].includes(currentScreen) && (
+      <div className={onboardingScreen || !user ? '' : 'pb-24'}>{renderContent()}</div>
+      {!onboardingScreen && user && ['dashboard', 'content', 'buddies', 'profile'].includes(currentScreen) && (
         <BottomNav
           activeView={activeTab === 'dashboard' ? 'home' : activeTab}
           onViewChange={(view) => handleTabChange((view === 'home' ? 'dashboard' : view) as MobileTab)}
