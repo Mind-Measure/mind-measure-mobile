@@ -68,20 +68,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setUser(null);
         } else if (data?.user && data.user.email) {
           const authUser = data.user;
-
-          // Enrich with university_id from profiles DB (Cognito getUser doesn't return it)
-          if (!authUser.university_id && authUser.id) {
-            try {
-              const uniProfile = await getUserUniversityProfile(authUser.id);
-              if (uniProfile?.id) {
-                authUser.university_id = uniProfile.id;
-              }
-            } catch {
-              // Non-blocking — content page has its own fallback
-            }
-          }
-
           setUser(authUser);
+
+          // Enrich with university_id in the background (don't block auth)
+          if (!authUser.university_id && authUser.id) {
+            getUserUniversityProfile(authUser.id)
+              .then((uniProfile) => {
+                if (uniProfile?.id) {
+                  setUser((prev) => (prev ? { ...prev, university_id: uniProfile.id } : prev));
+                }
+              })
+              .catch(() => {});
+          }
         } else {
           setUser(null);
         }
@@ -232,17 +230,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       const { data } = await cognitoApiClient.getUser();
       if (data?.user) {
-        if (!data.user.university_id && data.user.id) {
-          try {
-            const uniProfile = await getUserUniversityProfile(data.user.id);
-            if (uniProfile?.id) {
-              data.user.university_id = uniProfile.id;
-            }
-          } catch {
-            // Non-blocking
-          }
-        }
         setUser(data.user);
+        if (!data.user.university_id && data.user.id) {
+          getUserUniversityProfile(data.user.id)
+            .then((uniProfile) => {
+              if (uniProfile?.id) {
+                setUser((prev) => (prev ? { ...prev, university_id: uniProfile.id } : prev));
+              }
+            })
+            .catch(() => {});
+        }
       }
     } catch (error: unknown) {
       console.error('Refetch user error:', error);
