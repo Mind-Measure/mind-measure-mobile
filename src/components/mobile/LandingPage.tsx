@@ -122,7 +122,7 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
               position: 'absolute',
               right: -24,
               bottom: 0,
-              width: '62%',
+              width: '72%',
               zIndex: 5,
             }}
           >
