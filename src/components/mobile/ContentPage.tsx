@@ -119,9 +119,10 @@ export function ContentPage({
 
         // Incremental sync: only fetch articles updated since last sync
         const since = stored?.lastSyncedAt;
+        const userIdParam = user?.id ? `&userId=${encodeURIComponent(user.id)}` : '';
         const url = since
-          ? `/api/content/pool?universityId=${universityId}&since=${encodeURIComponent(since)}`
-          : `/api/content/pool?universityId=${universityId}`;
+          ? `/api/content/pool?universityId=${universityId}&since=${encodeURIComponent(since)}${userIdParam}`
+          : `/api/content/pool?universityId=${universityId}${userIdParam}`;
 
         const poolData = await fetch(url)
           .then((r) => (r.ok ? r.json() : null))

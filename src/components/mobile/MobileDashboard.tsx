@@ -1231,7 +1231,7 @@ export function DashboardScreen({ onNeedHelp, onCheckIn, onRetakeBaseline }: Das
 
   useEffect(() => {}, [profile]);
 
-  const { nudges: activeNudges, loading: nudgesLoading } = useActiveNudges(profile?.university_id);
+  const { nudges: activeNudges, loading: nudgesLoading } = useActiveNudges(profile?.university_id, _user?.id);
 
   const [openPanel, setOpenPanel] = useState<PanelId>(null);
 
@@ -1502,18 +1502,26 @@ export function DashboardScreen({ onNeedHelp, onCheckIn, onRetakeBaseline }: Das
                 cursor: 'pointer',
               }}
             >
-              <div style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', opacity: 0.5, marginBottom: '8px' }}>
+              <div
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                  opacity: 0.5,
+                  marginBottom: '8px',
+                }}
+              >
                 Next step
               </div>
               <h4 style={{ fontSize: '18px', fontWeight: 600, margin: '0 0 6px', lineHeight: 1.3 }}>
                 Do your first check-in
               </h4>
               <p style={{ fontSize: '14px', lineHeight: 1.5, margin: 0, opacity: 0.7 }}>
-                A quick two-minute conversation with Jodie. She'll ask how you're doing and your score will update based on what you share.
+                A quick two-minute conversation with Jodie. She'll ask how you're doing and your score will update based
+                on what you share.
               </p>
-              <div style={{ fontSize: '13px', fontWeight: 600, marginTop: '14px', opacity: 0.8 }}>
-                Start check-in →
-              </div>
+              <div style={{ fontSize: '13px', fontWeight: 600, marginTop: '14px', opacity: 0.8 }}>Start check-in →</div>
             </motion.div>
 
             <motion.div
@@ -1530,7 +1538,8 @@ export function DashboardScreen({ onNeedHelp, onCheckIn, onRetakeBaseline }: Das
                 How your score works
               </h4>
               <p style={{ fontSize: '14px', lineHeight: 1.5, margin: 0, color: 'rgba(45,76,76,0.7)' }}>
-                Your score of <strong style={{ color: C.spectra }}>{score}</strong> is based on what you shared in your baseline. It will update after every check-in, tracking your mood, stress, sleep, and more over time.
+                Your score of <strong style={{ color: C.spectra }}>{score}</strong> is based on what you shared in your
+                baseline. It will update after every check-in, tracking your mood, stress, sleep, and more over time.
               </p>
             </motion.div>
 
@@ -1548,7 +1557,8 @@ export function DashboardScreen({ onNeedHelp, onCheckIn, onRetakeBaseline }: Das
                 Complete your profile
               </h4>
               <p style={{ fontSize: '14px', lineHeight: 1.5, margin: 0, color: 'rgba(45,76,76,0.7)' }}>
-                Head to <strong style={{ color: C.spectra }}>Profile</strong> to add your details. You can also invite a buddy to share your journey with.
+                Head to <strong style={{ color: C.spectra }}>Profile</strong> to add your details. You can also invite a
+                buddy to share your journey with.
               </p>
             </motion.div>
           </div>

@@ -1,6 +1,12 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { Client } from 'pg';
 
+interface CohortTargeting {
+  schools?: string[];
+  yearOfStudy?: string[];
+  studyMode?: string[];
+}
+
 interface HubNudge {
   id: string;
   title: string;
@@ -8,7 +14,44 @@ interface HubNudge {
   category: 'urgent' | 'social' | 'educational';
   eventDate?: string | null;
   linkUrl: string;
+  targeting?: CohortTargeting | null;
   status: string;
+}
+
+interface UserProfile {
+  school?: string | null;
+  year_of_study?: string | null;
+  study_mode?: string | null;
+}
+
+function matchesTargeting(targeting: CohortTargeting | null | undefined, profile: UserProfile | null): boolean {
+  if (!targeting) return true;
+
+  const hasSchools = Array.isArray(targeting.schools) && targeting.schools.length > 0;
+  const hasYear = Array.isArray(targeting.yearOfStudy) && targeting.yearOfStudy.length > 0;
+  const hasMode = Array.isArray(targeting.studyMode) && targeting.studyMode.length > 0;
+
+  if (!hasSchools && !hasYear && !hasMode) return true;
+  if (!profile) return false;
+
+  if (
+    hasSchools &&
+    (!profile.school || !targeting.schools!.some((s) => s.toLowerCase() === profile.school!.toLowerCase()))
+  )
+    return false;
+  if (
+    hasYear &&
+    (!profile.year_of_study ||
+      !targeting.yearOfStudy!.some((y) => y.toLowerCase() === profile.year_of_study!.toLowerCase()))
+  )
+    return false;
+  if (
+    hasMode &&
+    (!profile.study_mode || !targeting.studyMode!.some((m) => m.toLowerCase() === profile.study_mode!.toLowerCase()))
+  )
+    return false;
+
+  return true;
 }
 
 const CATEGORY_PRIORITY: Record<string, number> = {
@@ -21,7 +64,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   let auroraClient: Client | null = null;
 
   try {
-    const { universityId } = req.query;
+    const { universityId, userId } = req.query;
 
     if (!universityId || typeof universityId !== 'string') {
       return res.status(400).json({ error: 'universityId is required' });
@@ -38,6 +81,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     await auroraClient.connect();
 
+    let userProfile: UserProfile | null = null;
+    if (userId && typeof userId === 'string') {
+      const profileResult = await auroraClient.query(
+        'SELECT school, year_of_study, study_mode FROM profiles WHERE user_id = $1',
+        [userId]
+      );
+      if (profileResult.rows.length > 0) {
+        userProfile = profileResult.rows[0];
+      }
+    }
+
     const result = await auroraClient.query(`SELECT nudges FROM universities WHERE id = $1`, [universityId]);
 
     if (result.rows.length === 0) {
@@ -48,6 +102,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const activeNudges = allNudges
       .filter((n) => n.status === 'active')
+      .filter((n) => matchesTargeting(n.targeting, userProfile))
       .sort((a, b) => {
         const wA = CATEGORY_PRIORITY[a.category] ?? 2;
         const wB = CATEGORY_PRIORITY[b.category] ?? 2;

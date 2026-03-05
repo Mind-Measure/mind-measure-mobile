@@ -8,6 +8,49 @@
  */
 
 import { VercelRequest, VercelResponse } from '@vercel/node';
+import { Client } from 'pg';
+
+interface CohortTargeting {
+  schools?: string[];
+  yearOfStudy?: string[];
+  studyMode?: string[];
+}
+
+interface UserProfile {
+  school?: string | null;
+  year_of_study?: string | null;
+  study_mode?: string | null;
+}
+
+function matchesTargeting(targeting: CohortTargeting | null | undefined, profile: UserProfile | null): boolean {
+  if (!targeting) return true;
+
+  const hasSchools = Array.isArray(targeting.schools) && targeting.schools.length > 0;
+  const hasYear = Array.isArray(targeting.yearOfStudy) && targeting.yearOfStudy.length > 0;
+  const hasMode = Array.isArray(targeting.studyMode) && targeting.studyMode.length > 0;
+
+  if (!hasSchools && !hasYear && !hasMode) return true;
+  if (!profile) return false;
+
+  if (
+    hasSchools &&
+    (!profile.school || !targeting.schools!.some((s) => s.toLowerCase() === profile.school!.toLowerCase()))
+  )
+    return false;
+  if (
+    hasYear &&
+    (!profile.year_of_study ||
+      !targeting.yearOfStudy!.some((y) => y.toLowerCase() === profile.year_of_study!.toLowerCase()))
+  )
+    return false;
+  if (
+    hasMode &&
+    (!profile.study_mode || !targeting.studyMode!.some((m) => m.toLowerCase() === profile.study_mode!.toLowerCase()))
+  )
+    return false;
+
+  return true;
+}
 
 const HUB_URL = process.env.HUB_URL || 'https://hub.mindmeasure.co.uk';
 
@@ -19,12 +62,40 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const universityId = req.query.universityId as string | undefined;
   const since = req.query.since as string | undefined;
+  const userId = req.query.userId as string | undefined;
 
   if (!universityId) {
     return res.status(200).json({ success: true, data: [], count: 0, source: 'hub' });
   }
 
   try {
+    let userProfile: UserProfile | null = null;
+    if (userId) {
+      let auroraClient: Client | null = null;
+      try {
+        auroraClient = new Client({
+          host: process.env.AWS_AURORA_HOST,
+          port: parseInt(process.env.AWS_AURORA_PORT || '5432'),
+          database: process.env.AWS_AURORA_DATABASE,
+          user: process.env.AWS_AURORA_USERNAME,
+          password: process.env.AWS_AURORA_PASSWORD,
+          ssl: { rejectUnauthorized: false },
+        });
+        await auroraClient.connect();
+        const profileResult = await auroraClient.query(
+          'SELECT school, year_of_study, study_mode FROM profiles WHERE user_id = $1',
+          [userId]
+        );
+        if (profileResult.rows.length > 0) {
+          userProfile = profileResult.rows[0];
+        }
+      } catch (e) {
+        console.error('[content/pool] profile lookup failed:', e);
+      } finally {
+        if (auroraClient) await auroraClient.end().catch(() => {});
+      }
+    }
+
     let hubUrl = `${HUB_URL}/api/content?universityId=${universityId}`;
     if (since) hubUrl += `&since=${encodeURIComponent(since)}`;
 
@@ -48,7 +119,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     for (const a of articles) {
       if (a.status === 'PUBLISHED') {
-        published.push(a);
+        if (matchesTargeting(a.targeting as CohortTargeting | null, userProfile)) {
+          published.push(a);
+        }
       } else {
         unpublishedIds.push(String(a.id));
       }

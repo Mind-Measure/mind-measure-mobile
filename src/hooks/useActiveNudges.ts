@@ -10,7 +10,7 @@ export interface HubNudge {
   status: string;
 }
 
-export function useActiveNudges(universityId: string | null | undefined) {
+export function useActiveNudges(universityId: string | null | undefined, userId?: string | null) {
   const [nudges, setNudges] = useState<HubNudge[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -26,7 +26,10 @@ export function useActiveNudges(universityId: string | null | undefined) {
         setLoading(true);
         setError(null);
 
-        const response = await fetch(`/api/nudges/active?universityId=${universityId}`);
+        let url = `/api/nudges/active?universityId=${universityId}`;
+        if (userId) url += `&userId=${encodeURIComponent(userId)}`;
+
+        const response = await fetch(url);
 
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);
@@ -43,7 +46,7 @@ export function useActiveNudges(universityId: string | null | undefined) {
     }
 
     fetchNudges();
-  }, [universityId]);
+  }, [universityId, userId]);
 
   return { nudges, loading, error };
 }
