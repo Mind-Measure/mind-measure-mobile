@@ -12,42 +12,48 @@ import { Client } from 'pg';
 
 interface CohortTargeting {
   schools?: string[];
+  courses?: string[];
   yearOfStudy?: string[];
+  accommodationType?: string[];
+  halls?: string[];
+  domicile?: string[];
   studyMode?: string[];
 }
 
 interface UserProfile {
   school?: string | null;
+  course?: string | null;
   year_of_study?: string | null;
+  living_situation?: string | null;
+  hall_of_residence?: string | null;
+  domicile?: string | null;
   study_mode?: string | null;
+}
+
+function ciMatch(list: string[], value: string | null | undefined): boolean {
+  if (!value) return false;
+  const lower = value.toLowerCase();
+  return list.some((v) => v.toLowerCase() === lower);
 }
 
 function matchesTargeting(targeting: CohortTargeting | null | undefined, profile: UserProfile | null): boolean {
   if (!targeting) return true;
 
-  const hasSchools = Array.isArray(targeting.schools) && targeting.schools.length > 0;
-  const hasYear = Array.isArray(targeting.yearOfStudy) && targeting.yearOfStudy.length > 0;
-  const hasMode = Array.isArray(targeting.studyMode) && targeting.studyMode.length > 0;
+  const checks: [string[] | undefined, string | null | undefined][] = [
+    [targeting.schools, profile?.school],
+    [targeting.courses, profile?.course],
+    [targeting.yearOfStudy, profile?.year_of_study],
+    [targeting.accommodationType, profile?.living_situation],
+    [targeting.halls, profile?.hall_of_residence],
+    [targeting.domicile, profile?.domicile],
+    [targeting.studyMode, profile?.study_mode],
+  ];
 
-  if (!hasSchools && !hasYear && !hasMode) return true;
-  if (!profile) return false;
-
-  if (
-    hasSchools &&
-    (!profile.school || !targeting.schools!.some((s) => s.toLowerCase() === profile.school!.toLowerCase()))
-  )
-    return false;
-  if (
-    hasYear &&
-    (!profile.year_of_study ||
-      !targeting.yearOfStudy!.some((y) => y.toLowerCase() === profile.year_of_study!.toLowerCase()))
-  )
-    return false;
-  if (
-    hasMode &&
-    (!profile.study_mode || !targeting.studyMode!.some((m) => m.toLowerCase() === profile.study_mode!.toLowerCase()))
-  )
-    return false;
+  for (const [list, value] of checks) {
+    if (Array.isArray(list) && list.length > 0) {
+      if (!profile || !ciMatch(list, value)) return false;
+    }
+  }
 
   return true;
 }
@@ -83,7 +89,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
         await auroraClient.connect();
         const profileResult = await auroraClient.query(
-          'SELECT school, year_of_study, study_mode FROM profiles WHERE user_id = $1',
+          'SELECT school, course, year_of_study, living_situation, hall_of_residence, domicile, study_mode FROM profiles WHERE user_id = $1',
           [userId]
         );
         if (profileResult.rows.length > 0) {
