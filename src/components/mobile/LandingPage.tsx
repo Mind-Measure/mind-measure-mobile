@@ -132,25 +132,27 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
           </div>
 
           {/* Hero figure — anchored bottom-right, overlapping text */}
-          <div
-            style={{
-              position: 'absolute',
-              left: isOriginalGirl ? '50%' : '35%',
-              bottom: 0,
-              width: '72%',
-              zIndex: 5,
-            }}
-          >
-            <img
-              src={heroSrc}
-              alt="Student"
+          {ready && (
+            <div
               style={{
-                width: '100%',
-                height: 'auto',
-                display: 'block',
+                position: 'absolute',
+                left: isOriginalGirl ? '50%' : '35%',
+                bottom: 0,
+                width: '72%',
+                zIndex: 5,
               }}
-            />
-          </div>
+            >
+              <img
+                src={heroSrc}
+                alt="Student"
+                style={{
+                  width: '100%',
+                  height: 'auto',
+                  display: 'block',
+                }}
+              />
+            </div>
+          )}
         </div>
       </div>
 
