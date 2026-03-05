@@ -16,7 +16,6 @@ interface CohortTargeting {
   yearOfStudy?: string[];
   accommodationType?: string[];
   halls?: string[];
-  domicile?: string[];
   studyMode?: string[];
 }
 
@@ -26,7 +25,6 @@ interface UserProfile {
   year_of_study?: string | null;
   living_situation?: string | null;
   hall_of_residence?: string | null;
-  domicile?: string | null;
   study_mode?: string | null;
 }
 
@@ -45,7 +43,6 @@ function matchesTargeting(targeting: CohortTargeting | null | undefined, profile
     [targeting.yearOfStudy, profile?.year_of_study],
     [targeting.accommodationType, profile?.living_situation],
     [targeting.halls, profile?.hall_of_residence],
-    [targeting.domicile, profile?.domicile],
     [targeting.studyMode, profile?.study_mode],
   ];
 
@@ -89,7 +86,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
         await auroraClient.connect();
         const profileResult = await auroraClient.query(
-          'SELECT school, course, year_of_study, living_situation, hall_of_residence, domicile, study_mode FROM profiles WHERE user_id = $1',
+          'SELECT school, course, year_of_study, living_situation, hall_of_residence, study_mode FROM profiles WHERE user_id = $1',
           [userId]
         );
         if (profileResult.rows.length > 0) {
