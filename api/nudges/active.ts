@@ -17,6 +17,7 @@ interface HubNudge {
   description: string;
   category: 'urgent' | 'social' | 'educational';
   eventDate?: string | null;
+  pinnedUntil?: string | null;
   linkUrl: string;
   targeting?: CohortTargeting | null;
   status: string;
@@ -107,14 +108,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const allNudges: HubNudge[] = result.rows[0].nudges || [];
 
+    const now = Date.now();
     const activeNudges = allNudges
       .filter((n) => n.status === 'active')
       .filter((n) => matchesTargeting(n.targeting, userProfile))
       .sort((a, b) => {
+        const pinA = a.pinnedUntil && new Date(a.pinnedUntil).getTime() > now ? 0 : 1;
+        const pinB = b.pinnedUntil && new Date(b.pinnedUntil).getTime() > now ? 0 : 1;
+        if (pinA !== pinB) return pinA - pinB;
+
         const wA = CATEGORY_PRIORITY[a.category] ?? 2;
         const wB = CATEGORY_PRIORITY[b.category] ?? 2;
         if (wA !== wB) return wA - wB;
-        const now = Date.now();
+
         const dA = a.eventDate ? Math.abs(new Date(a.eventDate).getTime() - now) : Infinity;
         const dB = b.eventDate ? Math.abs(new Date(b.eventDate).getTime() - now) : Infinity;
         return dA - dB;

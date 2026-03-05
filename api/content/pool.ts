@@ -132,6 +132,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
+    const now = Date.now();
     const normalized = published.map((a) => ({
       id: a.id,
       title: a.title,
@@ -147,10 +148,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       tags: a.tags || [],
       published_at: a.published_at || a.publishedAt || null,
       updated_at: a.updated_at || a.updatedAt || null,
+      pinned_until: a.pinned_until || a.pinnedUntil || null,
       status: 'PUBLISHED',
     }));
 
     normalized.sort((a, b) => {
+      const pinA = a.pinned_until && new Date(a.pinned_until as string).getTime() > now ? 0 : 1;
+      const pinB = b.pinned_until && new Date(b.pinned_until as string).getTime() > now ? 0 : 1;
+      if (pinA !== pinB) return pinA - pinB;
+
       const da = a.published_at ? new Date(a.published_at as string).getTime() : 0;
       const db = b.published_at ? new Date(b.published_at as string).getTime() : 0;
       return db - da;
