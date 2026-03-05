@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { cognitoApiClient } from '../services/cognito-api-client';
 import { saveUserToDevice } from '../components/mobile/MobileAppWrapper';
 import { getUserUniversityProfile } from '../features/mobile/data';
+import { clearAllContentStores } from '../services/content-store';
 
 export interface AuthUser {
   id: string;
@@ -160,6 +161,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setLoading(true);
     try {
       await cognitoApiClient.signOut();
+      clearAllContentStores();
       setUser(null);
       return { error: null };
     } catch (error: unknown) {

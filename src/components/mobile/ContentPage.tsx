@@ -4,38 +4,9 @@ import { Clock, ChevronRight } from 'lucide-react';
 import { ArticleDetailPage } from './ArticleDetailPage';
 import { getUserUniversityProfile } from '../../features/mobile/data';
 import { useAuth } from '@/contexts/AuthContext';
+import { getStoredContent, mergeIncrementalSync, replaceFullSync } from '@/services/content-store';
 
 const ARTICLES_PER_PAGE = 10;
-const CACHE_KEY = 'mm_content_cache';
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-
-interface CachedData {
-  articles: ContentArticle[];
-  universityName: string;
-  wellbeingSupportUrl: string;
-  universityId?: string;
-  timestamp: number;
-}
-
-function getCachedArticles(): CachedData | null {
-  try {
-    const raw = localStorage.getItem(CACHE_KEY);
-    if (!raw) return null;
-    const cached: CachedData = JSON.parse(raw);
-    if (Date.now() - cached.timestamp < CACHE_TTL) return cached;
-  } catch {
-    /* ignore */
-  }
-  return null;
-}
-
-function setCachedArticles(data: CachedData) {
-  try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify(data));
-  } catch {
-    /* quota exceeded — ignore */
-  }
-}
 
 interface ContentArticle {
   id: string;
@@ -122,17 +93,6 @@ export function ContentPage({
     let cancelled = false;
 
     const loadContent = async () => {
-      // Stale-while-revalidate: show cached data immediately, then refresh in background
-      const cached = getCachedArticles();
-      if (cached) {
-        setArticles(cached.articles);
-        setUniversityName(cached.universityName);
-        setWellbeingSupportUrl(cached.wellbeingSupportUrl);
-        setLoading(false);
-      } else {
-        setLoading(true);
-      }
-
       try {
         const profile = user?.id ? await getUserUniversityProfile(user.id).catch(() => null) : null;
         if (cancelled) return;
@@ -140,32 +100,53 @@ export function ContentPage({
         const universityId = user?.university_id || profile?.id || '';
 
         if (!universityId) {
-          if (!cached) setArticles([]);
+          setArticles([]);
+          setLoading(false);
           return;
         }
 
-        const poolData = await fetch(`/api/content/pool?universityId=${universityId}&limit=50`)
-          .then((r) => (r.ok ? r.json() : { data: [] }))
-          .catch(() => ({ data: [] }));
-        if (cancelled) return;
-
         const uniName = profile?.name || universityName;
         const supportUrl = profile?.wellbeing_support_url || '';
-        const mapped = parseArticles(poolData);
-
-        setArticles(mapped);
         setUniversityName(uniName);
         setWellbeingSupportUrl(supportUrl);
 
-        setCachedArticles({
-          articles: mapped,
-          universityName: uniName,
-          wellbeingSupportUrl: supportUrl,
-          timestamp: Date.now(),
-        });
+        // Show stored articles immediately (no TTL — they persist until synced)
+        const stored = getStoredContent(universityId);
+        if (stored && stored.articles.length > 0) {
+          setArticles(parseArticles({ data: stored.articles as unknown as Record<string, unknown>[] }));
+          setLoading(false);
+        }
+
+        // Incremental sync: only fetch articles updated since last sync
+        const since = stored?.lastSyncedAt;
+        const url = since
+          ? `/api/content/pool?universityId=${universityId}&since=${encodeURIComponent(since)}`
+          : `/api/content/pool?universityId=${universityId}`;
+
+        const poolData = await fetch(url)
+          .then((r) => (r.ok ? r.json() : null))
+          .catch(() => null);
+        if (cancelled || !poolData) return;
+
+        const syncedAt = poolData.syncedAt || new Date().toISOString();
+        const unpublishedIds: string[] = poolData.unpublishedIds || [];
+        const rawArticles = poolData.data || [];
+
+        if (since && stored) {
+          // Incremental merge
+          const merged = mergeIncrementalSync(universityId, rawArticles, unpublishedIds, syncedAt);
+          if (!cancelled) {
+            setArticles(parseArticles({ data: merged as unknown as Record<string, unknown>[] }));
+          }
+        } else {
+          // Full sync (first load or no prior data)
+          replaceFullSync(universityId, rawArticles, syncedAt);
+          if (!cancelled) {
+            setArticles(parseArticles(poolData));
+          }
+        }
       } catch (error) {
         console.error('Error loading content pool:', error);
-        if (!cached) setArticles([]);
       } finally {
         if (!cancelled) setLoading(false);
       }

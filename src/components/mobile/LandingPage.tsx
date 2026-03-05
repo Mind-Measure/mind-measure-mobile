@@ -1,7 +1,8 @@
-import { useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
+import { Preferences } from '@capacitor/preferences';
 
 const MM_LOGO = '/images/mm-logo-wordmark-white.png';
 const HERO_FIGURES = [
@@ -18,30 +19,39 @@ const HERO_CYCLE_KEY = 'mm_hero_cycle_index';
 const coral = '#FF6B6B';
 const spectra = '#2D4C4C';
 
-function getNextHeroIndex(): number {
-  try {
-    const stored = localStorage.getItem(HERO_CYCLE_KEY);
-    const next = stored !== null ? (parseInt(stored, 10) + 1) % HERO_FIGURES.length : 0;
-    localStorage.setItem(HERO_CYCLE_KEY, String(next));
-    return next;
-  } catch {
-    return 0;
-  }
-}
-
 interface SplashScreenProps {
   onGetStarted: () => void;
 }
 
 export function SplashScreen({ onGetStarted }: SplashScreenProps) {
-  const heroIndex = useMemo(() => getNextHeroIndex(), []);
+  const [heroIndex, setHeroIndex] = useState(0);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    Preferences.get({ key: HERO_CYCLE_KEY })
+      .then(({ value }) => {
+        if (!mounted) return;
+        const next = value !== null ? (parseInt(value, 10) + 1) % HERO_FIGURES.length : 0;
+        setHeroIndex(next);
+        setReady(true);
+        Preferences.set({ key: HERO_CYCLE_KEY, value: String(next) });
+      })
+      .catch(() => {
+        if (mounted) setReady(true);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const heroSrc = HERO_FIGURES[heroIndex];
   const isOriginalGirl = heroSrc === '/images/hero-student.png';
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
+      animate={{ opacity: ready ? 1 : 0 }}
       transition={{ duration: 0.5, ease: 'easeOut' }}
       style={{
         minHeight: '100vh',

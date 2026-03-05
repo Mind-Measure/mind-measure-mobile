@@ -18,23 +18,43 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const universityId = req.query.universityId as string | undefined;
+  const since = req.query.since as string | undefined;
 
   if (!universityId) {
     return res.status(200).json({ success: true, data: [], count: 0, source: 'hub' });
   }
 
   try {
-    const response = await fetch(`${HUB_URL}/api/content?universityId=${universityId}`, {
+    let hubUrl = `${HUB_URL}/api/content?universityId=${universityId}`;
+    if (since) hubUrl += `&since=${encodeURIComponent(since)}`;
+
+    const response = await fetch(hubUrl, {
       signal: AbortSignal.timeout(6000),
     });
 
     let articles: Record<string, unknown>[] = [];
+    let syncedAt: string | undefined;
+    let incremental = false;
+
     if (response.ok) {
       const d = await response.json();
-      articles = (d.articles || []).filter((a: Record<string, unknown>) => a.status === 'PUBLISHED');
+      articles = d.articles || [];
+      syncedAt = d.syncedAt;
+      incremental = d.incremental || false;
     }
 
-    const normalized = articles.map((a) => ({
+    const published: Record<string, unknown>[] = [];
+    const unpublishedIds: string[] = [];
+
+    for (const a of articles) {
+      if (a.status === 'PUBLISHED') {
+        published.push(a);
+      } else {
+        unpublishedIds.push(String(a.id));
+      }
+    }
+
+    const normalized = published.map((a) => ({
       id: a.id,
       title: a.title,
       slug: a.slug,
@@ -48,6 +68,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       categories: a.categories || [],
       tags: a.tags || [],
       published_at: a.published_at || a.publishedAt || null,
+      updated_at: a.updated_at || a.updatedAt || null,
       status: 'PUBLISHED',
     }));
 
@@ -62,6 +83,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       success: true,
       data: normalized,
       count: normalized.length,
+      unpublishedIds,
+      syncedAt,
+      incremental,
       source: 'hub',
     });
   } catch (error: unknown) {
