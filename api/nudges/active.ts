@@ -3,6 +3,7 @@ import { Client } from 'pg';
 
 interface CohortTargeting {
   schools?: string[];
+  departments?: string[];
   courses?: string[];
   yearOfStudy?: string[];
   accommodationType?: string[];
@@ -41,6 +42,7 @@ function matchesTargeting(targeting: CohortTargeting | null | undefined, profile
 
   const checks: [string[] | undefined, string | null | undefined][] = [
     [targeting.schools, profile?.school],
+    [targeting.departments, profile?.course],
     [targeting.courses, profile?.course],
     [targeting.yearOfStudy, profile?.year_of_study],
     [targeting.accommodationType, profile?.living_situation],
