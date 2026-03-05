@@ -330,12 +330,12 @@ export const MobileAppStructure: React.FC = () => {
         case 'baseline_assessment':
           return <BaselineAssessmentSDK onComplete={handleBaselineComplete} />;
         default:
-          return <SplashScreen onGetStarted={handleSplashComplete} />;
+          return <SplashScreen onGetStarted={handleLetsGo} />;
       }
     }
 
     if (!onboardingScreen && !user) {
-      return <SplashScreen onGetStarted={handleSplashComplete} />;
+      return <SplashScreen onGetStarted={handleLetsGo} />;
     }
 
     switch (currentScreen) {
