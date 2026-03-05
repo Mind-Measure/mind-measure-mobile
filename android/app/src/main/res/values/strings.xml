@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Mind Measure</string>
+    <string name="title_activity_main">Mind Measure</string>
+    <string name="package_name">com.mindmeasure.mobile</string>
+    <string name="custom_url_scheme">com.mindmeasure.mobile</string>
+</resources>

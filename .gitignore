@@ -55,6 +55,7 @@ android/.gradle/
 android/build/
 android/local.properties
 *.keystore
+android/keystore.properties
 
 # Capacitor
 .capacitor/

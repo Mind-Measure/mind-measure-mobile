@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Preferences } from '@capacitor/preferences';
+import { App as CapApp } from '@capacitor/app';
 import { BottomNav } from '@/components/BottomNavigation';
 import { DashboardScreen } from './MobileDashboard';
 import { CheckInWelcome } from './CheckInWelcome';
@@ -304,6 +305,23 @@ export const MobileAppStructure: React.FC = () => {
   const handleNavigateBack = useCallback(() => {
     setCurrentScreen(activeTab);
   }, [activeTab]);
+
+  useEffect(() => {
+    const listener = CapApp.addListener('backButton', ({ canGoBack }) => {
+      if (onboardingScreen) return;
+      if (currentScreen === 'settings' || currentScreen === 'help') {
+        setCurrentScreen(activeTab);
+      } else if (currentScreen === 'checkin' || currentScreen === 'checkin_assessment') {
+        setCurrentScreen('dashboard');
+        setActiveTab('dashboard');
+      } else if (!canGoBack) {
+        CapApp.minimizeApp();
+      }
+    });
+    return () => {
+      listener.then((l) => l.remove());
+    };
+  }, [onboardingScreen, currentScreen, activeTab]);
 
   const renderContent = () => {
     if (onboardingScreen) {
