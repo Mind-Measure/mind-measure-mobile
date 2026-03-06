@@ -223,9 +223,10 @@ export function ContentPage({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          padding: '0 32px',
         }}
       >
-        <div style={{ textAlign: 'center' }}>
+        <div style={{ textAlign: 'center', maxWidth: '280px' }}>
           <div
             style={{
               width: '48px',
@@ -234,10 +235,16 @@ export function ContentPage({
               borderTopColor: '#99CCCE',
               borderRadius: '50%',
               animation: 'spin 1s linear infinite',
-              margin: '0 auto 16px',
+              margin: '0 auto 20px',
             }}
           />
-          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px' }}>Loading articles...</p>
+          <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '16px', fontWeight: 600, margin: '0 0 8px' }}>
+            Fetching your content
+          </p>
+          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', lineHeight: '1.5', margin: 0 }}>
+            Loading wellbeing articles from your institution. This only takes a moment on first load — next time
+            it&apos;ll be instant.
+          </p>
         </div>
       </div>
     );

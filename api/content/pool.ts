@@ -105,7 +105,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (since) hubUrl += `&since=${encodeURIComponent(since)}`;
 
     const response = await fetch(hubUrl, {
-      signal: AbortSignal.timeout(6000),
+      signal: AbortSignal.timeout(15000),
     });
 
     let articles: Record<string, unknown>[] = [];

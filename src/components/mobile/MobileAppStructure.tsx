@@ -23,6 +23,7 @@ import { useUserAssessmentHistory } from '@/hooks/useUserAssessmentHistory';
 import { useAuth } from '@/contexts/AuthContext';
 import { BackendServiceFactory } from '@/services/database/BackendServiceFactory';
 import { buddiesApi } from '@/services/buddies-api';
+import { prefetchContent } from '@/services/content-store';
 
 const PROFILE_REMINDER_VISIT_KEY = 'profile_reminder_visit_count';
 const BUDDY_REMINDER_SHOWN_KEY = 'buddy_reminder_shown';
@@ -304,7 +305,11 @@ export const MobileAppStructure: React.FC = () => {
 
   const handleBaselineStart = useCallback(() => {
     setOnboardingScreen('baseline_assessment');
-  }, []);
+
+    if (user?.university_id) {
+      prefetchContent(user.university_id, user.id).catch(() => {});
+    }
+  }, [user]);
 
   const handleBaselineComplete = useCallback(async () => {
     await markBaselineComplete();
@@ -385,6 +390,9 @@ export const MobileAppStructure: React.FC = () => {
               }}
               onRegistrationComplete={() => {
                 setOnboardingScreen('baseline_welcome');
+                if (user?.university_id) {
+                  prefetchContent(user.university_id, user.id).catch(() => {});
+                }
               }}
             />
           );

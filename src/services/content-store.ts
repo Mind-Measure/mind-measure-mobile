@@ -110,6 +110,36 @@ export function replaceFullSync(institutionId: string, articles: StoredArticle[]
 }
 
 /**
+ * Prefetch content in the background (fire-and-forget).
+ * Called during onboarding so content is cached before the user
+ * reaches the Content tab for the first time.
+ */
+export async function prefetchContent(universityId: string, userId?: string): Promise<void> {
+  if (!universityId) return;
+
+  const existing = getStoredContent(universityId);
+  if (existing && existing.articles.length > 0) return;
+
+  try {
+    let url = `/api/content/pool?universityId=${encodeURIComponent(universityId)}`;
+    if (userId) url += `&userId=${encodeURIComponent(userId)}`;
+
+    const response = await fetch(url, { signal: AbortSignal.timeout(20000) });
+    if (!response.ok) return;
+
+    const data = await response.json();
+    const articles = data.data || [];
+    const syncedAt = data.syncedAt || new Date().toISOString();
+
+    if (articles.length > 0) {
+      replaceFullSync(universityId, articles, syncedAt);
+    }
+  } catch {
+    // Prefetch is best-effort — failures are silent
+  }
+}
+
+/**
  * Clear content store for a specific institution.
  */
 export function clearContentStore(institutionId: string): void {
