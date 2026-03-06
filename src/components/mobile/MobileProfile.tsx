@@ -122,6 +122,8 @@ export function MobileProfile({
       'domicileStatus',
       'firstGenStudent',
       'caringResponsibilities',
+      'occupation',
+      'referralSource',
     ];
     const hasChanges = editableFields.some((field) => userData[field] !== originalUserData[field]);
     setHasUnsavedChanges(hasChanges);

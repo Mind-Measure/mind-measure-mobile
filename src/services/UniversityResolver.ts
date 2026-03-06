@@ -121,10 +121,10 @@ export class UniversityResolver {
   /**
    * Get default fallback university
    * Used when email domain doesn't match any university.
-   * During public testing, unmatched users go to Rummidge (demo institution).
+   * Non-university users go to the Mind Measure open-access institution.
    */
   getDefaultUniversity(): string {
-    return 'rummidge'; // Public testing default – route unknown domains to demo university
+    return 'mindmeasure';
   }
 
   /**

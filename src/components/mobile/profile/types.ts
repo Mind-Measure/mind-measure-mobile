@@ -7,6 +7,7 @@ export interface UserData {
   phone: string;
   institution: string;
   institutionLogo: string;
+  institutionId: string;
   accountType: string;
   ageRange: string;
   gender: string;
@@ -19,6 +20,8 @@ export interface UserData {
   domicileStatus: string;
   firstGenStudent: boolean;
   caringResponsibilities: boolean;
+  occupation: string;
+  referralSource: string;
   currentStreak: number;
   longestStreak: number;
   totalCheckIns: number;
@@ -33,6 +36,18 @@ export interface UniversityData {
   halls_of_residence?: Array<{ name: string }>;
 }
 
+export const OPEN_ACCESS_INSTITUTION_ID = 'mindmeasure';
+
+export const REFERRAL_SOURCE_OPTIONS = [
+  'Social Media',
+  'Friend or Family',
+  'University',
+  'News / Press',
+  'Search Engine',
+  'App Store',
+  'Other',
+] as const;
+
 export const DEFAULT_USER_DATA: UserData = {
   firstName: '',
   lastName: '',
@@ -40,6 +55,7 @@ export const DEFAULT_USER_DATA: UserData = {
   phone: '',
   institution: '',
   institutionLogo: '',
+  institutionId: '',
   accountType: 'Student',
   ageRange: '',
   gender: '',
@@ -52,6 +68,8 @@ export const DEFAULT_USER_DATA: UserData = {
   domicileStatus: '',
   firstGenStudent: false,
   caringResponsibilities: false,
+  occupation: '',
+  referralSource: '',
   currentStreak: 0,
   longestStreak: 0,
   totalCheckIns: 0,

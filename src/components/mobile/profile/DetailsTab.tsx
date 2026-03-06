@@ -1,6 +1,7 @@
 import { Edit2 } from 'lucide-react';
 import { Select } from '../Select';
 import type { UserData } from './types';
+import { OPEN_ACCESS_INSTITUTION_ID, REFERRAL_SOURCE_OPTIONS } from './types';
 
 interface DetailsTabProps {
   userData: UserData;
@@ -13,6 +14,33 @@ interface DetailsTabProps {
   onSaveProfile: () => Promise<void>;
 }
 
+const sectionHeaderStyle: React.CSSProperties = {
+  fontSize: '12px',
+  fontWeight: '600',
+  color: '#999999',
+  marginBottom: '16px',
+  textTransform: 'uppercase',
+  letterSpacing: '0.05em',
+};
+
+const labelStyle: React.CSSProperties = {
+  fontSize: '12px',
+  color: '#666666',
+  marginBottom: '6px',
+  display: 'block',
+};
+
+const inputStyleFn = (editing: boolean): React.CSSProperties => ({
+  width: '100%',
+  padding: '10px 12px',
+  border: '1px solid #E0E0E0',
+  borderRadius: '8px',
+  fontSize: '14px',
+  color: '#1a1a1a',
+  background: editing ? 'white' : '#FAFAFA',
+  outline: 'none',
+});
+
 export function DetailsTab({
   userData,
   setUserData,
@@ -23,6 +51,8 @@ export function DetailsTab({
   hallOptions,
   onSaveProfile,
 }: DetailsTabProps) {
+  const isOpenAccess = userData.institutionId === OPEN_ACCESS_INSTITUTION_ID;
+
   return (
     <div>
       {/* Your Information Section */}
@@ -69,88 +99,44 @@ export function DetailsTab({
 
         {/* Personal Information */}
         <div style={{ marginBottom: '28px' }}>
-          <div
-            style={{
-              fontSize: '12px',
-              fontWeight: '600',
-              color: '#999999',
-              marginBottom: '16px',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-            }}
-          >
-            Personal Information
-          </div>
+          <div style={sectionHeaderStyle}>Personal Information</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '12px' }}>
             <div>
-              <label style={{ fontSize: '12px', color: '#666666', marginBottom: '6px', display: 'block' }}>
-                First Name
-              </label>
+              <label style={labelStyle}>First Name</label>
               <input
                 type="text"
                 value={userData.firstName}
                 disabled={!isEditing}
                 onChange={(e) => setUserData({ ...userData, firstName: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  border: '1px solid #E0E0E0',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  color: '#1a1a1a',
-                  background: isEditing ? 'white' : '#FAFAFA',
-                  outline: 'none',
-                }}
+                style={inputStyleFn(isEditing)}
               />
             </div>
             <div>
-              <label style={{ fontSize: '12px', color: '#666666', marginBottom: '6px', display: 'block' }}>
-                Last Name
-              </label>
+              <label style={labelStyle}>Last Name</label>
               <input
                 type="text"
                 value={userData.lastName}
                 disabled={!isEditing}
                 onChange={(e) => setUserData({ ...userData, lastName: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  border: '1px solid #E0E0E0',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  color: '#1a1a1a',
-                  background: isEditing ? 'white' : '#FAFAFA',
-                  outline: 'none',
-                }}
+                style={inputStyleFn(isEditing)}
               />
             </div>
           </div>
-          <div style={{ marginBottom: '12px' }}>
-            <label style={{ fontSize: '12px', color: '#666666', marginBottom: '6px', display: 'block' }}>
-              Phone Number
-            </label>
-            <input
-              type="tel"
-              value={userData.phone}
-              disabled={!isEditing}
-              onChange={(e) => setUserData({ ...userData, phone: e.target.value })}
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                border: '1px solid #E0E0E0',
-                borderRadius: '8px',
-                fontSize: '14px',
-                color: '#1a1a1a',
-                background: isEditing ? 'white' : '#FAFAFA',
-                outline: 'none',
-              }}
-            />
-          </div>
+          {!isOpenAccess && (
+            <div style={{ marginBottom: '12px' }}>
+              <label style={labelStyle}>Phone Number</label>
+              <input
+                type="tel"
+                value={userData.phone}
+                disabled={!isEditing}
+                onChange={(e) => setUserData({ ...userData, phone: e.target.value })}
+                style={inputStyleFn(isEditing)}
+              />
+            </div>
+          )}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div>
-              <label style={{ fontSize: '12px', color: '#666666', marginBottom: '6px', display: 'block' }}>
-                Age Range
-              </label>
+              <label style={labelStyle}>Age Range</label>
               <Select
                 value={userData.ageRange}
                 onChange={(value) => setUserData({ ...userData, ageRange: value })}
@@ -159,9 +145,7 @@ export function DetailsTab({
               />
             </div>
             <div>
-              <label style={{ fontSize: '12px', color: '#666666', marginBottom: '6px', display: 'block' }}>
-                Gender
-              </label>
+              <label style={labelStyle}>Gender</label>
               <Select
                 value={userData.gender}
                 onChange={(value) => setUserData({ ...userData, gender: value })}
@@ -172,237 +156,208 @@ export function DetailsTab({
           </div>
         </div>
 
-        {/* Academic Information */}
-        <div style={{ marginBottom: '28px' }}>
-          <div
-            style={{
-              fontSize: '12px',
-              fontWeight: '600',
-              color: '#999999',
-              marginBottom: '16px',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-            }}
-          >
-            Academic Information
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '12px' }}>
-            <div>
-              <label style={{ fontSize: '12px', color: '#666666', marginBottom: '6px', display: 'block' }}>
-                School / Faculty <span style={{ color: '#FF4444' }}>*</span>
-              </label>
-              <Select
-                value={userData.school}
-                onChange={(value) => setUserData({ ...userData, school: value })}
-                options={schoolOptions.length > 0 ? schoolOptions : ['Select your faculty or school']}
-                disabled={!isEditing}
-              />
-            </div>
-            <div>
-              <label style={{ fontSize: '12px', color: '#666666', marginBottom: '6px', display: 'block' }}>
-                Year of Study <span style={{ color: '#FF4444' }}>*</span>
-              </label>
-              <Select
-                value={userData.yearOfStudy}
-                onChange={(value) => setUserData({ ...userData, yearOfStudy: value })}
-                options={['Year 1', 'Year 2', 'Year 3', 'Year 4', 'Postgraduate', 'Foundation']}
-                disabled={!isEditing}
-              />
-            </div>
-          </div>
-          <div style={{ marginBottom: '12px' }}>
-            <label style={{ fontSize: '12px', color: '#666666', marginBottom: '6px', display: 'block' }}>
-              Course / Programme
-            </label>
-            <input
-              type="text"
-              value={userData.course}
-              disabled={!isEditing}
-              onChange={(e) => setUserData({ ...userData, course: e.target.value })}
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                border: '1px solid #E0E0E0',
-                borderRadius: '8px',
-                fontSize: '14px',
-                color: '#1a1a1a',
-                background: isEditing ? 'white' : '#FAFAFA',
-                outline: 'none',
-              }}
-            />
-          </div>
+        {isOpenAccess ? (
+          /* ─── Open-Access: About You ─── */
           <div>
-            <label style={{ fontSize: '12px', color: '#666666', marginBottom: '6px', display: 'block' }}>
-              Study Mode
-            </label>
-            <Select
-              value={userData.studyMode}
-              onChange={(value) => setUserData({ ...userData, studyMode: value })}
-              options={['Full-time', 'Part-time', 'Distance Learning']}
-              disabled={!isEditing}
-            />
-          </div>
-        </div>
-
-        {/* Living Situation */}
-        <div style={{ marginBottom: '28px' }}>
-          <div
-            style={{
-              fontSize: '12px',
-              fontWeight: '600',
-              color: '#999999',
-              marginBottom: '16px',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-            }}
-          >
-            Living Situation
-          </div>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: '16px',
-              marginBottom: userData.livingArrangement === 'University Accommodation' ? '12px' : '0',
-            }}
-          >
-            <div>
-              <label style={{ fontSize: '12px', color: '#666666', marginBottom: '6px', display: 'block' }}>
-                Where do you live? <span style={{ color: '#FF4444' }}>*</span>
-              </label>
-              <Select
-                value={userData.livingArrangement}
-                onChange={(value) =>
-                  setUserData({
-                    ...userData,
-                    livingArrangement: value,
-                    accommodationName: value === 'University Accommodation' ? userData.accommodationName : '',
-                  })
-                }
-                options={['University Accommodation', 'Off Campus - Private', 'Living at Home', 'Commuting']}
+            <div style={sectionHeaderStyle}>About You</div>
+            <div style={{ marginBottom: '12px' }}>
+              <label style={labelStyle}>Occupation</label>
+              <input
+                type="text"
+                value={userData.occupation}
                 disabled={!isEditing}
+                onChange={(e) => setUserData({ ...userData, occupation: e.target.value })}
+                placeholder="e.g., Nurse, Teacher, Software Engineer"
+                style={inputStyleFn(isEditing)}
               />
             </div>
             <div>
-              <label style={{ fontSize: '12px', color: '#666666', marginBottom: '6px', display: 'block' }}>
-                Domicile Status
-              </label>
+              <label style={labelStyle}>How did you hear about us?</label>
               <Select
-                value={userData.domicileStatus}
-                onChange={(value) => setUserData({ ...userData, domicileStatus: value })}
-                options={['Home (UK)', 'EU', 'International']}
+                value={userData.referralSource}
+                onChange={(value) => setUserData({ ...userData, referralSource: value })}
+                options={[...REFERRAL_SOURCE_OPTIONS]}
                 disabled={!isEditing}
+                placeholder="Select an option"
               />
             </div>
           </div>
-          {userData.livingArrangement === 'University Accommodation' && (
-            <div>
-              <label style={{ fontSize: '12px', color: '#666666', marginBottom: '6px', display: 'block' }}>
-                Name of Accommodation
-              </label>
-              {hallOptions.length > 0 ? (
-                <Select
-                  value={userData.accommodationName}
-                  onChange={(value) => setUserData({ ...userData, accommodationName: value })}
-                  options={hallOptions}
-                  disabled={!isEditing}
-                  placeholder="Select hall of residence"
-                />
-              ) : (
+        ) : (
+          <>
+            {/* ─── University: Academic Information ─── */}
+            <div style={{ marginBottom: '28px' }}>
+              <div style={sectionHeaderStyle}>Academic Information</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '12px' }}>
+                <div>
+                  <label style={labelStyle}>
+                    School / Faculty <span style={{ color: '#FF4444' }}>*</span>
+                  </label>
+                  <Select
+                    value={userData.school}
+                    onChange={(value) => setUserData({ ...userData, school: value })}
+                    options={schoolOptions.length > 0 ? schoolOptions : ['Select your faculty or school']}
+                    disabled={!isEditing}
+                  />
+                </div>
+                <div>
+                  <label style={labelStyle}>
+                    Year of Study <span style={{ color: '#FF4444' }}>*</span>
+                  </label>
+                  <Select
+                    value={userData.yearOfStudy}
+                    onChange={(value) => setUserData({ ...userData, yearOfStudy: value })}
+                    options={['Year 1', 'Year 2', 'Year 3', 'Year 4', 'Postgraduate', 'Foundation']}
+                    disabled={!isEditing}
+                  />
+                </div>
+              </div>
+              <div style={{ marginBottom: '12px' }}>
+                <label style={labelStyle}>Course / Programme</label>
                 <input
                   type="text"
-                  value={userData.accommodationName}
+                  value={userData.course}
                   disabled={!isEditing}
-                  onChange={(e) => setUserData({ ...userData, accommodationName: e.target.value })}
-                  placeholder="e.g., Smith Hall"
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    border: '1px solid #E0E0E0',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    color: '#1a1a1a',
-                    background: isEditing ? 'white' : '#FAFAFA',
-                    outline: 'none',
-                  }}
+                  onChange={(e) => setUserData({ ...userData, course: e.target.value })}
+                  style={inputStyleFn(isEditing)}
                 />
+              </div>
+              <div>
+                <label style={labelStyle}>Study Mode</label>
+                <Select
+                  value={userData.studyMode}
+                  onChange={(value) => setUserData({ ...userData, studyMode: value })}
+                  options={['Full-time', 'Part-time', 'Distance Learning']}
+                  disabled={!isEditing}
+                />
+              </div>
+            </div>
+
+            {/* ─── University: Living Situation ─── */}
+            <div style={{ marginBottom: '28px' }}>
+              <div style={sectionHeaderStyle}>Living Situation</div>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '16px',
+                  marginBottom: userData.livingArrangement === 'University Accommodation' ? '12px' : '0',
+                }}
+              >
+                <div>
+                  <label style={labelStyle}>
+                    Where do you live? <span style={{ color: '#FF4444' }}>*</span>
+                  </label>
+                  <Select
+                    value={userData.livingArrangement}
+                    onChange={(value) =>
+                      setUserData({
+                        ...userData,
+                        livingArrangement: value,
+                        accommodationName: value === 'University Accommodation' ? userData.accommodationName : '',
+                      })
+                    }
+                    options={['University Accommodation', 'Off Campus - Private', 'Living at Home', 'Commuting']}
+                    disabled={!isEditing}
+                  />
+                </div>
+                <div>
+                  <label style={labelStyle}>Domicile Status</label>
+                  <Select
+                    value={userData.domicileStatus}
+                    onChange={(value) => setUserData({ ...userData, domicileStatus: value })}
+                    options={['Home (UK)', 'EU', 'International']}
+                    disabled={!isEditing}
+                  />
+                </div>
+              </div>
+              {userData.livingArrangement === 'University Accommodation' && (
+                <div>
+                  <label style={labelStyle}>Name of Accommodation</label>
+                  {hallOptions.length > 0 ? (
+                    <Select
+                      value={userData.accommodationName}
+                      onChange={(value) => setUserData({ ...userData, accommodationName: value })}
+                      options={hallOptions}
+                      disabled={!isEditing}
+                      placeholder="Select hall of residence"
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      value={userData.accommodationName}
+                      disabled={!isEditing}
+                      onChange={(e) => setUserData({ ...userData, accommodationName: e.target.value })}
+                      placeholder="e.g., Smith Hall"
+                      style={inputStyleFn(isEditing)}
+                    />
+                  )}
+                </div>
               )}
             </div>
-          )}
-        </div>
 
-        {/* Additional Information */}
-        <div>
-          <div
-            style={{
-              fontSize: '12px',
-              fontWeight: '600',
-              color: '#999999',
-              marginBottom: '16px',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-            }}
-          >
-            Additional Information
-          </div>
-          <label
-            style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: '12px',
-              marginBottom: '16px',
-              cursor: isEditing ? 'pointer' : 'default',
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={userData.firstGenStudent}
-              disabled={!isEditing}
-              onChange={(e) => setUserData({ ...userData, firstGenStudent: e.target.checked })}
-              style={{
-                marginTop: '2px',
-                width: '18px',
-                height: '18px',
-                cursor: isEditing ? 'pointer' : 'default',
-              }}
-            />
+            {/* ─── University: Additional Information ─── */}
             <div>
-              <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '500', marginBottom: '2px' }}>
-                First generation student
-              </div>
-              <div style={{ fontSize: '12px', color: '#999999' }}>
-                First in your immediate family to attend university
-              </div>
+              <div style={sectionHeaderStyle}>Additional Information</div>
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '12px',
+                  marginBottom: '16px',
+                  cursor: isEditing ? 'pointer' : 'default',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={userData.firstGenStudent}
+                  disabled={!isEditing}
+                  onChange={(e) => setUserData({ ...userData, firstGenStudent: e.target.checked })}
+                  style={{
+                    marginTop: '2px',
+                    width: '18px',
+                    height: '18px',
+                    cursor: isEditing ? 'pointer' : 'default',
+                  }}
+                />
+                <div>
+                  <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '500', marginBottom: '2px' }}>
+                    First generation student
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#999999' }}>
+                    First in your immediate family to attend university
+                  </div>
+                </div>
+              </label>
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '12px',
+                  cursor: isEditing ? 'pointer' : 'default',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={userData.caringResponsibilities}
+                  disabled={!isEditing}
+                  onChange={(e) => setUserData({ ...userData, caringResponsibilities: e.target.checked })}
+                  style={{
+                    marginTop: '2px',
+                    width: '18px',
+                    height: '18px',
+                    cursor: isEditing ? 'pointer' : 'default',
+                  }}
+                />
+                <div>
+                  <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '500', marginBottom: '2px' }}>
+                    Caring responsibilities
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#999999' }}>You care for a family member or dependent</div>
+                </div>
+              </label>
             </div>
-          </label>
-          <label
-            style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: '12px',
-              cursor: isEditing ? 'pointer' : 'default',
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={userData.caringResponsibilities}
-              disabled={!isEditing}
-              onChange={(e) => setUserData({ ...userData, caringResponsibilities: e.target.checked })}
-              style={{
-                marginTop: '2px',
-                width: '18px',
-                height: '18px',
-                cursor: isEditing ? 'pointer' : 'default',
-              }}
-            />
-            <div>
-              <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '500', marginBottom: '2px' }}>
-                Caring responsibilities
-              </div>
-              <div style={{ fontSize: '12px', color: '#999999' }}>You care for a family member or dependent</div>
-            </div>
-          </label>
-        </div>
+          </>
+        )}
       </div>
 
       {/* Data Usage Info */}
@@ -435,8 +390,8 @@ export function DetailsTab({
           }}
         >
           <li style={{ marginBottom: '4px' }}>Your data helps us personalise your wellbeing support</li>
-          <li style={{ marginBottom: '4px' }}>Academic info enables aggregate cohort insights</li>
-          <li style={{ marginBottom: '4px' }}>All data is anonymised for institutional research</li>
+          {!isOpenAccess && <li style={{ marginBottom: '4px' }}>Academic info enables aggregate cohort insights</li>}
+          <li style={{ marginBottom: '4px' }}>All data is anonymised and never shared with third parties</li>
           <li>You can update or delete your information anytime</li>
         </ul>
       </div>

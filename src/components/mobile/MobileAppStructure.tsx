@@ -17,6 +17,7 @@ import { BaselineAssessmentScreen } from './BaselineWelcome';
 import { BaselineAssessmentSDK } from './BaselineAssessmentSDK';
 import { ProfileReminderModal } from './ProfileReminderModal';
 import { BuddyReminderModal } from './BuddyReminderModal';
+import { OpenAccessWelcomeModal } from './OpenAccessWelcomeModal';
 import { SplashScreen } from './LandingPage';
 import { useUserAssessmentHistory } from '@/hooks/useUserAssessmentHistory';
 import { useAuth } from '@/contexts/AuthContext';
@@ -25,6 +26,41 @@ import { buddiesApi } from '@/services/buddies-api';
 
 const PROFILE_REMINDER_VISIT_KEY = 'profile_reminder_visit_count';
 const BUDDY_REMINDER_SHOWN_KEY = 'buddy_reminder_shown';
+const OPEN_ACCESS_WELCOME_SHOWN_KEY = 'open_access_welcome_shown';
+
+const getOpenAccessWelcomeShown = async (): Promise<boolean> => {
+  try {
+    const { value } = await Preferences.get({ key: OPEN_ACCESS_WELCOME_SHOWN_KEY });
+    return value === '1' || value === 'true';
+  } catch {
+    return false;
+  }
+};
+
+const setOpenAccessWelcomeShown = async (): Promise<void> => {
+  try {
+    await Preferences.set({ key: OPEN_ACCESS_WELCOME_SHOWN_KEY, value: '1' });
+  } catch (e: unknown) {
+    console.warn('[Open-access welcome] Could not persist shown flag:', e);
+  }
+};
+
+const shouldShowOpenAccessWelcome = async (userId: string): Promise<boolean> => {
+  try {
+    if (await getOpenAccessWelcomeShown()) return false;
+
+    const backend = BackendServiceFactory.createService(BackendServiceFactory.getEnvironmentConfig());
+    const { data } = await backend.database.select('profiles', {
+      filters: { user_id: userId },
+      columns: 'university_id',
+    });
+    const universityId = (data?.[0] as { university_id?: string } | undefined)?.university_id;
+    return universityId === 'mindmeasure';
+  } catch (e: unknown) {
+    console.warn('[Open-access welcome] Could not check university:', e);
+    return false;
+  }
+};
 
 const getProfileReminderVisitCount = async (): Promise<number> => {
   try {
@@ -187,6 +223,7 @@ export const MobileAppStructure: React.FC = () => {
   const [showProfileUnsavedWarning, setShowProfileUnsavedWarning] = useState(false);
   const [pendingTabChange, setPendingTabChange] = useState<MobileTab | null>(null);
   const [showBuddyReminderModal, setShowBuddyReminderModal] = useState(false);
+  const [showOpenAccessWelcome, setShowOpenAccessWelcome] = useState(false);
   const [splashWipeActive, setSplashWipeActive] = useState(false);
   // Ref to trigger save from parent
   const profileSaveRef = useRef<(() => Promise<void>) | null>(null);
@@ -249,11 +286,16 @@ export const MobileAppStructure: React.FC = () => {
       setOnboardingScreen(null);
       setCurrentScreen('dashboard');
       setActiveTab('dashboard');
-      const showProfile = await shouldShowProfileReminderThisVisit(user.id);
-      if (showProfile) setShowProfileReminderModal(true);
-      else {
-        const showBuddy = await shouldShowBuddyReminderThisVisit(user.id);
-        if (showBuddy) setShowBuddyReminderModal(true);
+      const showWelcome = await shouldShowOpenAccessWelcome(user.id);
+      if (showWelcome) {
+        setShowOpenAccessWelcome(true);
+      } else {
+        const showProfile = await shouldShowProfileReminderThisVisit(user.id);
+        if (showProfile) setShowProfileReminderModal(true);
+        else {
+          const showBuddy = await shouldShowBuddyReminderThisVisit(user.id);
+          if (showBuddy) setShowBuddyReminderModal(true);
+        }
       }
       return;
     }
@@ -274,11 +316,16 @@ export const MobileAppStructure: React.FC = () => {
       setCurrentScreen('dashboard');
       setActiveTab('dashboard');
       if (user?.id) {
-        const showProfile = await shouldShowProfileReminderThisVisit(user.id);
-        if (showProfile) setShowProfileReminderModal(true);
-        else {
-          const showBuddy = await shouldShowBuddyReminderThisVisit(user.id);
-          if (showBuddy) setShowBuddyReminderModal(true);
+        const showWelcome = await shouldShowOpenAccessWelcome(user.id);
+        if (showWelcome) {
+          setShowOpenAccessWelcome(true);
+        } else {
+          const showProfile = await shouldShowProfileReminderThisVisit(user.id);
+          if (showProfile) setShowProfileReminderModal(true);
+          else {
+            const showBuddy = await shouldShowBuddyReminderThisVisit(user.id);
+            if (showBuddy) setShowBuddyReminderModal(true);
+          }
         }
       }
     }
@@ -433,6 +480,21 @@ export const MobileAppStructure: React.FC = () => {
           onViewChange={(view) => handleTabChange((view === 'home' ? 'dashboard' : view) as MobileTab)}
         />
       )}
+      <OpenAccessWelcomeModal
+        isOpen={showOpenAccessWelcome}
+        onDismiss={async () => {
+          await setOpenAccessWelcomeShown();
+          setShowOpenAccessWelcome(false);
+          if (user?.id) {
+            const showProfile = await shouldShowProfileReminderThisVisit(user.id);
+            if (showProfile) setShowProfileReminderModal(true);
+            else {
+              const showBuddy = await shouldShowBuddyReminderThisVisit(user.id);
+              if (showBuddy) setShowBuddyReminderModal(true);
+            }
+          }
+        }}
+      />
       <ProfileReminderModal
         isOpen={showProfileReminderModal}
         onComplete={() => {
