@@ -79,8 +79,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     await client.connect();
 
     const result = await client.query(
-      `INSERT INTO universities (id, name, slug, short_name, status, total_students, undergraduate_students, postgraduate_students, settings, faculties, halls, emergency_contacts, mental_health_services, national_resources, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), NOW())
+      `INSERT INTO universities (id, name, slug, short_name, status, total_students, undergraduate_students, postgraduate_students, settings, faculties, emergency_contacts, mental_health_services, national_resources, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), NOW())
        ON CONFLICT (id) DO UPDATE SET
          name = EXCLUDED.name, slug = EXCLUDED.slug, short_name = EXCLUDED.short_name,
          status = EXCLUDED.status, settings = EXCLUDED.settings,
@@ -100,7 +100,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         INSTITUTION.postgraduate_students,
         JSON.stringify(INSTITUTION.settings),
         JSON.stringify(INSTITUTION.faculties),
-        JSON.stringify(INSTITUTION.halls),
         JSON.stringify(INSTITUTION.emergency_contacts),
         JSON.stringify(INSTITUTION.mental_health_services),
         JSON.stringify(INSTITUTION.national_resources),
