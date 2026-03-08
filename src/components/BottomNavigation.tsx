@@ -1,10 +1,11 @@
 interface BottomNavProps {
   activeView: 'home' | 'content' | 'buddies' | 'profile';
   onViewChange: (view: 'home' | 'content' | 'buddies' | 'profile') => void;
+  hideBuddies?: boolean;
 }
 
-export function BottomNav({ activeView, onViewChange }: BottomNavProps) {
-  const navItems = [
+export function BottomNav({ activeView, onViewChange, hideBuddies }: BottomNavProps) {
+  const allNavItems = [
     {
       id: 'home' as const,
       label: 'Home',
@@ -13,14 +14,12 @@ export function BottomNav({ activeView, onViewChange }: BottomNavProps) {
     {
       id: 'content' as const,
       label: 'Content',
-      pathData:
-        'M4 19.5A2.5 2.5 0 0 1 6.5 17H20 M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z',
+      pathData: 'M4 19.5A2.5 2.5 0 0 1 6.5 17H20 M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z',
     },
     {
       id: 'buddies' as const,
       label: 'Buddies',
-      pathData:
-        'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75',
+      pathData: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75',
       circles: [{ cx: 9, cy: 7, r: 4 }],
     },
     {
@@ -30,6 +29,8 @@ export function BottomNav({ activeView, onViewChange }: BottomNavProps) {
       circles: [{ cx: 12, cy: 7, r: 4 }],
     },
   ];
+
+  const navItems = hideBuddies ? allNavItems.filter((item) => item.id !== 'buddies') : allNavItems;
 
   return (
     <nav

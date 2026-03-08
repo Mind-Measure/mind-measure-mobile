@@ -245,6 +245,8 @@ export const MobileAppStructure: React.FC = () => {
   const { user, loading: _authLoading } = useAuth();
   const { hasAssessmentHistory, loading: _historyLoading } = useUserAssessmentHistory();
 
+  const isOpenAccess = user?.university_id === 'mindmeasure';
+
   // Check device preferences on mount to determine if this is a returning user
   useEffect(() => {
     const checkDeviceUser = async () => {
@@ -293,7 +295,7 @@ export const MobileAppStructure: React.FC = () => {
       } else {
         const showProfile = await shouldShowProfileReminderThisVisit(user.id);
         if (showProfile) setShowProfileReminderModal(true);
-        else {
+        else if (!isOpenAccess) {
           const showBuddy = await shouldShowBuddyReminderThisVisit(user.id);
           if (showBuddy) setShowBuddyReminderModal(true);
         }
@@ -301,7 +303,7 @@ export const MobileAppStructure: React.FC = () => {
       return;
     }
     setOnboardingScreen('baseline_welcome');
-  }, [user, hasAssessmentHistory]);
+  }, [user, hasAssessmentHistory, isOpenAccess]);
 
   const handleBaselineStart = useCallback(() => {
     setOnboardingScreen('baseline_assessment');
@@ -327,14 +329,14 @@ export const MobileAppStructure: React.FC = () => {
         } else {
           const showProfile = await shouldShowProfileReminderThisVisit(user.id);
           if (showProfile) setShowProfileReminderModal(true);
-          else {
+          else if (!isOpenAccess) {
             const showBuddy = await shouldShowBuddyReminderThisVisit(user.id);
             if (showBuddy) setShowBuddyReminderModal(true);
           }
         }
       }
     }
-  }, [user]);
+  }, [user, isOpenAccess]);
 
   const handleTabChange = useCallback(
     (tab: MobileTab) => {
@@ -437,7 +439,7 @@ export const MobileAppStructure: React.FC = () => {
               if (user?.id) {
                 const showProfile = await shouldShowProfileReminderThisVisit(user.id);
                 if (showProfile) setShowProfileReminderModal(true);
-                else {
+                else if (!isOpenAccess) {
                   const showBuddy = await shouldShowBuddyReminderThisVisit(user.id);
                   if (showBuddy) setShowBuddyReminderModal(true);
                 }
@@ -482,12 +484,17 @@ export const MobileAppStructure: React.FC = () => {
   return (
     <div className="min-h-screen" style={{ backgroundColor: splashWipeActive ? SPLASH_BRAND_COLOR : '#ffffff' }}>
       <div className={onboardingScreen || !user ? '' : 'pb-24'}>{renderContent()}</div>
-      {!onboardingScreen && user && ['dashboard', 'content', 'buddies', 'profile'].includes(currentScreen) && (
-        <BottomNav
-          activeView={activeTab === 'dashboard' ? 'home' : activeTab}
-          onViewChange={(view) => handleTabChange((view === 'home' ? 'dashboard' : view) as MobileTab)}
-        />
-      )}
+      {!onboardingScreen &&
+        user &&
+        (isOpenAccess
+          ? ['dashboard', 'content', 'profile'].includes(currentScreen)
+          : ['dashboard', 'content', 'buddies', 'profile'].includes(currentScreen)) && (
+          <BottomNav
+            activeView={activeTab === 'dashboard' ? 'home' : activeTab}
+            onViewChange={(view) => handleTabChange((view === 'home' ? 'dashboard' : view) as MobileTab)}
+            hideBuddies={isOpenAccess}
+          />
+        )}
       <OpenAccessWelcomeModal
         isOpen={showOpenAccessWelcome}
         onDismiss={async () => {
@@ -496,10 +503,6 @@ export const MobileAppStructure: React.FC = () => {
           if (user?.id) {
             const showProfile = await shouldShowProfileReminderThisVisit(user.id);
             if (showProfile) setShowProfileReminderModal(true);
-            else {
-              const showBuddy = await shouldShowBuddyReminderThisVisit(user.id);
-              if (showBuddy) setShowBuddyReminderModal(true);
-            }
           }
         }}
       />
