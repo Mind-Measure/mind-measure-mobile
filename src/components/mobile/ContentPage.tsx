@@ -10,7 +10,7 @@ const ARTICLES_PER_PAGE = 10;
 
 interface ContentArticle {
   id: string;
-  category: 'Anxiety' | 'Sleep' | 'Stress' | 'Relationships' | 'Exercise' | 'Study' | 'Wellbeing';
+  category: string;
   title: string;
   description: string;
   readTime: number;
@@ -25,12 +25,18 @@ interface ContentArticle {
 
 const CATEGORY_COLORS: Record<string, string> = {
   Anxiety: '#F59E0B',
+  Wellbeing: '#10b981',
+  Relationships: '#DDD6FE',
+  Resilience: '#6B8DB2',
+  'Self-Care': '#99CCCE',
+  'Exam Stress': '#FF6B6B',
+  Research: '#2563eb',
+  Resources: '#8B5CF6',
+  'In the News': '#EC4899',
   Sleep: '#99CCCE',
   Stress: '#FF6B6B',
-  Relationships: '#DDD6FE',
   Exercise: '#99CCCE',
   Study: '#F59E0B',
-  Wellbeing: '#FF6B6B',
 };
 
 interface ContentPageProps {
@@ -181,16 +187,22 @@ export function ContentPage({
   }, [activeFilter]);
 
   const mapCategory = (slug?: string): ContentArticle['category'] => {
-    const mapping: Record<string, ContentArticle['category']> = {
+    const mapping: Record<string, string> = {
       anxiety: 'Anxiety',
+      wellbeing: 'Wellbeing',
+      relationships: 'Relationships',
+      resilience: 'Resilience',
+      'self-care': 'Self-Care',
+      'exam stress': 'Exam Stress',
+      research: 'Research',
+      resources: 'Resources',
+      'in the news': 'In the News',
       sleep: 'Sleep',
       stress: 'Stress',
-      relationships: 'Relationships',
       exercise: 'Exercise',
       study: 'Study',
-      wellbeing: 'Wellbeing',
     };
-    return mapping[slug?.toLowerCase() || ''] || 'Study';
+    return mapping[slug?.toLowerCase() || ''] || slug || 'Wellbeing';
   };
 
   const isRecent = (publishedAt?: string): boolean => {
@@ -208,7 +220,7 @@ export function ContentPage({
     return Math.max(1, Math.ceil(words.length / 200));
   };
 
-  const filters = ['All', 'Wellbeing', 'Anxiety', 'Sleep', 'Stress', 'Relationships', 'Exercise', 'Study'];
+  const filters = ['All', ...Array.from(new Set(articles.map((a) => a.category))).sort()];
   const filteredArticles = activeFilter === 'All' ? articles : articles.filter((a) => a.category === activeFilter);
   const visibleArticles = filteredArticles.slice(0, visibleCount);
   const hasMore = visibleCount < filteredArticles.length;
