@@ -313,6 +313,10 @@ export const MobileAppStructure: React.FC = () => {
     }
   }, [user]);
 
+  const handleBaselineBack = useCallback(() => {
+    setOnboardingScreen('baseline_welcome');
+  }, []);
+
   const handleBaselineComplete = useCallback(async () => {
     await markBaselineComplete();
     setOnboardingScreen(null);
@@ -403,7 +407,7 @@ export const MobileAppStructure: React.FC = () => {
         case 'returning_splash':
           return <ReturningSplashScreen onComplete={handleReturningSplashComplete} />;
         case 'baseline_assessment':
-          return <BaselineAssessmentSDK onComplete={handleBaselineComplete} />;
+          return <BaselineAssessmentSDK onBack={handleBaselineBack} onComplete={handleBaselineComplete} />;
         default:
           return <SplashScreen onGetStarted={handleLetsGo} />;
       }

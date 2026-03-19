@@ -590,6 +590,21 @@ export function useBaselineAssessment({ onComplete }: UseBaselineAssessmentOptio
     if (onComplete) onComplete();
   }, [onComplete]);
 
+  const handleAbandon = useCallback(async () => {
+    if (mediaCaptureRef.current) {
+      mediaCaptureRef.current.cancel();
+      mediaCaptureRef.current = null;
+    }
+    try {
+      if (conversation.status === 'connected') {
+        await Promise.race([conversation.endSession(), new Promise((resolve) => setTimeout(resolve, 3000))]);
+      }
+    } catch {
+      // best-effort teardown
+    }
+    resetState();
+  }, [conversation, resetState]);
+
   return {
     // State
     showConversation,
@@ -611,6 +626,7 @@ export function useBaselineAssessment({ onComplete }: UseBaselineAssessmentOptio
     handleFinish,
     handleErrorCancel,
     handleErrorRetry,
+    handleAbandon,
     completeProcessing,
   };
 }

@@ -118,6 +118,7 @@ export function WelcomeStep({ flow }: WelcomeStepProps) {
             style={inputStyle}
             onFocus={(e) => {
               e.currentTarget.style.borderColor = '#2D4C4C';
+              setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
             }}
             onBlur={(e) => {
               e.currentTarget.style.borderColor = '#E5E7EB';

@@ -22,6 +22,7 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
     handleFinish,
     handleErrorCancel,
     handleErrorRetry,
+    handleAbandon,
     completeProcessing,
   } = useBaselineAssessment({ onComplete });
 
@@ -33,6 +34,21 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
       handleStartAssessment();
     }
   }, [showConversation, handleStartAssessment]);
+
+  // When the user retries after an early-finish error, reset startedRef so
+  // the auto-start effect fires again and a fresh conversation begins.
+  const handleRetry = () => {
+    startedRef.current = false;
+    handleErrorRetry(onBack);
+  };
+
+  // End the ElevenLabs session and media capture cleanly, then navigate back.
+  const handleBack = onBack
+    ? async () => {
+        await handleAbandon();
+        onBack();
+      }
+    : undefined;
 
   if (showConversation) {
     return (
@@ -46,12 +62,16 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
           />
         )}
 
+        {showErrorModal && (
+          <ErrorModal errorMessage={errorMessage} onCancel={handleErrorCancel} onRetry={handleRetry} />
+        )}
+
         <ConversationScreen
           type="baseline"
           messages={messages}
           isListening={conversationStatus === 'connected'}
           onFinish={handleFinish}
-          onBack={onBack}
+          onBack={handleBack}
           userName={user?.user_metadata?.first_name || user?.user_metadata?.given_name}
         />
       </>
@@ -61,9 +81,7 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
   // Minimal fallback while auto-start kicks in or if error
   return (
     <>
-      {showErrorModal && (
-        <ErrorModal errorMessage={errorMessage} onCancel={handleErrorCancel} onRetry={() => handleErrorRetry(onBack)} />
-      )}
+      {showErrorModal && <ErrorModal errorMessage={errorMessage} onCancel={handleErrorCancel} onRetry={handleRetry} />}
       {!showErrorModal && (
         <div
           style={{

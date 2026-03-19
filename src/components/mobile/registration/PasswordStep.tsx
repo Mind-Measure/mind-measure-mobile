@@ -92,6 +92,7 @@ export function PasswordStep({ flow }: PasswordStepProps) {
               style={{ ...inputStyle, paddingRight: '48px' }}
               onFocus={(e) => {
                 e.currentTarget.style.borderColor = '#2D4C4C';
+                setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
               }}
               onBlur={(e) => {
                 e.currentTarget.style.borderColor = '#E5E7EB';
@@ -139,6 +140,7 @@ export function PasswordStep({ flow }: PasswordStepProps) {
               style={{ ...inputStyle, paddingRight: '48px' }}
               onFocus={(e) => {
                 e.currentTarget.style.borderColor = '#2D4C4C';
+                setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
               }}
               onBlur={(e) => {
                 e.currentTarget.style.borderColor = '#E5E7EB';
