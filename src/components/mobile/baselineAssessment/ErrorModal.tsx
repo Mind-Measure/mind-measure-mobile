@@ -1,3 +1,6 @@
+const navy = '#1B3A3A';
+const teal = '#99CCCE';
+
 interface ErrorModalProps {
   errorMessage: string;
   onCancel: () => void;
@@ -9,41 +12,35 @@ export function ErrorModal({ errorMessage, onCancel, onRetry }: ErrorModalProps)
     <div
       style={{
         position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        inset: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 9999,
-        padding: '1rem',
+        padding: '1.5rem',
       }}
     >
       <div
         style={{
           backgroundColor: 'white',
-          borderRadius: '1rem',
-          maxWidth: '28rem',
+          borderRadius: '1.25rem',
+          maxWidth: '26rem',
           width: '100%',
-          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+          boxShadow: '0 24px 40px rgba(0, 0, 0, 0.18)',
           overflow: 'hidden',
+          fontFamily: 'Lato, system-ui, sans-serif',
         }}
       >
         {/* Header */}
-        <div
-          style={{
-            padding: '1.5rem',
-            borderBottom: '1px solid #e5e7eb',
-          }}
-        >
+        <div style={{ padding: '1.5rem 1.5rem 1rem' }}>
           <h3
             style={{
-              fontSize: '1.25rem',
-              fontWeight: '600',
-              color: '#111827',
+              fontSize: '1.1rem',
+              fontWeight: 700,
+              color: navy,
               margin: 0,
+              fontFamily: 'Inter, system-ui, sans-serif',
             }}
           >
             Unable to Complete Baseline
@@ -51,15 +48,13 @@ export function ErrorModal({ errorMessage, onCancel, onRetry }: ErrorModalProps)
         </div>
 
         {/* Body */}
-        <div
-          style={{
-            padding: '1.5rem',
-          }}
-        >
+        <div style={{ padding: '0 1.5rem 1.5rem' }}>
           <p
             style={{
-              color: '#6b7280',
-              lineHeight: '1.6',
+              fontSize: '0.9375rem',
+              color: navy,
+              opacity: 0.6,
+              lineHeight: 1.6,
               margin: 0,
             }}
           >
@@ -67,11 +62,10 @@ export function ErrorModal({ errorMessage, onCancel, onRetry }: ErrorModalProps)
           </p>
         </div>
 
-        {/* Footer - Buttons */}
+        {/* Footer */}
         <div
           style={{
-            padding: '1rem 1.5rem',
-            backgroundColor: '#f9fafb',
+            padding: '1rem 1.5rem 1.5rem',
             display: 'flex',
             gap: '0.75rem',
             justifyContent: 'flex-end',
@@ -80,21 +74,16 @@ export function ErrorModal({ errorMessage, onCancel, onRetry }: ErrorModalProps)
           <button
             onClick={onCancel}
             style={{
-              padding: '0.5rem 1rem',
+              padding: '0.625rem 1.25rem',
               fontSize: '0.875rem',
-              fontWeight: '500',
-              color: '#6b7280',
-              backgroundColor: 'white',
-              border: '1px solid #d1d5db',
-              borderRadius: '0.5rem',
+              fontWeight: 500,
+              color: navy,
+              opacity: 0.5,
+              backgroundColor: 'transparent',
+              border: '1px solid rgba(27,58,58,0.2)',
+              borderRadius: '0.75rem',
               cursor: 'pointer',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#f3f4f6';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'white';
+              fontFamily: 'Inter, system-ui, sans-serif',
             }}
           >
             Cancel
@@ -103,22 +92,16 @@ export function ErrorModal({ errorMessage, onCancel, onRetry }: ErrorModalProps)
           <button
             onClick={onRetry}
             style={{
-              padding: '0.5rem 1.5rem',
+              padding: '0.625rem 1.5rem',
               fontSize: '0.875rem',
-              fontWeight: '600',
-              color: 'white',
-              background: 'linear-gradient(to right, #a855f7, #3b82f6)',
+              fontWeight: 600,
+              color: navy,
+              backgroundColor: teal,
               border: 'none',
-              borderRadius: '0.5rem',
+              borderRadius: '0.75rem',
               cursor: 'pointer',
-              boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'scale(1.02)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'scale(1)';
+              fontFamily: 'Inter, system-ui, sans-serif',
+              boxShadow: '0 4px 16px rgba(153,204,206,0.35)',
             }}
           >
             Try Again
