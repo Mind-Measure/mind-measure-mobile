@@ -62,9 +62,7 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
           />
         )}
 
-        {showErrorModal && (
-          <ErrorModal errorMessage={errorMessage} onCancel={handleErrorCancel} onRetry={handleRetry} />
-        )}
+        {showErrorModal && <ErrorModal errorMessage={errorMessage} onRetry={handleRetry} />}
 
         <ConversationScreen
           type="baseline"

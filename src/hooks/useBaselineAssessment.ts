@@ -566,13 +566,16 @@ export function useBaselineAssessment({ onComplete }: UseBaselineAssessmentOptio
     }
   }, [isSaving, assessmentState.transcript.length, conversation, processAssessmentData]);
 
-  const handleErrorCancel = useCallback(() => {
-    setShowErrorModal(false);
-    resetState();
-    if (onComplete) {
-      onComplete();
-    }
-  }, [resetState, onComplete]);
+  const handleErrorCancel = useCallback(
+    (onBack?: () => void) => {
+      setShowErrorModal(false);
+      resetState();
+      if (onBack) {
+        onBack();
+      }
+    },
+    [resetState]
+  );
 
   const handleErrorRetry = useCallback(
     (onBack?: () => void) => {

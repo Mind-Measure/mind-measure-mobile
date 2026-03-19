@@ -3,11 +3,10 @@ const teal = '#99CCCE';
 
 interface ErrorModalProps {
   errorMessage: string;
-  onCancel: () => void;
   onRetry: () => void;
 }
 
-export function ErrorModal({ errorMessage, onCancel, onRetry }: ErrorModalProps) {
+export function ErrorModal({ errorMessage, onRetry }: ErrorModalProps) {
   return (
     <div
       style={{
@@ -71,24 +70,6 @@ export function ErrorModal({ errorMessage, onCancel, onRetry }: ErrorModalProps)
             justifyContent: 'flex-end',
           }}
         >
-          <button
-            onClick={onCancel}
-            style={{
-              padding: '0.625rem 1.25rem',
-              fontSize: '0.875rem',
-              fontWeight: 500,
-              color: navy,
-              opacity: 0.5,
-              backgroundColor: 'transparent',
-              border: '1px solid rgba(27,58,58,0.2)',
-              borderRadius: '0.75rem',
-              cursor: 'pointer',
-              fontFamily: 'Inter, system-ui, sans-serif',
-            }}
-          >
-            Cancel
-          </button>
-
           <button
             onClick={onRetry}
             style={{
