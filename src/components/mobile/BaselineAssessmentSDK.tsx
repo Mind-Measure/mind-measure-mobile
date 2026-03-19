@@ -2,12 +2,13 @@ import { useEffect, useRef } from 'react';
 import { useBaselineAssessment } from '../../hooks/useBaselineAssessment';
 import { useAuth } from '../../contexts/AuthContext';
 import { ConversationScreen } from './ConversationScreen';
-import { ProcessingOverlay, ErrorModal } from './baselineAssessment';
+import { ProcessingOverlay, ErrorModal, HelpModal } from './baselineAssessment';
 import type { BaselineAssessmentSDKProps } from './baselineAssessment';
 
 export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessmentSDKProps) {
   const { user } = useAuth();
   const startedRef = useRef(false);
+  const retryCountRef = useRef(0);
   const {
     showConversation,
     messages,
@@ -37,14 +38,18 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
 
   // When the user retries after an early-finish error, reset startedRef so
   // the auto-start effect fires again and a fresh conversation begins.
+  // On the second consecutive failure show the help modal instead.
   const handleRetry = () => {
+    retryCountRef.current += 1;
     startedRef.current = false;
     handleErrorRetry(onBack);
   };
 
   // End the ElevenLabs session and media capture cleanly, then navigate back.
+  // Also resets the retry counter so it doesn't carry over to future attempts.
   const handleBack = onBack
     ? async () => {
+        retryCountRef.current = 0;
         await handleAbandon();
         onBack();
       }
@@ -62,7 +67,13 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
           />
         )}
 
-        {showErrorModal && <ErrorModal errorMessage={errorMessage} onRetry={handleRetry} />}
+        {showErrorModal && retryCountRef.current < 1 && (
+          <ErrorModal errorMessage={errorMessage} onRetry={handleRetry} />
+        )}
+
+        {showErrorModal && retryCountRef.current >= 1 && (
+          <HelpModal onBack={handleBack ?? (() => handleErrorRetry(onBack))} />
+        )}
 
         <ConversationScreen
           type="baseline"
@@ -79,7 +90,11 @@ export function BaselineAssessmentSDK({ onBack, onComplete }: BaselineAssessment
   // Minimal fallback while auto-start kicks in or if error
   return (
     <>
-      {showErrorModal && <ErrorModal errorMessage={errorMessage} onCancel={handleErrorCancel} onRetry={handleRetry} />}
+      {showErrorModal && retryCountRef.current < 1 && <ErrorModal errorMessage={errorMessage} onRetry={handleRetry} />}
+
+      {showErrorModal && retryCountRef.current >= 1 && (
+        <HelpModal onBack={handleBack ?? (() => handleErrorRetry(onBack))} />
+      )}
       {!showErrorModal && (
         <div
           style={{
