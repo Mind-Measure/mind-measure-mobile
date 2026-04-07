@@ -21,6 +21,7 @@ import { OpenAccessWelcomeModal } from './OpenAccessWelcomeModal';
 import { SplashScreen } from './LandingPage';
 import { useUserAssessmentHistory } from '@/hooks/useUserAssessmentHistory';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { BackendServiceFactory } from '@/services/database/BackendServiceFactory';
 import { buddiesApi } from '@/services/buddies-api';
 import { prefetchContent } from '@/services/content-store';
@@ -244,6 +245,9 @@ export const MobileAppStructure: React.FC = () => {
   const [hasCompletedInitialSplash, setHasCompletedInitialSplash] = useState(false);
   const { user, loading: _authLoading } = useAuth();
   const { hasAssessmentHistory, loading: _historyLoading } = useUserAssessmentHistory();
+
+  // Register FCM/APNs device token once user is authenticated
+  usePushNotifications(user?.id);
 
   const isOpenAccess = user?.university_id === 'mindmeasure';
 

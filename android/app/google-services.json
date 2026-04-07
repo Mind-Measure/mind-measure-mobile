@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "540418561617",
+    "project_id": "mind-measure-university",
+    "storage_bucket": "mind-measure-university.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:540418561617:android:e1a2b2f503faa4d2e0ca70",
+        "android_client_info": {
+          "package_name": "com.mindmeasure.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCU40dXMH7v6Z_M_y3nTQcZC7521IG5LsE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
