@@ -53,7 +53,7 @@ export function usePushNotifications(userId: string | undefined): void {
         }
 
         if (permStatus.receive !== 'granted') {
-          console.log('[usePushNotifications] Permission not granted');
+          console.warn('[usePushNotifications] Permission not granted');
           return;
         }
 
